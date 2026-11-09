@@ -20,6 +20,8 @@ extends Node2D
 @onready var _season: SeasonSystem = $Systems/SeasonSystem
 @onready var _start_menu: StartMenu = $StartMenu
 @onready var _rain: RainEffect = $RainLayer/RainEffect
+@onready var _skill_tree: SkillTree = $Systems/SkillTree
+@onready var _skill_ui: SkillTreeUI = $SkillTreeUI
 
 var _last_fit: Vector2i = Vector2i.ZERO
 
@@ -33,7 +35,8 @@ func _ready() -> void:
 	get_tree().root.size_changed.connect(_fit_display)
 	_chunk_manager.setup(_camera)
 	# REVISION 3: Regen kennt Kamera + Gelände -> Aufprall auf der Oberfläche.
-	_rain.setup(_camera, _chunk_manager.generator)
+	# PHASE 4: Regen/Schnee kennt jetzt auch die Jahreszeit.
+	_rain.setup(_camera, _chunk_manager.generator, _time)
 	_mountains.setup(_camera)
 	_sky.refresh_layout()
 	var state := _chunk_manager.world_state
@@ -44,6 +47,7 @@ func _ready() -> void:
 	_season.setup(_chunk_manager, _trees, _camera, _time, _interaction)
 	_save.setup(_interaction, _chunk_manager, state, _time, _season)
 	_hud.setup(_interaction, _growth, _water, _time, _save, state)
+	_skill_ui.setup(_interaction)
 	_start_menu.setup(_should_show_start_menu(args))
 	_apply_presets(args)
 
@@ -89,6 +93,12 @@ func _ready() -> void:
 		var smoke_r4 = preload("res://tests/Revision4Smoke.gd").new()
 		smoke_r4.setup(_interaction, _chunk_manager, _season, _hud, _camera)
 		add_child(smoke_r4)
+	elif args.has("--phase4-smoke"):
+		var smoke4 = preload("res://tests/Phase4Smoke.gd").new()
+		smoke4.setup(_interaction, _skill_tree, _skill_ui, _water, _growth,
+			_chunk_manager, _camera, state, _time, _season, _save,
+			_rain, _hud)
+		add_child(smoke4)
 
 	print("[Main] PHASE 3 + REVISION 3 bereit: %d Eicheln, Jahreszeiten x1/x3/x10, Herbst-Eichelfall, Samen finden/vergraben, Schwierigkeitsgrade." % [
 		_interaction.get_seed_count()])
@@ -167,6 +177,53 @@ func _apply_presets(args: PackedStringArray) -> void:
 			" scale=", get_tree().root.content_scale_factor,
 			" mode=", get_tree().root.content_scale_mode,
 			" aspect=", get_tree().root.content_scale_aspect)
+	# --- PHASE 4: Skilltree + Winter-Schnee ----------------------------------
+	if args.has("--phase4-shot-skilltree"):
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 330.0))
+		_growth.set_process(false)
+		_water.set_process(false)
+		_season.set_process(false)
+		_interaction.debug_plant_twice()
+		if _interaction.selected_tree != null:
+			_interaction.selected_tree.glucose = 260.0
+		for id in ["root_efficiency", "leaf_efficiency", "rain_absorption",
+				"symbiosis", "spread"]:
+			_skill_tree.debug_unlock(id)
+		_skill_ui.open()
+		_hud.refresh()
+	elif args.has("--phase4-shot-snow"):
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 360.0))
+		_time.debug_set_season(TimeManager.Season.WINTER, 3, 0.40)
+		_water.force_rain(60.0)
+		_rain.debug_populate(46)
+		_growth.set_process(false)
+		_water.set_process(false)
+		_season.set_process(false)
+		_hud.refresh()
+	elif args.has("--phase4-shot-snow-detail"):
+		_camera.set_zoom_immediate(1.9)
+		_camera.teleport_to(Vector2(0.0, 345.0))
+		_time.debug_set_season(TimeManager.Season.WINTER, 3, 0.40)
+		_water.force_rain(60.0)
+		_rain.debug_populate(52)
+		_growth.set_process(false)
+		_water.set_process(false)
+		_season.set_process(false)
+		_hud.refresh()
+	elif args.has("--phase4-shot-skilltree-locked"):
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 330.0))
+		_growth.set_process(false)
+		_water.set_process(false)
+		_season.set_process(false)
+		_interaction.debug_plant_twice()
+		if _interaction.selected_tree != null:
+			_interaction.selected_tree.glucose = 12.0
+		_skill_ui.open()
+		_hud.refresh()
+
 	# --- REVISION 4: Start, Inventar-Klick und Wuchsstufen -------------------
 	if args.has("--rev4-shot-start"):
 		_camera.set_zoom_immediate(1.15)

@@ -1,0 +1,118 @@
+WALD-REGENERATION — PHASE 4 — TESTPROTOKOLL
+Godot 4.7.2.stable.official.ed1daf0bf · 2026-11-05 · Europe/Berlin
+Xvfb 1920x1080x24 · --rendering-driver opengl3 (llvmpipe Software-Rasterizer)
+Ziel-Renderer des Projekts: Forward+ / Vulkan
+
+======================================================================
+1) IMPORT / F5 / DAUERLAUF
+======================================================================
+--headless --path . --import                         Exit 0 / 0 Fehler
+F5 ohne Preset (Xvfb, 1920x1080, 25 Frames)          Exit 0 / 0 Fehler
+--headless --path . --quit-after 180
+    -- --seed=20261105 --windowed                     Exit 0 / 0 Fehler
+Godot-Import der neuen .tres/.gd/.uid-Dateien         0 Parse/Load-Fehler
+
+======================================================================
+2) SMOKE-TESTS (headless, ohne --seed, Legacy-Seed bleibt zufaellig)
+======================================================================
+--phase0-smoke       Exit 0  Ergebnis: OK    3 OK-Zeilen   0 Fehler
+--phase1-smoke       Exit 0  Ergebnis: OK   26 OK-Zeilen   0 Fehler
+--phase2-smoke       Exit 0  Ergebnis: OK   25 OK-Zeilen   0 Fehler
+--rev1-smoke         Exit 0  Ergebnis: OK   32 OK-Zeilen   0 Fehler
+--rev2-smoke         Exit 0  Ergebnis: OK   27 OK-Zeilen   0 Fehler
+--p3-smoke           Exit 0  Ergebnis: OK   56 OK-Zeilen   0 Fehler
+--rev3-smoke         Exit 0  Ergebnis: OK   20 OK-Zeilen   0 Fehler
+--rev4-smoke         Exit 0  Ergebnis: OK   32 OK-Zeilen   0 Fehler
+--phase4-smoke       Exit 0  Ergebnis: OK   50 OK-Zeilen   0 Fehler
+----------------------------------------------------------------------
+9 / 9 Smokes OK · 271 OK-Zeilen (inkl. je 1 Ergebniszeile) · 0 FEHLER · 0 SCRIPT ERROR
+
+PHASE4-Checks im Detail:
+[SMOKE] === PHASE 4: Skilltree + Winter-Schnee ===
+[SMOKE] SkillTree + data/skilltrees/oak.tres geladen               OK
+[SMOKE] Genau 15 MVP-Knoten                                        OK
+[SMOKE] Alle 7 Pflicht-Mutationen aus Master-Punkt 6               OK
+[SMOKE] 14 Vorbedingungs-Verbindungen                              OK
+[SMOKE] Start: nichts freigeschaltet, alle Modifikatoren = 1.0     OK
+[SMOKE] Baum fuer Glucose-Bezahlung vorhanden                      OK
+[SMOKE] can_unlock(): Wurzel-Knoten bezahlbar                      OK
+[SMOKE] Vorbedingung sperrt Tiefwurzler                            OK
+[SMOKE] Freischalten erfolgreich                                   OK
+[SMOKE] Genau 10 Glucose abgezogen                                 OK
+[SMOKE] +25 % Wasseraufnahme im Skilltree                          OK
+[SMOKE] apply_effect() wirkt auf die Baum-Instanz                  OK
+[SMOKE] Echter Wert: 10 Wasser/s werden zu 12,5                    OK
+[SMOKE] Skilltree pro Art synchron (neuer Baum uebernimmt Effekt)  OK
+[SMOKE] Effizientere Blaetter freigeschaltet                       OK
+[SMOKE] +20 % Glucose am Baum                                      OK
+[SMOKE] Echter Wert: Fotosynthese erzeugt 1.92 Glucose             OK
+[SMOKE] Verbreitung freigeschaltet (Voraussetzung Blaetter)        OK
+[SMOKE] P3-Anschluss set_spread_bonus() = +30 %                    OK
+[SMOKE] Ketten-Freischaltung bis Kronenwuchs                       OK
+[SMOKE] +2 Blaetter: can_grow('leaf') real erweitert               OK
+[SMOKE] Symbiose mit ZWEI Vorbedingungen                           OK
+[SMOKE] Parasiten-Resistenz freigeschaltet                         OK
+[SMOKE] Resistenzwert -50 % gespeichert (PHASE-5-Anschluss)        OK
+[SMOKE] Resistenz wirkt jetzt schon auf den Wasserverbrauch        OK
+[SMOKE] 7 Knoten freigeschaltet                                    OK
+[SMOKE] GraphEdit: 15 GraphNodes                                   OK
+[SMOKE] GraphEdit: 14 Linien                                       OK
+[SMOKE] Skilltree-UI oeffnet ueber HUD-Signal / T                  OK
+[SMOKE] Zoom veraenderbar                                          OK
+[SMOKE] Skilltree-UI schliesst wieder                              OK
+[SMOKE] Speichern (Format v5)                                      OK
+[SMOKE] Savegame version = 5                                       OK
+[SMOKE] Skill-Fortschritt im Savegame (7 IDs)                      OK
+[SMOKE] Zurueckgesetzt vor dem Laden                               OK
+[SMOKE] Laden (Format v5)                                          OK
+[SMOKE] Skill-Fortschritt nach Laden wiederhergestellt             OK
+[SMOKE] Winter: Niederschlag ist SCHNEE                            OK
+[SMOKE] HUD zeigt „Es schneit“                                     OK
+[SMOKE] Schnee erzeugt KEINE Regen-Spritzer                        OK
+[SMOKE] Flocken bleiben auf der Oberflaeche liegen                 OK
+[SMOKE] Keine Flocken unter der Geländelinie                       OK
+[SMOKE] Schnee fuellt Reservoirs weiter auf (R3 erhalten)          OK
+[SMOKE] Winter: weiterhin KEINE Reservoir-Entnahme (R3)            OK
+[SMOKE] Fruehling: wieder Regen                                    OK
+[SMOKE] Schnee-Punkte beim Saisonwechsel entfernt                  OK
+[SMOKE] Regen-Spritzer im Fruehling weiter aktiv (REV3)            OK
+[SMOKE] Alle 50 P4-Schluessel in DE + EN uebersetzt                OK
+[SMOKE] Weiterhin 5 geladene Chunks                                OK
+[SMOKE] Ergebnis: OK
+
+======================================================================
+3) REPRODUZIERBARE RENDERS (Xvfb + opengl3, --quit-after 25)
+======================================================================
+Ohne Preset / F5            Exit 0 / 25 Frames / 0 Fehler -> p4_f5.png
+--phase4-shot-skilltree     Exit 0 / 25 Frames / 0 Fehler -> p4_skilltree.png
+--phase4-shot-skilltree-locked
+                            Exit 0 / 25 Frames / 0 Fehler -> p4_skilltree-locked.png
+--phase4-shot-snow          Exit 0 / 25 Frames / 0 Fehler -> p4_snow.png
+--phase4-shot-snow-detail   Exit 0 / 25 Frames / 0 Fehler -> p4_snow-detail.png
+Sichtpruefung: Skilltree 15 Knoten / 14 Linien, keine ueberlagerte
+GraphEdit-Leiste; Winter zeigt weisse Flocken, keine blauen Linien,
+keine Spritzer; F5-HUD hat den Button "Skilltree (T)".
+
+======================================================================
+4) DATEN / SAVE / LOKALISIERUNG
+======================================================================
+data/skilltrees/oak.tres     15 Knoten, 14 Vorbedingungen, err=0
+tools/generate_skilltree.gd  Godot-4.7-ResourceSaver, deterministisch
+SaveManager.FORMAT_VERSION   5; skills vor trees wiederhergestellt
+data/localization.csv        136 Zeilen, 57 neue PHASE-4-Zeilen (DE+EN)
+Phase3Smoke                  version >= 4 (v5 kompatibel)
+
+======================================================================
+5) ZIP / EXTRAKT-VERIFIKATION
+======================================================================
+deliverables/waldspiel-PHASE4.zip: project.godot im Root, CRC OK,
+keine .godot-Dateien, keine .zip-in-.zip, alle neuen P4-Dateien drin.
+Extrakt -> --headless --import -> alle 9 Smokes: Exit 0 / Ergebnis: OK.
+
+======================================================================
+6) BEWUSSTE GRENZE
+======================================================================
+PHASE 5 wurde NICHT begonnen: keine Tiere, kein Mistel-Befall,
+keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
+Resistenz- und Symbiose-Werte sind als echte Zahlen vorbereitet.
+

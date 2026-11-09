@@ -1,4 +1,4 @@
-WALD-REGENERATION — PHASE 3 + REVISION 4 — Godot 4.7.2 stable
+WALD-REGENERATION — PHASE 4 — Godot 4.7.2 stable
 ======================================================================
 
 Dieses ZIP enthaelt das KOMPLETTE, lauffaehige Projekt. project.godot liegt
@@ -36,74 +36,102 @@ Steuerung:
   Rechtsklick (sonst)      Info (Baumwerte / Bodenmaterial + Kosten)
   WASD / Maus am Rand      Kamera schwenken
   Mausrad                  Zoom 0.5x … 2.0x
-  R                        Regen sofort (Dev-Hook) — fuellt Becken WIEDER AUF
+  R                        Niederschlag sofort (Dev-Hook): REGEN im Fruehling/
+                           Sommer/Herbst, SCHNEE im Winter. Fuellt Becken
+                           WIEDER AUF.
+  T / HUD "Skilltree (T)"  PHASE 4: Skilltree-UI oeffnen/schliessen
+  Esc (Skilltree offen)    Skilltree schliessen
+  Mittlere Maustaste       Skilltree-Graph verschieben
+  Mausrad / + / - / 1:1    Skilltree-Graph zoomen (0.35x … 1.8x)
+  Knoten-Button klicken    Mutation gegen Glucose freischalten, wenn alle
+                           Vorbedingungen erfuellt sind
   F11                      Vollbild an/aus
   HUD                      AUTO/MANUELL, DE/EN, Speichern, Laden
+
+NEU IN PHASE 4:
+  * Skilltree-UI mit echtem GraphEdit: 15 Knoten, 14 Vorbedingungs-Linien,
+    Zoom/Pan, Minimap, HUD-Button oben rechts und Taste T.
+  * data/skilltrees/oak.tres enthaelt alle 7 Pflicht-Mutationen:
+    Effizientere Wurzeln (+25 % Wasser), Effizientere Blaetter (+20 %
+    Glucose), Symbiose/Pilz-Knoten, Parasiten-/Krankheits-Resistenz,
+    Holz-Haerte (Sturm-Resistenz) und Verbreitung (+30 % Keimrate).
+  * Freischalten kostet Glucose des ausgewaehlten Baums. Der Fortschritt
+    ist GLOBAL PRO ART: alle Eichen teilen ihn, auch neu gespawnte.
+    (Master 4.2: Glucose pro Baum-Instanz, Skilltree pro Art synchron.)
+  * Effekte wirken auf ECHTE Werte: Wasseraufnahme, Fotosynthese,
+    Blatt-Obergrenze, Wurzel-/Stamm-/Blatt-Kosten, Regen- und
+    Reservoir-Faktoren, Winter-Bodenwasser, Eichelfall/Keimung und
+    Wasserverbrauch. Resistenzwerte (z.B. 0.5 = -50 %) sind gespeichert;
+    die Ereignis-Simulation folgt erst in PHASE 5.
+  * Savegame FORMAT v5 speichert den Skill-Fortschritt zusaetzlich.
+    v4/v3/v2/v1-Spielstaende bleiben lesbar.
+  * WINTER: SCHNEE statt Regen. 240 langsame weisse Flocken mit leichtem
+    Seitenschwingen, keine blauen Linien, keine Spritzer, keine Rippen.
+    Beim Auftreffen bleiben kurz Schneepunkte auf der exakten
+    Gelaendelinie liegen. HUD/Toast: "Es schneit". Beim Wechsel in den
+    Fruehling regnet es wieder mit den REV3-Spritzern.
+  * R3-Winterregeln bleiben: KEINE Reservoir-Entnahme, keine passive
+    Versickerung, aber Niederschlag fuellt die Becken weiter auf.
+  * 57 neue DE/EN-Zeilen in data/localization.csv; Skilltree- und
+    HUD-Texte schalten mit DE/EN um.
+  * Neuer Test: --phase4-smoke (50 Checks).
+
+NEU IN REVISION 4 (vor PHASE 4):
+  * Statische Erde/Hoehlen werden nur EINMAL gezeichnet; Wasser hat einen
+    eigenen TerrainWaterPainter. Isolinien-Cache, Streifen-Batching und
+    gedrosselte Redraws: A/B 1 FPS → 7 FPS (Xvfb/llvmpipe).
+  * 2 Eicheln liegen am Boden statt im Inventar; nur das HUD-Eichel-Icon
+    nimmt eine Inventar-Eichel auf; Platzierung nur auf dem Boden.
+  * Stamm und Wurzeln haben 5 sichtbare Wuchsstufen + Verjuengung.
 
 NEU IN REVISION 3 (vor PHASE 4):
   * Wasserpegel sinkt/steigt STUFENLOS (Interpolation innerhalb einer
     Tile-Zeile + anteilig gefuellte 4px-Zelle) -> kein 16px-Ruckler.
-    Feines Kontur-Redraw, Tile-Slots nur noch beim Zeilenwechsel und
-    ueber eine gecachte Kachelliste (kein Full-Scan mehr).
   * Im WINTER ziehen Baeume KEIN Wasser aus Reservoirs; auch die
-    Boden-Versickerung ruht. Regen fuellt weiter auf. HUD-Hinweis.
+    Boden-Versickerung ruht. Niederschlag fuellt weiter auf.
   * Regen faellt in WELT-KOORDINATEN bis zur echten Gelaendelinie
     (height_smooth_at) und erzeugt dort kleine Spritzer + Rippen.
     Kein Tropfen faellt mehr durch den Boden hindurch.
-  * Neuer Test: --rev3-smoke (19 Checks).
 
-NEU IN PHASE 3:
-  * Jahreszeiten Fruehling / Sommer / Herbst / Winter (15 min/Jahr).
-    Winter: Wachstum stoppt, Laubbaeume kahl. Kein Tag/Nacht-Zyklus.
-  * Zeitspulen x1 / x3 / x10 + Pause (Leertaste). Alle Simulationen nutzen
-    delta * time_scale. HUD zeigt Jahr, Jahreszeit und Saison-Fortschritt.
-  * Herbst: Eicheln fallen unter den Kronen (ab ~3 Spiel-Jahren, Physik-Fall,
-    manche keimen bei Wasser + Licht). Wahrscheinlichkeit x Schwierigkeit.
-  * Samen liegen auf dem Boden oder sind flach vergraben (kleiner Huegel,
-    per Noise verteilt). Vergrabene erst mit einer Wurzel erreichbar.
-  * Schwierigkeitsgrade vor Spielstart waehlbar, jederzeit im HUD aenderbar.
-    LEICHT / NORMAL / SCHWER beeinflussen Fotosynthese, Wasser, Regen,
-    Wachstumskosten, Samendichte, Eichel-/Keimwahrscheinlichkeit.
-    Schalter + Faktoren fuer pH / N-P-K / Mykorrhiza / Katastrophen sind
-    vorbereitet; die Simulation selbst folgt in PHASE 5 (siehe DECISIONS.md).
-  * Savegame v4 speichert difficulty / time / seeds zusaetzlich zu allen
-    v3-Daten. Alte v3/v2/v1-Spielstaende bleiben lesbar.
-  * Zwei Korrekturen VOR PHASE 3:
-      - Regen fuellt Wasserreservoirs LANGSAM und SICHTBAR wieder auf
-        (0.9 Einheiten/Tile/s x Becken-Groesse, nach der Wurzelentnahme).
-      - Der Vogel fliegt bis HINTER den linken Bildrand, statt mitten in
-        der Luft zu verschwinden (kamera-/viewport-abhaengig).
-  * Zusatzfix: keine doppelte Vollbild-Skalierung mehr — HUD ist bei
-    2560x1440 und 3440x1440 vollstaendig sichtbar.
-  * Zusatzfix: Revision1Smoke.gd scannt jetzt denselben Hoehlenbereich wie
-    Phase2Smoke/Revision2Smoke (top+5..top+45) — kein sporadischer
-    Fehlalarm bei unguenstigen Zufalls-Seeds mehr.
+PHASE 3 / REVISION 1 / REVISION 2 / PHASE 2 / PHASE 1 / PHASE 0 bleiben
+vollstaendig enthalten: Jahreszeiten, Zeitspulen, Samen finden/vergraben,
+Herbst-Eichelfall, Schwierigkeitsgrade, Kamera-Zoom/Pan, Chunks,
+Wasserreservoirs, Wurzelwachstum, Vogel-Event, Glucose/Wasser-HUD.
 
 Tests (im Projektordner, OHNE --seed):
   godot --headless --path . --import
   godot --headless --path . --quit-after 180
-  godot --headless --path . -- --phase0-smoke    # Regression: OK
-  godot --headless --path . -- --phase1-smoke    # Regression: OK
-  godot --headless --path . -- --phase2-smoke    # Regression: OK
-  --rev1-smoke / --rev2-smoke                    # Regression: OK
-  --p3-smoke                                     # 55 Checks: Zeit, Samen,
-                                                 # Schwierigkeit, Save v4
-  --rev3-smoke                                   # 19 Checks: Pegel, Winter,
-                                                 # Regen-Spritzer
+  godot --headless --path . -- --phase0-smoke    #  3 Checks: OK
+  godot --headless --path . -- --phase1-smoke    # 26 Checks: OK
+  godot --headless --path . -- --phase2-smoke    # 25 Checks: OK
+  godot --headless --path . -- --rev1-smoke      # 32 Checks: OK
+  godot --headless --path . -- --rev2-smoke      # 27 Checks: OK
+  godot --headless --path . -- --p3-smoke        # 56 Checks: OK
+  godot --headless --path . -- --rev3-smoke      # 20 Checks: OK
+  godot --headless --path . -- --rev4-smoke      # 32 Checks: OK
+  godot --headless --path . -- --phase4-smoke    # 50 Checks: OK
+  --------------------------------------------------------------------
+  9 / 9 Smokes OK · 271 Checks · 0 FEHLER · 0 SCRIPT ERROR
 
 Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed):
+  --phase4-shot-skilltree           (5/15 freigeschaltet, 260 Glucose)
+  --phase4-shot-skilltree-locked    (0/15, gesperrte Vorbedingungen)
+  --phase4-shot-snow                (Winter-Schnee, HUD "Es schneit")
+  --phase4-shot-snow-detail         (Flocken + liegengebliebene Punkte)
   --p3-shot-difficulty / -spring / -autumn / -winter / -seeds
   --p3-shot-rain-refill / -bird-mid / -bird-exit
-  --rev2-shot-edges          (Regression)
+  --rev2-shot-edges                 (Regression)
   --rev3-shot-rain-splash / -water-a / -water-b
-  --p3-debug-sizes           (Viewport-/Skalierungs-Debug)
+  --rev4-shot-start / -carry / -stages / -water
+  --p3-debug-sizes                  (Viewport-/Skalierungs-Debug)
+  Ohne Preset: F5-Startbild (screenshots/p4_f5.png)
 
-Dokumente: README.md, DECISIONS.md (Abschnitte 34–53),
-REVISION3-ERGEBNIS.html/.md, REVISION3-TESTPROTOKOLL.txt,
-PHASE3-ERGEBNIS.html/.md, PHASE3-TESTPROTOKOLL.txt sowie die historischen
-REVISION2-/REVISION1-/PHASE0-/PHASE1-/PHASE2-Berichte.
-Die HTML-Berichte enthalten die Bilder als data-URIs und funktionieren offline.
+Dokumente: README.md, DECISIONS.md (Abschnitte 1–68),
+PHASE4-ERGEBNIS.html/.md, PHASE4-TESTPROTOKOLL.txt sowie die historischen
+REVISION4-/REVISION3-/PHASE3-/REVISION2-/REVISION1-/PHASE0-/PHASE1-/PHASE2-
+Berichte. Die HTML-Berichte enthalten die Bilder als data-URIs und
+funktionieren offline.
 
 Hinweis: user://savegame.json liegt NICHT im ZIP, sondern im
 Godot-Benutzerdatenordner und wird beim ersten Speichern angelegt.
-PHASE 3 und REVISION 3 sind abgeschlossen; PHASE 4 wurde NICHT begonnen.
+PHASE 4 ist abgeschlossen; PHASE 5 wurde NICHT begonnen.

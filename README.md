@@ -1,11 +1,23 @@
-# Wald-Regeneration — PHASE 3 + REVISION 4
+# Wald-Regeneration — PHASE 4
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
-> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen und natürliche Vermehrung.
+> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen, natürliche Vermehrung, ein **Skilltree mit 15 Mutationen** und **Schnee statt Regen im Winter**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · **REVISION 4 ✅ (4 Korrekturen, 8/8 Smokes OK)** · PHASE 4 ⏳ (Skilltree-UI, **noch nicht begonnen**)
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · **PHASE 4 ✅ (Skilltree + Winter-Schnee, 9/9 Smokes OK)** · PHASE 5 ⏳ (**noch nicht begonnen**)
 
-**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `waldspiel-REVISION4.zip` (ersetzt `waldspiel-REVISION3.zip`). Dazu `REVISION4-ERGEBNIS.md` / `.html` mit Screenshots und Code-Snippets.
+**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-PHASE4.zip` (ersetzt `waldspiel-REVISION4.zip` als aktuellen Stand). Dazu `PHASE4-ERGEBNIS.md` / `.html` mit Screenshots und Code-Snippets.
+
+---
+
+## PHASE 4 — Skilltree und Winter-Schnee
+
+1. **GraphEdit-Skilltree mit 15 Knoten.** `data/skilltrees/oak.tres` enthält die 7 Pflicht-Mutationen und 8 weitere Knoten als echte `SkillNodeData`-Resources, dazu **14 Vorbedingungs-Linien**. `SkillTreeUI.gd` zeigt sie als zoombaren, pannbaren Graphen (`0.35× … 1.8×`, Minimap, mittlere Maustaste, Mausrad, `+ / − / 1:1`). Der HUD-Button oben rechts oder **`T`** öffnet, `Esc` schließt. Die eingebaute GraphEdit-Leiste ist zugunsten eigener Buttons ausgeblendet, damit sie nicht über dem Titel liegt.
+2. **Freischalten kostet echte Glucose.** `SkillTree.can_unlock()` prüft Vorbedingung + Kontostand des ausgewählten Baums; `unlock()` zieht exakt die Knotenkosten ab. Wie in Master-Punkt 4.2 festgelegt bleibt Glucose **pro Baum-Instanz**, der Skilltree-Fortschritt dagegen **global pro Art**: alle Eichen (auch neu gespawnte) bekommen denselben Stand. `SaveManager` speichert ihn in **Format v5**; alte v4/v3/v2/v1-Saves bleiben lesbar.
+3. **Effekte verändern echte Werte.** `root_efficiency` → `12,5 Wasser/s` statt `10`; `leaf_efficiency` → Fotosynthese × `1,20`; `crown_growth` → `MAX_LEAVES + 2`; `spread` → `spread_bonus = 0,30` für Eichelfall/Keimung; `deep_roots`/`trunk_saver` → −20 % Wachstumskosten; `rain_absorption`/`reservoir_tap`/`winter_hardy` → echte Wasserfaktoren; Resistenzen → gespeicherte −50 %-Werte und −10 % Wasserverbrauch. Die Ereignis-Simulation für Parasiten/Krankheit/Sturm/Pilze bleibt bewusst **PHASE 5**.
+4. **Im Winter schneit es.** Dasselbe Niederschlags-Event zeichnet jetzt langsame, seitlich schwingende **weiße Flocken** statt blauer Regenlinien, legt beim Auftreffen auf der echten Geländelinie kurz Schneepunkte ab und erzeugt **keine Spritzer/Rippen**. HUD und Toast sagen „Es schneit". Die R3-Regeln bleiben: keine Reservoir-Entnahme, keine Versickerung, aber Auffüllen läuft weiter. Im Frühling regnet es wieder mit Spritzern.
+5. **Alles bleibt lauffähig.** DE/EN (57 neue Lokalisierungszeilen), Save/Load, Zeitspulen, 5 Chunks, Nearest, Startmenü und alle 8 bisherigen Smokes sind unverändert geprüft. `--phase4-smoke` ergänzt **50 Checks**; insgesamt **9/9 Smokes · 271 Checks · 0 Fehler**. Screenshots: `p4_f5.png`, `p4_skilltree.png`, `p4_skilltree-locked.png`, `p4_snow.png`, `p4_snow-detail.png`.
+
+**PHASE 5 wurde nicht begonnen** — keine Tiere, kein Mistel-Befall, keine Pilz-/pH-/N-P-K-/Katastrophen-Simulation.
 
 ---
 
@@ -16,7 +28,7 @@
 3. **Inventar-Eichel nur per Klick auf die Eichel.** Ein Klick irgendwo im Bild (leerer Boden, Himmel, Baum) nimmt **keine** Eichel mehr aus dem Inventar; einziger Einstieg ist das Eichel-Icon im HUD (`hud_acorn_clicked()`, beim Tragen orange markiert). Und die schwebende Eichel wird nur noch **auf dem Boden** platziert — ein Klick in den Himmel verbraucht sie nicht mehr. Neuer DE/EN-Hinweis `MSG_ACORN_GROUND_ONLY`, HUD-Hilfszeile aktualisiert.
 4. **Stamm und Wurzeln haben 5 sichtbare Wachstumsstufen.** Keimling = 30 % Breite, ausgewachsen = 100 %, dazwischen 46 / 62 / 80 %. Zusätzlich verjüngt sich der Stamm nach oben und die Wurzeln zur Spitze hin; junge Triebe sind leicht grünlich. Das 16px-Kollisionsraster bleibt unverändert und die Stufe überlebt Save/Load.
 
-**PHASE 4 wurde nicht begonnen.** Die Skilltree-UI bleibt der nächste Schritt.
+**PHASE 4 ist inzwischen umgesetzt** – siehe Abschnitt oben.
 
 ---
 
@@ -26,7 +38,7 @@
 2. **Winter: keine Reservoir-Entnahme.** `WaterSystem.tick()` überspringt im Winter die komplette Wurzel-Entnahme und die Boden-Versickerung (Frost); Regen füllt weiterhin auf. Das HUD zeigt `Winter: kein Wasser aus Reservoirs`. Smoke: 8712 → 8712 im Winter, 8712 → 8622,9 im Frühling.
 3. **Regen prasselt auf die Oberfläche.** `RainEffect` rechnet jetzt in **Welt-Koordinaten** (Kameraposition + Zoom). Jeder Tropfen fällt bis `generator.height_smooth_at(wx)`, erzeugt dort 3 kleine Spritzer mit Aufwärts-/Seitwärts-Geschwindigkeit plus eine kurz aufblitzende Rippe und startet oberhalb neu. Kein Tropfen fällt mehr durch den Boden. Smoke: Aufprallhöhe = echte Geländelinie, 316 Spritzer, 0 Tropfen unter der Oberfläche.
 
-**PHASE 4 wurde nicht begonnen.** Die Skilltree-UI bleibt der nächste Schritt.
+**PHASE 4 ist inzwischen umgesetzt** – siehe Abschnitt oben.
 
 ---
 
@@ -50,7 +62,9 @@
 | Rechtsklick (ohne getragene Eichel) | Info: Baumwerte / Bodenmaterial / Tiefe / Kosten / vergrabener Samen |
 | `W A S D` / Maus am Rand | Kamera schwenken |
 | Mausrad | Zoom `0.5x … 2.0x` |
-| `R` | Regen sofort auslösen (Dev-Hook) |
+| `R` | Regen / Schnee sofort auslösen (Dev-Hook), je nach Jahreszeit |
+| **`T` / HUD „Skilltree (T)"** | Skilltree-UI öffnen/schließen |
+| **Skilltree: mittlere Maustaste / Mausrad** | Graph verschieben / zoomen (zusätzlich `+ / − / 1:1`) |
 | **Leertaste** | **PHASE 3:** Pause an/aus (auch HUD-Button) |
 | **HUD `x1 / x3 / x10`** | **PHASE 3:** Zeitspulen; alle Simulationen nutzen `delta * time_scale` |
 | **HUD „Schwierigkeit: …“** | **PHASE 3:** LEICHT → NORMAL → SCHWER → LEICHT |
@@ -80,9 +94,9 @@
 ### Samen & natürliche Vermehrung (`src/systems/SeasonSystem.gd`)
 
 - `WorldGenerator.ground_seeds_for_chunk()` verteilt Kandidaten **per Noise** und seed-deterministisch. `SeasonSystem` erzeugt daraus Sprites: frei liegende Eicheln (`acorn.png`) und **flach vergrabene** Eicheln (`seed_mound.png`, `ty = surface_tile_y_at + 2`) — nur mit einer Wurzel in Reichweite erreichbar.
-- Linksklick sammelt ein (`EventBus.seed_found` / `seed_collected`), Rechtsklick auf einen Hügel gibt den Hinweis. Bereits gesammelte IDs werden gemerkt und in **Savegame v4** gespeichert, damit sie nach Chunk-Reload nicht wieder auftauchen.
+- Linksklick sammelt ein (`EventBus.seed_found` / `seed_collected`), Rechtsklick auf einen Hügel gibt den Hinweis. Bereits gesammelte IDs werden gemerkt und im **Savegame (v4/v5)** gespeichert, damit sie nach Chunk-Reload nicht wieder auftauchen.
 - **Herbst:** alle 12 simulierten Sekunden Eichelfall unter der Krone (Tween-Fall auf `height_smooth_at()`), max. 14 pro Herbst. Reife ab **~3 Spiel-Jahren** (`MATURE_AGE_YEARS = 3.0`); junge Bäume werfen seltener ab. Manche Eicheln keimen, wenn `sunlight > 0.4` und nicht Winter (Basis 22 %, × Schwierigkeit × reservierter Skill „Verbreitung"). Sonst bleiben sie liegen.
-- Der Skill **„Verbreitung"** ist als `spread_bonus` / `set_spread_bonus()` vorbereitet; die **Skilltree-UI bleibt PHASE 4**.
+- Der Skill **„Verbreitung"** setzt jetzt über `SeasonSystem.set_spread_bonus()` den echten `spread_bonus = 0,30`; der Schalter kommt aus dem PHASE-4-Skilltree.
 
 ### Schwierigkeitsgrade (`src/autoload/Global.gd`, `src/ui/StartMenu.gd`)
 
@@ -180,9 +194,9 @@ Reproduzierbare Screenshots (Godot + Xvfb, `--seed=20261105 --windowed`):
 ## ZIP (vollständig, Godot-importierbar)
 
 ```bash
-python3 tools/build_zip.py REVISION4   # -> /home/user/waldspiel-REVISION4.zip
+python3 tools/build_zip.py PHASE4   # -> deliverables/waldspiel-PHASE4.zip
 ```
 
 `project.godot` liegt im **ZIP-Root**, `.godot/`-Cache und generierte `.translation` sind ausgeschlossen; alle Quellen, Assets, `.import`/`.uid`, Tests, Berichte und Screenshots sind drin. CRC-Test ist Teil des Skripts.
 
-**Nächster Schritt: PHASE 4 — Skilltree-UI (GraphEdit, 15 Nodes, Glucose-Kosten, echte Effekte).**
+**Nächster Schritt: PHASE 5 — Tiere, Parasiten, Pilz-Symbiose und pH-/Katastrophen-Simulation (noch nicht begonnen).**

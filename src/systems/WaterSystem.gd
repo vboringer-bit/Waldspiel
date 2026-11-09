@@ -70,12 +70,17 @@ func tick(delta: float) -> void:
 	# Reservoirs ziehen; auch die Boden-Versickerung ist bei Frost gestoppt.
 	# Regen fuellt weiterhin auf (der Niederschlag faellt ja trotzdem).
 	var winter := time_manager != null and time_manager.is_winter()
-	var soil_factor := Global.difficulty_factor("soil_water")
+	var st := SkillTree.instance
+	var soil_factor := Global.difficulty_factor("soil_water") \
+		* (st.modifier("winter_water") if st != null and winter else 1.0)
+	var rain_mult: float = st.modifier("rain_boost") if st != null else 1.0
+	var reservoir_mult: float = st.modifier("reservoir_gain") if st != null else 1.0
 	for tree in get_tree().get_nodes_in_group("trees"):
 		var rate: float = tree.species.base_water_gain * float(tree.root_count) \
 			* soil_factor
 		if raining:
-			rate *= REGEN_FAKTOR * Global.difficulty_factor("rain_boost")
+			rate *= REGEN_FAKTOR * Global.difficulty_factor("rain_boost") \
+				* rain_mult
 		# REVISION 2: jedes Wurzelsegment im NASSEN Teil entnimmt dem
 		# GESAMTEN Becken Wasser (nicht nur seinem eigenen Tile).
 		if not winter and world_state != null and generator != null:
@@ -83,7 +88,8 @@ func tick(delta: float) -> void:
 			for seg in tree.root_segments:
 				var gt: Vector2i = seg.global_tile()
 				if world_state.is_reservoir(gt.x, gt.y) and not world_state.is_dry(gt.x, gt.y):
-					bonus += world_state.consume(gt.x, gt.y, RESERVOIR_GAIN * dt)
+					bonus += world_state.consume(gt.x, gt.y,
+						RESERVOIR_GAIN * reservoir_mult * dt)
 			if bonus > 0.0:
 				rate += bonus / dt
 				last_reservoir_rate += bonus / dt
@@ -113,8 +119,18 @@ func reservoir_fraction(tree: BaseTree) -> float:
 func start_rain(duration: float) -> void:
 	raining = true
 	rain_time_left = maxf(duration, 0.1)
+	# PHASE 4: Im Winter ist der Niederschlag SCHNEE. Die Simulation bleibt
+	# identisch (R3: Auffuellen laeuft weiter, Entnahme/Versickerung ruhen),
+	# nur Partikel, HUD-Text und Meldung werden umgestellt.
+	var snow := is_snowfall()
+	EventBus.precipitation_mode_changed.emit(snow)
 	EventBus.rain_started.emit(rain_time_left)
-	EventBus.toast.emit(tr("MSG_RAIN_REFILL"))
+	EventBus.toast.emit(tr("MSG_SNOW_REFILL") if snow else tr("MSG_RAIN_REFILL"))
+
+
+## PHASE 4: Winter = Schnee statt Regen (gleiches Niederschlag-Event).
+func is_snowfall() -> bool:
+	return time_manager != null and time_manager.is_winter()
 
 
 func _stop_rain() -> void:

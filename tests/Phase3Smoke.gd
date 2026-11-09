@@ -229,8 +229,9 @@ func run() -> void:
 	var parsed: Variant = JSON.parse_string(f.get_as_text()) if f != null else null
 	if f != null:
 		f.close()
-	var ok_v4 := parsed is Dictionary and int((parsed as Dictionary).get("version", 0)) == 4
-	_check(ok_v4, "Savegame version = 4")
+	# PHASE 4 hebt das Format auf v5 (Skill-Fortschritt); >= 4 bleibt gueltig.
+	var ok_v4 := parsed is Dictionary and int((parsed as Dictionary).get("version", 0)) >= 4
+	_check(ok_v4, "Savegame version >= 4 (PHASE 4: v5)")
 	if parsed is Dictionary:
 		var d: Dictionary = parsed
 		_check(d.has("difficulty") and d.has("time") and d.has("seeds"),

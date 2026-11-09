@@ -4,7 +4,7 @@
 
     python3 tools/build_zip.py PHASE2
 
-Ziel: /home/user/waldspiel-PHASE2.zip
+Ziel: deliverables/waldspiel-<PHASE>.zip (im Projektordner)
 `project.godot` liegt im ZIP-Root (nicht in einem Unterordner), damit Godot
 "Importieren -> project.godot" direkt funktioniert. Editor-Cache (.godot),
 uebersetzte .translation-Dateien und Python-Caches werden bewusst
@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PHASE = sys.argv[1].strip() if len(sys.argv) > 1 else "PHASE2"
-OUT = ROOT.parent / f"waldspiel-{PHASE}.zip"
+OUT = ROOT / "deliverables" / f"waldspiel-{PHASE}.zip"
 
 SKIP_DIRS = {".godot", "__pycache__", ".git", ".cache", ".venv", "node_modules"}
 SKIP_SUFFIXES = {".translation", ".zip", ".pyc", ".log", ".tmp"}
@@ -40,6 +40,7 @@ def main() -> None:
     if not any(p.relative_to(ROOT).as_posix() == "project.godot" for p in files):
         raise SystemExit("FEHLER: project.godot fehlt im Projekt-Root.")
 
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     if OUT.exists():
         OUT.unlink()
     with zipfile.ZipFile(OUT, "w", compression=zipfile.ZIP_DEFLATED,
@@ -55,7 +56,7 @@ def main() -> None:
         bad = z.testzip()
         assert bad is None, f"beschaedigter Eintrag: {bad}"
 
-    print(f"[ZIP] {OUT.name} | {len(files)} Dateien | {OUT.stat().st_size / 1024 / 1024:.2f} MiB")
+    print(f"[ZIP] {OUT} | {len(files)} Dateien | {OUT.stat().st_size / 1024 / 1024:.2f} MiB")
     print(f"[ZIP] project.godot im Root: OK | CRC-Test: OK | .godot ausgeschlossen: OK")
 
 

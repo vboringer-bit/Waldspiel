@@ -541,3 +541,51 @@ Bei 5 geladenen Chunks ≈ 335 ms pro Neuaufbau; R3 löste `queue_redraw()` bis 
 `Phase1Smoke` prüft jetzt `get_seed_count() == 0` und setzt für den P1-Tutorial-Test bewusst `set_seed_count(2)` — die ursprüngliche Vogel-/Keimling-Logik wird dadurch unverändert getestet. `tools/build_revision4_report.py`, `REVISION4-ERGEBNIS.md/.html`, `REVISION4-TESTPROTOKOLL.txt`, `tests/Revision4Smoke.gd` und 4 `screenshots/rev4_*.png` sind neu.
 
 **PHASE 4 wurde NICHT begonnen.** Kein GraphEdit, keine Skilltree-Nodes, keine Glucose-Kosten für Skills. `SeasonSystem.set_spread_bonus()` bleibt der reservierte Anschluss für „Verbreitung". Die pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* bleibt PHASE 5 zugeordnet.
+
+## 64. PHASE 4 — Skilltree-Daten, Glucose-Kosten und globale Synchronität
+
+Master-Punkt 6 verlangt **pro Baumart einen eigenen Skilltree**, im MVP **15 Knoten**, Freischalten gegen **Glucose** und Vorbedingungen. `src/systems/SkillNodeData.gd` (`Resource`) speichert `id`, `title_key`, `desc_key`, `cost`, beliebig viele `prerequisites`, `effects` und `graph_position`; `SkillTreeData.gd` bündelt sie pro Art. `tools/generate_skilltree.gd` erzeugt daraus mit Godot 4.7.2 `data/skilltrees/oak.tres` (15 eingebettete Sub-Resources, **14** Verbindungslinien). Die sieben Pflicht-Mutationen sind alle vorhanden: `root_efficiency` (+25 % Wasseraufnahme), `leaf_efficiency` (+20 % Glucose), `symbiosis` (Pilz-Knoten), `parasite_res`, `disease_res`, `wood_hardness`, `spread` (+30 % Keimrate).
+
+`SkillTree.gd` hält den Freischalt-Zustand **nur einmal pro Art** (`static var instance`) und nicht in den Baum-Instanzen. `can_unlock()` prüft Vorbedingungen + Glucose, `unlock()` zieht die Kosten ab, berechnet alle Modifikatoren neu und ruft `apply_effect()` auf **jeden** Baum; neu spawnende Bäume bekommen den Stand über `EventBus.tree_spawned`. Master-Punkt 4.2 stellt ausdrücklich klar: „Glucose ist pro Baum-Instanz, Skilltree pro Art synchron". Deshalb bezahlt der **ausgewählte Baum** die Knoten — es wurde kein widersprüchlicher globaler Glucose-Topf eingeführt. `SaveManager` schreibt den Fortschritt als `skills` in **Format v5**, stellt ihn beim Laden **vor** den Bäumen wieder her; v4/v3/v2/v1 bleiben lesbar.
+
+## 65. PHASE 4 — Effekte wirken auf echte Werte, nicht nur auf Tooltips
+
+| Effekt-Key | Echte Code-Stelle | Messbarer Wert im Smoke |
+|---|---|---|
+| `root_water` | `BaseTree.absorb_water()`, `WaterSystem` | +25 %: `absorb_water(1 s, 10/s)` → **12,5 Wasser** statt 10 |
+| `glucose` | `BaseTree.photosynthesize()` | +20 %: Glucose-Ausbeute = Blätter × Effizienz × Schwierigkeit × **1,20** |
+| `max_leaves` | `BaseTree.can_grow("leaf")` | `MAX_LEAVES + 2` statt hartem Cap |
+| `growth_cost` / `root_cost` | `InteractionController` (4 Preisstellen) + `GrowthSystem` (AUTO) | −20 % Wurzel-/Stamm-/Blattpreis |
+| `rain_boost` / `reservoir_gain` / `winter_water` | `WaterSystem.tick()` | +30 % Niederschlag, +25 % Reservoir-Entnahme, +30 % Bodenwasser im Winter |
+| `spread` | `SeasonSystem.set_spread_bonus()` → Eichelfall/Keimung | **spread_bonus = 0,30** |
+| `water_consumption` | `BaseTree.photosynthesize()` | −10 % nach Parasiten-/Krankheits-Resistenz |
+| `parasite_risk` / `disease_risk` / `storm_risk` | `SkillTree.resistance()` (echte Zahlen, **0,5** = −50 %) | bereits gespeichert; die Ereignis-Simulation bleibt PHASE 5 |
+
+`SkillTree.apply_effect()` synchronisiert `skill_glucose_mult`, `skill_root_water_mult`, `skill_water_consumption_mult` und `skill_max_leaves_bonus` auf jeder `BaseTree`-Instanz. `SeasonSystem._sync_skills()` abonniert `skilltree_changed`; `WaterSystem` und die Preisrechner lesen die Modifikatoren direkt. Damit sind die sieben Pflicht-Mutationen keine reinen UI-Flags.
+
+## 66. PHASE 4 — GraphEdit-UI und Bedienung
+
+`src/ui/SkillTreeUI.gd` ist ein `CanvasLayer` (Layer 30) mit **echtem `GraphEdit`**: 15 `GraphNode`s, 14 `connect_node()`-Linien, Minimap, Zoom `0,35 … 1,8` (Schritt 1,15, Start 1,0), mittlere Maustaste zum Pannen, Mausrad und eigene `+ / − / 1:1`-Buttons unten links. `show_menu = false` sowie `show_zoom_buttons/grid/minimap/arrange = false` blenden die eingebaute GraphEdit-Leiste aus — sie überlagerte sonst Titel und erste Knotenzeile. Knoten sind absichtlich `draggable = false`: verschoben wird der Graph, nicht das Layout.
+
+Oben rechts sitzt der HUD-Button **„Skilltree (T)"**; `T` öffnet/schließt, `Esc` schließt. `_on_unlock_pressed()` ruft `SkillTree.unlock(id, selected_tree)`; gesperrte oder zu teure Knoten haben deaktivierte Buttons und Statuszeilen (`Gesperrt (Vorbedingung)` / `Verfügbar` / `✓ Freigeschaltet`). `EventBus.skill_unlocked`, `skilltree_changed`, `tree_selected`, `game_loaded` und `locale_changed` aktualisieren Anzeige und DE/EN-Texte; 57 neue `data/localization.csv`-Zeilen decken Knoten, UI, Toasts und Schnee ab.
+
+## 67. PHASE 4 — Winter: Schnee statt Regen
+
+Der User-Wunsch „ersetze den Regen im Winter mit Schnee" wurde **ohne neues Niederschlags-System** umgesetzt: `WaterSystem.raining`, Zeitdauer, Reservoir-Auffüllung, x1/x3/x10-Echtzeitpartikel und Save/Load bleiben unverändert. `RainEffect.snow_mode` wird aus `TimeManager.is_winter()` bei Saisonwechsel und Niederschlagsstart synchronisiert. Im Winter fallen **240 weiße Flocken** mit 55–135 px/s (statt 620–1040 px/s blauer Linien), schwingen sinusförmig seitlich und bleiben beim Auftreffen auf der exakten `height_smooth_at(wx)`-Linie als langsam verblassende Punkte liegen (`MAX_SETTLE = 220`). **Keine Spritzer, keine Rippen** — Schnee spritzt nicht. HUD/Toast zeigen „Es schneit" bzw. „Es schneit – die Wasserreservoirs füllen sich langsam wieder auf."; `WaterSystem.is_snowfall()` und `EventBus.precipitation_mode_changed` halten HUD und Effekt konsistent.
+
+Die R3-Regeln bleiben exakt erhalten: im Winter **keine Reservoir-Entnahme**, keine passive Versickerung, aber Niederschlag füllt weiter auf (`last_reservoir_rate = 0`). Beim Wechsel zurück in den Frühling werden Schneepunkte gelöscht und Regen-Spritzer wieder erzeugt. Screenshots `p4_snow.png` / `p4_snow-detail.png` zeigen Flocken ohne blaue Linien; `p4_f5.png` zeigt den normalen F5-Start mit neuem Skilltree-Button.
+
+## 68. Verifikation PHASE 4 und PHASE-5-Sperre
+
+| Prüfung | Ergebnis |
+|---|---|
+| `--headless --path . --import` | Exit 0 / 0 Fehler |
+| F5 / `--quit-after 180` ohne Preset | Exit 0 / 0 Fehler |
+| 9 Smokes P0/P1/P2/REV1/REV2/P3/REV3/REV4/**PHASE4** (ohne `--seed`) | je Exit 0 / `Ergebnis: OK` / **271 Checks** |
+| `--phase4-smoke` | **50 Checks OK** / 0 `FEHLER` |
+| 5 Xvfb-Renders 1920×1080 (`p4_f5`, `--phase4-shot-skilltree`, `-locked`, `-snow`, `-snow-detail`) | je Exit 0 / 0 Fehler |
+| ZIP `waldspiel-PHASE4.zip`: CRC, `project.godot` im Root, `.godot` ausgeschlossen, Extrakt-Import + 9 Smokes | OK |
+
+Neu: `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`, `PHASE4-ERGEBNIS.md/.html`, `PHASE4-TESTPROTOKOLL.txt`, 5 `screenshots/p4_*.png`. `Phase3Smoke` prüft jetzt `version >= 4`, damit v5-Saves die alte Save/Load-Regression nicht brechen.
+
+**PHASE 5 wurde NICHT begonnen.** Keine Tiere/StateMachine, kein Mistel-Befall, keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Ereignisse*. Die Resistenz- und Symbiose-Werte sind als echte Zahlen vorbereitet, die zugehörige Simulation bleibt dem nächsten Meilenstein vorbehalten.

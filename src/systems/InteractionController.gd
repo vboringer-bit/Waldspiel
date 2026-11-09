@@ -145,7 +145,8 @@ func _right_click(pos: Vector2) -> void:
 	var kind := generator.material_at(gx, ty)
 	var depth := int(maxf(pos.y - generator.height_at(pos.x), 0.0))
 	var cost := GrowthCost.for_tile(generator, gx, ty,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("growth_cost") if SkillTree.instance != null else 1.0))
 	EventBus.toast.emit(tr("MSG_SOIL_INFO") % [
 		GrowthCost.material_name(kind), depth, cost, Global.world_seed])
 
@@ -383,7 +384,8 @@ func update_ghost(world_pos: Vector2) -> void:
 	var gt := tree.global_tile_for(target)
 	var kind := generator.material_at(gt.x, gt.y)
 	var cost := GrowthCost.for_tile(generator, gt.x, gt.y,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("root_cost") if SkillTree.instance != null else 1.0))
 	var affordable := tree.glucose >= cost
 	var material := GrowthCost.material_name(kind)
 	ghost.show_at(Vector2(float(gt.x * WorldGenerator.TILE_SIZE),
@@ -418,7 +420,8 @@ func manual_root_growth(tree: BaseTree, segment: RootSegment) -> bool:
 		EventBus.toast.emit(tr("MSG_ROOT_BLOCKED"))
 		return false
 	var cost := GrowthCost.for_tile(generator, gt.x, gt.y,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("root_cost") if SkillTree.instance != null else 1.0))
 	if tree.glucose < cost:
 		EventBus.toast.emit(tr("MSG_NOT_ENOUGH_GLUCOSE"))
 		return false
@@ -442,7 +445,8 @@ func manual_growth(tree: BaseTree, pos: Vector2) -> bool:
 		return false
 	if pos.y >= tree.global_position.y:
 		return manual_root_growth(tree, tree.deepest_tip())
-	var cost: float = tree.species.growth_cost
+	var cost: float = tree.species.growth_cost \
+		* (SkillTree.instance.modifier("growth_cost") if SkillTree.instance != null else 1.0)
 	if not tree.can_grow("leaf"):
 		return false
 	if tree.glucose < cost:
@@ -541,7 +545,8 @@ func debug_show_ghost() -> void:
 	var gt := tree.global_tile_for(target)
 	var kind := generator.material_at(gt.x, gt.y)
 	var cost := GrowthCost.for_tile(generator, gt.x, gt.y,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("root_cost") if SkillTree.instance != null else 1.0))
 	var affordable := tree.glucose >= cost
 	var material := GrowthCost.material_name(kind)
 	ghost.show_at(Vector2(float(gt.x * WorldGenerator.TILE_SIZE),

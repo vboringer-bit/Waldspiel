@@ -151,8 +151,8 @@ func _build_widgets() -> void:
 	_growth_label = _label("", _cost_settings)
 	_reservoir_label = _label("", _cost_settings)
 
-	_skill_button = _button("Skilltree (ab PHASE 4)")
-	_skill_button.disabled = true
+	_skill_button = _button("Skilltree (T)")
+	_skill_button.disabled = false          # PHASE 4: UI ist da
 
 	# --- PHASE 3: Schwierigkeit + Zeitspulen + Pause + Jahreszeitenbalken ---
 	_difficulty_button = _button("Schwierigkeit: Normal")
@@ -250,7 +250,21 @@ func debug_click_seed_icon() -> void:
 	_on_seed_icon_input(ev)
 
 
+## PHASE 4: Skilltree-Button oben rechts oeffnet die GraphEdit-UI.
+func _on_skill_pressed() -> void:
+	EventBus.skilltree_open_requested.emit()
+
+
+func _is_winter() -> bool:
+	return time_manager != null and time_manager.is_winter()
+
+
+func debug_rain_label_text() -> String:
+	return _rain_label.text
+
+
 func _connect() -> void:
+	_skill_button.pressed.connect(_on_skill_pressed)
 	_mode_button.pressed.connect(_on_mode_pressed)
 	_lang_button.pressed.connect(_on_lang_pressed)
 	_save_button.pressed.connect(_on_save_pressed)
@@ -272,6 +286,7 @@ func _connect() -> void:
 		_scale_buttons[i].pressed.connect(_on_scale_pressed.bind(TimeManager.SCALES[i]))
 	_pause_button.pressed.connect(_on_pause_pressed)
 	EventBus.season_changed.connect(func(_y, _s): refresh())
+	EventBus.precipitation_mode_changed.connect(func(_snow): refresh())
 	EventBus.time_scale_changed.connect(func(_s, _p): refresh())
 	EventBus.difficulty_changed.connect(func(_d): refresh_texts())
 
@@ -347,7 +362,7 @@ func refresh_texts() -> void:
 	_save_button.text = tr("UI_SAVE")
 	_load_button.text = tr("UI_LOAD")
 	_water_caption.text = tr("HUD_WATER")
-	_rain_label.text = tr("MSG_RAIN")
+	_rain_label.text = tr("MSG_SNOW") if _is_winter() else tr("MSG_RAIN")
 	_mode_button.text = tr("MODE_AUTO") if Global.auto_mode else tr("MODE_MANUAL")
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_difficulty()
@@ -377,6 +392,7 @@ func refresh() -> void:
 	_refresh_difficulty()
 	_refresh_time_controls()
 	_rain_label.visible = water_system != null and water_system.raining
+	_rain_label.text = tr("MSG_SNOW") if _is_winter() else tr("MSG_RAIN")
 	_mode_button.text = tr("MODE_AUTO") if Global.auto_mode else tr("MODE_MANUAL")
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_reservoir_label(tree)

@@ -44,6 +44,14 @@ var trunk_tiles: int = 0
 var season: int = 0
 var growth_blocked: bool = false
 
+## PHASE 4: vom globalen Skilltree per apply_effect(tree_instance)
+## gesetzte, PRO INSTANZ gespeicherte Wirksfaktoren. Default 1.0 haelt alle
+## P0-P3/REV-Smokes unveraendert, solange kein Knoten freigeschaltet ist.
+var skill_glucose_mult: float = 1.0
+var skill_water_consumption_mult: float = 1.0
+var skill_root_water_mult: float = 1.0
+var skill_max_leaves_bonus: int = 0
+
 ## PHASE 2: alle Segmente; root_count == root_segments.size().
 var root_segments: Array[RootSegment] = []
 
@@ -175,7 +183,7 @@ func can_grow(part: String) -> bool:
 	if part == "root":
 		return root_segments.size() < MAX_ROOTS
 	if part == "leaf":
-		return leaves_count < MAX_LEAVES
+		return leaves_count < MAX_LEAVES + skill_max_leaves_bonus
 	if part == "trunk":
 		return trunk_tiles < MAX_TRUNK
 	return false
@@ -390,16 +398,18 @@ func photosynthesize(dt: float, sunlight: float = 1.0,
 	if sunlight <= 0.0 or growth <= 0.0:
 		return
 	glucose += float(leaves_count) * species.photosynthesis_efficiency \
-		* sunlight * growth * Global.difficulty_factor("photosynthesis") * dt
+		* sunlight * growth * Global.difficulty_factor("photosynthesis") \
+		* skill_glucose_mult * dt
 	water = maxf(water - species.water_consumption_rate \
-		* Global.difficulty_factor("water_consumption") * dt, 0.0)
+		* Global.difficulty_factor("water_consumption") \
+		* skill_water_consumption_mult * dt, 0.0)
 
 
 ## rate kommt von WaterSystem (Boden + Reservoir + Regen).
 func absorb_water(dt: float, rate: float) -> void:
 	if not _built:
 		return
-	water = clampf(water + rate * dt, 0.0, 100.0)
+	water = clampf(water + rate * skill_root_water_mult * dt, 0.0, 100.0)
 
 
 # --------------------------------------------------------------------------- #
