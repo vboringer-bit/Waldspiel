@@ -1,33 +1,42 @@
-# Wald-Regeneration — PHASE 4
+# Wald-Regeneration — PHASE 5
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
-> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen, natürliche Vermehrung, ein **Skilltree mit 15 Mutationen** und **Schnee statt Regen im Winter**.
+> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen, natürliche Vermehrung, ein **Skilltree mit 15 Mutationen**, **Winter-Schnee** sowie **Tiere, Parasiten und Pilz-Symbiose**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · **PHASE 4 ✅ + Fixrunde ✅ (9/9 Smokes OK)** · PHASE 5 ⏳ (**noch nicht begonnen**)
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · **PHASE 5 ✅ (10/10 Smokes OK)**
 
-**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-PHASE4-FIX.zip` (aktueller Stand; `waldspiel-PHASE4.zip` bleibt als historischer Stand erhalten). Dazu aktualisierte `PHASE4-ERGEBNIS.md` / `.html` mit 6 Screenshots und Code-Snippets.
+**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-PHASE5.zip` (aktueller Stand; alle älteren ZIPs bleiben historisch erhalten). Dazu `PHASE5-ERGEBNIS.md` / `.html` mit 6 Screenshots und Code-Snippets.
 
 ---
 
 ## PHASE 4 — Skilltree und Winter-Schnee
 
 1. **GraphEdit-Skilltree mit 15 Knoten.** `data/skilltrees/oak.tres` enthält die 7 Pflicht-Mutationen und 8 weitere Knoten als echte `SkillNodeData`-Resources, dazu **14 Vorbedingungs-Linien**. `SkillTreeUI.gd` zeigt sie als zoombaren, pannbaren Graphen (`0.35× … 1.8×`, Minimap, mittlere Maustaste, Mausrad, `+ / − / 1:1`). Der HUD-Button oben rechts oder **`T`** öffnet, `Esc` schließt. Die eingebaute GraphEdit-Leiste ist zugunsten eigener Buttons ausgeblendet, damit sie nicht über dem Titel liegt.
-2. **Freischalten kostet echte Glucose.** `SkillTree.can_unlock()` prüft Vorbedingung + Kontostand des ausgewählten Baums; `unlock()` zieht exakt die Knotenkosten ab. Wie in Master-Punkt 4.2 festgelegt bleibt Glucose **pro Baum-Instanz**, der Skilltree-Fortschritt dagegen **global pro Art**: alle Eichen (auch neu gespawnte) bekommen denselben Stand. `SaveManager` speichert ihn in **Format v5**; alte v4/v3/v2/v1-Saves bleiben lesbar.
-3. **Effekte verändern echte Werte.** `root_efficiency` → `12,5 Wasser/s` statt `10`; `leaf_efficiency` → Fotosynthese × `1,20`; `crown_growth` → **+2 sofort sichtbare Blätter** und `MAX_LEAVES + 2`; `spread` → `spread_bonus = 0,30` für Eichelfall/Keimung; `deep_roots`/`trunk_saver` → −20 % Wachstumskosten; `rain_absorption`/`reservoir_tap`/`winter_hardy` → echte Wasserfaktoren; Resistenzen → gespeicherte −50 %-Werte und −10 % Wasserverbrauch. Die Ereignis-Simulation für Parasiten/Krankheit/Sturm/Pilze bleibt bewusst **PHASE 5**.
+2. **Freischalten kostet echte Glucose.** `SkillTree.can_unlock()` prüft Vorbedingung + Kontostand des ausgewählten Baums; `unlock()` zieht exakt die Knotenkosten ab. Wie in Master-Punkt 4.2 festgelegt bleibt Glucose **pro Baum-Instanz**, der Skilltree-Fortschritt dagegen **global pro Art**: alle Eichen (auch neu gespawnte) bekommen denselben Stand. `SaveManager` speichert ihn in **Format v6**; alte v5/v4/v3/v2/v1-Saves bleiben lesbar.
+3. **Effekte verändern echte Werte.** `root_efficiency` → `12,5 Wasser/s` statt `10`; `leaf_efficiency` → Fotosynthese × `1,20`; `crown_growth` → **+2 sofort sichtbare Blätter** und `MAX_LEAVES + 2`; `spread` → `spread_bonus = 0,30` für Eichelfall/Keimung; `deep_roots`/`trunk_saver` → −20 % Wachstumskosten; `rain_absorption`/`reservoir_tap`/`winter_hardy` → echte Wasserfaktoren; Resistenzen → gespeicherte −50 %-Werte und −10 % Wasserverbrauch. Parasiten und Pilz-Symbiose sind in **PHASE 5** echt umgesetzt; Krankheits-/Sturm-/Katastrophen-Ereignisse bleiben vorbereitet.
 4. **Im Winter schneit es.** Dasselbe Niederschlags-Event zeichnet jetzt langsame, seitlich schwingende **weiße Flocken** statt blauer Regenlinien, legt beim Auftreffen auf der echten Geländelinie **5–9 s** Schneepunkte ab und erzeugt **keine Spritzer/Rippen**. HUD und Toast sagen „Es schneit". Die R3-Regeln bleiben: keine Reservoir-Entnahme, keine Versickerung, aber Auffüllen läuft weiter. Wird es mitten im Ereignis Frühling, blendet der Niederschlag über **3,5 s** sanft zu Regen über; danach sind Spritzer wieder aktiv.
-5. **Alles bleibt lauffähig.** DE/EN (58 Lokalisierungszeilen), Save/Load, Zeitspulen, 5 Chunks, Nearest, Startmenü und alle 8 bisherigen Smokes sind unverändert geprüft. Nach der Fixrunde: `--phase4-smoke` **63 OK-Zeilen**, insgesamt **9/9 Smokes · 284 OK-Zeilen · 0 Fehler**. Screenshots: `p4_f5.png`, `p4_skilltree.png`, `p4_skilltree-locked.png`, `p4_snow.png`, `p4_snow-detail.png`, `p4_thaw.png`.
+5. **Alles bleibt lauffähig.** DE/EN (`data/localization.csv` hat 171 Zeilen, davon 35 neue PHASE-5-Schlüssel), Save/Load, Zeitspulen, 5 Chunks, Nearest, Startmenü und alle 9 bisherigen Smokes sind unverändert geprüft. Nach PHASE 5: `--phase5-smoke` **57 OK-Zeilen**, insgesamt **10/10 Smokes · 341 OK-Zeilen · 0 Fehler**. Screenshots: `p4_*.png` und `p5_*.png`.
 
-**PHASE 5 wurde nicht begonnen** — keine Tiere, kein Mistel-Befall, keine Pilz-/pH-/N-P-K-/Katastrophen-Simulation.
+## PHASE 5 — Tiere & Symbiose
+
+1. **Wald-Gesundheit als echte Metrik.** `ForestHealth.gd` berechnet `0.02 × Blätter + 0.12 × Bäume + 0.08 × Tierarten + 0.04 × Pilz-Patches` (0..1). Das HUD zeigt den Wert oben links; ab **> 50 %** ist der Wald „gesund".
+2. **Basis-Tiere sind immer da.** Zwei Regenwürmer, zwei Ameisen und ein Ameisenhügel starten unabhängig von der Gesundheit (User-Entscheidung). `Animal.gd` enthält eine echte StateMachine `Idle → Wander → Eat → HelpTree → Carry`; Wurm/Ameise geben **Futter**, die Ameisenkolonie vermehrt sich langsam, Tiere weichen Baum-Bounds aus und sind anklickbar.
+3. **Specht & Eichhörnchen ab > 50 %.** Der Specht reagiert auf `parasite_spawned`, fliegt zum Baum und pickt Parasiten weg. Das Eichhörnchen trägt eine Eichel in **Chunk 1** und pflanzt dort einen neuen Baum. Unter 50 % verschwinden beide wieder.
+4. **Mistel + Wurmbefall.** `Parasite.gd` zieht pro simulierter Sekunde echte Glucose ab. Die Spawn-Chance hängt an Schwierigkeit und `parasite_risk`; der Wurm-Entzug nutzt `disease_risk`. LEICHT bleibt befallfrei. Der Skill **Parasiten-Resistenz** und der Specht entfernen den Befall. Frei lebende Würmer sind weiterhin nützlich; „Wurmbefall" ist bewusst als Borkenlarve interpretiert (siehe `DECISIONS.md` §70).
+5. **Pilz-Symbiose gibt Nährstoffe.** `mushroom_node` liefert jetzt `nutrients = 0.15`; `BaseTree.nutrient_mult` erhöht die Fotosynthese um **+15 %**, sichtbare `FungusPatch`-Pilze erscheinen an allen Eichen und zählen zur Biodiversität.
+6. **HUD, Save, Tests.** Neues Ökologie-Panel (Gesundheit / Futter / Tiere / Parasiten / Pilze), **Save v6** mit Tieren, Futter, Hügeln und Parasiten, 35 neue DE/EN-Schlüssel. **10/10 Smokes · 341 OK-Zeilen · 0 Fehler**, sechs neue 1920×1080-Renders.
+
+**Bewusste Grenze:** Sturm-/Dürre-/Borkenkäfer-Ereignisse sowie pH-, N-P-K- und Mykorrhiza-Simulation gehören zur späteren *vollen Simulation* (Master 4.2), nicht zum PHASE-5-Milestone. Die Schalter/Faktoren bleiben vorbereitet.
 
 ---
 
 ## PHASE-4-FIXRUNDE — drei gemeldete Punkte
 
 1. **Glucose bleibt stehen.** `AUTO` ist jetzt **standardmäßig aus** (HUD zeigt `MANUELL`); nach bewusstem Umschalten funktioniert es wie vorher. Zusätzlich war ein echter Bug die Ursache für Verbrauch am ausgewachsenen Baum: `can_grow("leaf")` erlaubte mit dem Skill 14 Blätter, `add_leaf()` blockte aber bei 12 — `grow_part()` meldete trotzdem Erfolg und AUTO zog 10 Glucose ab, ohne dass ein Blatt entstand. Jetzt geben alle Wachstumsfunktionen nur bei **echtem Zuwachs** `true` zurück; ein voller Baum verbraucht **0 Glucose**.
-2. **Kronenwuchs zeigt sofort +2 Blätter.** Der Knoten hat zusätzlich `grant_leaves = 2`; `SkillTree.apply_effect()` schenkt die Blätter direkt auf **allen** Eichen (auch neu gespawnten). `skill_leaf_grants` verhindert Duplikate bei Refresh und Save/Load und liegt mit in Format v5.
+2. **Kronenwuchs zeigt sofort +2 Blätter.** Der Knoten hat zusätzlich `grant_leaves = 2`; `SkillTree.apply_effect()` schenkt die Blätter direkt auf **allen** Eichen (auch neu gespawnten). `skill_leaf_grants` verhindert Duplikate bei Refresh und Save/Load und liegt mit in Format v6.
 3. **Schnee liegt länger und taut sanft.** Liegezeit **5–9 s** statt 1,6–3,2 s. Wird es **mitten im Schneefall Frühling**, läuft `snow_blend` in **3,5 s** von Schnee zu Regen: Flocken und erste Regenlinien sind gleichzeitig sichtbar, liegende Punkte schmelzen beschleunigt statt hart gelöscht zu werden. HUD/Toast: „Der Schnee geht langsam in Regen ueber." Neues Screenshot-Preset `--phase4-shot-thaw` (`--fixed-fps 10`).
 
-Die R3-Winterregeln, alle alten Smokes, Save/Load und DE/EN bleiben erhalten. **PHASE 5 wurde weiterhin nicht begonnen.**
+Die R3-Winterregeln, alle alten Smokes, Save/Load und DE/EN bleiben erhalten. **PHASE 5 ist inzwischen umgesetzt (siehe Abschnitt oben).**
 
 ---
 
@@ -120,9 +129,9 @@ Die R3-Winterregeln, alle alten Smokes, Save/Load und DE/EN bleiben erhalten. **
 | Boden-Komplexität (vorbereitet) | 0.00 | 0.50 | 1.00 |
 | Schalter | keine Katastrophen, kein pH | seltene Stürme/Parasiten | pH, N-P-K, Mykorrhiza, häufige Katastrophen |
 
-> **Bewusste Grenze:** pH-Wert, Nährstoffe (N/P/K), Mykorrhiza-Netz und Dürre/Sturm/Borkenkäfer sind laut Master-Punkt 4.2 Teil der *„vollen Simulation"*. PHASE 3 legt dafür **alle Schalter und Faktoren** in `Global.difficulty_toggle()` / `difficulty_factor()` an und speichert die Wahl; die eigentliche Simulation folgt in **PHASE 5**, weil sie Systeme voraussetzt, die es im MVP noch nicht gibt. Das ist in `DECISIONS.md` §52 dokumentiert und wird in `--p3-smoke` geprüft.
+> **Bewusste Grenze:** pH-Wert, Nährstoffe (N/P/K), Mykorrhiza-Netz und Dürre/Sturm/Borkenkäfer sind laut Master-Punkt 4.2 Teil der *„vollen Simulation"*. PHASE 3 legt dafür **alle Schalter und Faktoren** in `Global.difficulty_toggle()` / `difficulty_factor()` an und speichert die Wahl. PHASE 5 nutzt `parasites` / `disaster_rate` bereits für echte Parasiten; die übrige Ereignis-Simulation bleibt einer späteren Ausbaustufe vorbehalten. Das ist in `DECISIONS.md` §52 und §70 dokumentiert.
 
-### Speichern (`src/systems/SaveManager.gd`, Format **v4**)
+### Speichern (`src/systems/SaveManager.gd`, Format **v6**)
 
 Zusätzlich zu Wurzeln, Becken-Volumina und getragener Eichel: `difficulty`, `time` (`year`, `season`, `total_elapsed`, `season_elapsed`, `time_scale`, `paused`) und `seeds` (verbleibende + gesammelte IDs). **v3/v2/v1-Saves bleiben lesbar** und bekommen NORMAL/Frühling/Jahr 1 als Defaults.
 
@@ -199,14 +208,16 @@ Reproduzierbare Screenshots (Godot + Xvfb, `--seed=20261105 --windowed`):
 --rev4-shot-carry                         # nur HUD-Icon-Klick -> schwebende Eichel
 --rev4-shot-stages                        # duenner Keimling vs. dicker Baum
 --rev4-shot-water                         # R3-Regression: geglätteter Pegel
+--phase5-shot-wildlife / -health / -parasite / -fungus / -remote
+# ohne Preset -> p5_f5.png (alle P5-Renders mit --fixed-fps 10)
 ```
 
 ## ZIP (vollständig, Godot-importierbar)
 
 ```bash
-python3 tools/build_zip.py PHASE4-FIX   # -> deliverables/waldspiel-PHASE4-FIX.zip
+python3 tools/build_zip.py PHASE5       # -> deliverables/waldspiel-PHASE5.zip
 ```
 
-`project.godot` liegt im **ZIP-Root**, `.godot/`-Cache und generierte `.translation` sind ausgeschlossen; alle Quellen, Assets, `.import`/`.uid`, Tests, Berichte und Screenshots sind drin. CRC-Test ist Teil des Skripts.
+`project.godot` liegt im **ZIP-Root**, `.godot/`-Cache und generierte `.translation` sind ausgeschlossen; alle Quellen, Assets, `.import`/`.uid`, Tests, `PHASE5-ERGEBNIS.html/.md`, `PHASE5-TESTPROTOKOLL.txt` und Screenshots sind drin. CRC-Test ist Teil des Skripts.
 
-**Nächster Schritt: PHASE 5 — Tiere, Parasiten, Pilz-Symbiose und pH-/Katastrophen-Simulation (noch nicht begonnen).**
+**PHASE 5 ist abgeschlossen.** Für eine spätere Ausbaustufe bleiben Sturm-/Dürre-/Borkenkäfer-Ereignisse sowie pH-, N-P-K- und Mykorrhiza-Simulation vorbereitet (Master 4.2).

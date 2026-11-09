@@ -74,7 +74,7 @@ func _initialize() -> void:
 		["root_efficiency", "leaf_efficiency"], {"root_water": 0.10},
 		Vector2(330.0, 660.0), "symbiosis"))
 	d.nodes.append(_node("mushroom_node", "MUSHROOM", "MUSHROOM", 30.0,
-		["symbiosis"], {"glucose": 0.10},
+		["symbiosis"], {"glucose": 0.10, "nutrients": 0.15},
 		Vector2(660.0, 660.0), "symbiosis"))
 	d.nodes.append(_node("winter_hardy", "WINTER", "WINTER", 28.0,
 		["mushroom_node"], {"winter_water": 0.30},

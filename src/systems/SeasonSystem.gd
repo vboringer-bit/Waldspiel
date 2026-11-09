@@ -69,7 +69,6 @@ func setup(p_chunks: ChunkManager, p_trees: Node2D, p_camera: CameraController,
 		seed_layer.z_index = 4
 		trees_root.get_parent().add_child(seed_layer)
 	_connect()
-	_sync_skills()
 	_refresh_all_loaded()
 
 
@@ -84,8 +83,6 @@ func _connect() -> void:
 		EventBus.difficulty_changed.connect(_on_difficulty_changed)
 	if not EventBus.root_grown.is_connected(_on_root_grown):
 		EventBus.root_grown.connect(_on_root_grown)
-	if not EventBus.skilltree_changed.is_connected(_sync_skills):
-		EventBus.skilltree_changed.connect(_sync_skills)
 
 
 func _ready() -> void:
@@ -382,13 +379,6 @@ func _on_difficulty_changed(_value: int) -> void:
 
 func set_spread_bonus(value: float) -> void:
 	spread_bonus = maxf(value, 0.0)     # PHASE 4: Skill "Verbreitung"
-
-
-## PHASE 4: der globale Skilltree treibt den reservierten "Verbreitung"-
-## Anschluss. Greift auch nach Save/Load und beim Freischalten.
-func _sync_skills() -> void:
-	var st := SkillTree.instance
-	set_spread_bonus(st.bonus("spread") if st != null else 0.0)
 
 
 func to_dict() -> Dictionary:

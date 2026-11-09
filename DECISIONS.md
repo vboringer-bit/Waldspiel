@@ -66,9 +66,9 @@ Der Himmel ist ein bildschirmfester `CanvasLayer` (`layer=-100`) **hinter** der 
 | Repo | Status | Verwendung |
 |---|---|---|
 | `GDQuest/godot-procedural-generation` | ✅ erreichbar | `make_seed_for()`-Idee → `chunk_seed()`, Sektor-Refresh um Kamera-X (`_refresh()`), nur neue Chunks erzeugen / alte freigeben. **Weiterhin aktiv.** |
-| `Tdead1/GodotGeneration` | ✅ erreichbar (neu, PHASE 1) | Godot-3-Projekt (`config_version=4`), 20×20-Tile-Grid, `RandomNumberGenerator.seed`, Nachbarschafts-Smoothing und Item-Platzierung. Muster **notiert** für PHASE 2 (Höhlen-Smoothing) und PHASE 5 (Wald-Konkurrenz). Kein Code übernommen. |
+| `Tdead1/GodotGeneration` | ✅ erreichbar (neu, PHASE 1) | Godot-3-Projekt (`config_version=4`), 20×20-Tile-Grid, `RandomNumberGenerator.seed`, Nachbarschafts-Smoothing und Item-Platzierung. Muster **notiert** für PHASE 2 (Höhlen-Smoothing) und einer späteren Wald-Konkurrenz. Kein Code übernommen. |
 | `funferall/RHIZOMORPH` | ✅ erreichbar | Boden-Querschnitt / Substrat-Denken, CPU-Fallback + grobes Grid als Architektur-Notiz für PHASE 2/5 |
-| `DrJamgo/GodotGpuConwaysLife` | ✅ erreichbar | Tile-Grid / GPU-Feld als Notiz für Wald-Konkurrenz (PHASE 5) |
+| `DrJamgo/GodotGpuConwaysLife` | ✅ erreichbar | Tile-Grid / GPU-Feld als Notiz für Wald-Konkurrenz (spätere Ausbaustufe) |
 | `SeldonHh/Godot_skill_tree_maker` | ✅ erreichbar | Ressourcen-basierte Skill-Nodes als Notiz für PHASE 4 |
 | `Arsenic-er/Game-Super-boring-fungi` | ✅ erreichbar | Mutations-/Upgrade-Struktur als Notiz für PHASE 4/5 |
 | `marcus-zitzelsbergerit/godot-pixel-sculpt` | ❌ **404, vom Nutzer bestätigt** | **Ignoriert** (keine lokale Kopie vorhanden) |
@@ -409,7 +409,7 @@ Eicheln fallen per Tween unter die Krone (`±40 px`) auf `height_smooth_at()`; `
 
 Alle Modifikatoren liegen in `Global.difficulty_factor(key)` mit **NORMAL = 1.0 als Referenz** (deshalb bleiben P0/P1/P2/REV1/REV2-Smokes unverändert grün). `Global.set_difficulty(int)`, `difficulty_chosen`, `difficulty_from_name()` und `--difficulty=` ergänzen `EventBus.difficulty_changed`. `StartMenu` ist ein nicht-blockierendes `CanvasLayer` (Layer 20): es fragt vor dem Start, überschreibt aber keine laufende Sitzung; der HUD-Button zyklet jederzeit weiter. `_should_show_start_menu()` unterdrückt das Panel für alle Test-/Preset-/CLI-Argumente.
 
-**Bewusste Grenze (Master-Punkt 4.2):** LEICHT = „keine Naturkatastrophen, kein pH", NORMAL = „seltene Stürme/Parasiten", SCHWER = „volle Simulation: pH, N/P/K, Mykorrhiza nötig, häufige Katastrophen". Diese Subsysteme existieren im MVP noch nicht; PHASE 3 legt deshalb **`difficulty_toggle()`** (LEICHT: alles aus; NORMAL: nur `disasters`/`parasites`; SCHWER: alles an) sowie die Faktoren `disaster_rate` (0.00 / 0.35 / 2.00) und `soil_complexity` (0.00 / 0.50 / 1.00) an, speichert die Wahl und prüft sie im Smoke. **Die Simulation selbst ist PHASE 5 zugeordnet**, nicht PHASE 3 — der P3-Meilenstein (Master Zeile 153) nennt ausschließlich Zeit, Eichelfall, Samen und Schwierigkeitsgrade. Das ist eine dokumentierte, nicht verschwiegene Teilerfüllung.
+**Bewusste Grenze (Master-Punkt 4.2):** LEICHT = „keine Naturkatastrophen, kein pH", NORMAL = „seltene Stürme/Parasiten", SCHWER = „volle Simulation: pH, N/P/K, Mykorrhiza nötig, häufige Katastrophen". Diese Subsysteme existieren im MVP noch nicht; PHASE 3 legt deshalb **`difficulty_toggle()`** (LEICHT: alles aus; NORMAL: nur `disasters`/`parasites`; SCHWER: alles an) sowie die Faktoren `disaster_rate` (0.00 / 0.35 / 2.00) und `soil_complexity` (0.00 / 0.50 / 1.00) an, speichert die Wahl und prüft sie im Smoke. **Die Parasiten-/Schwierigkeits-Schalter werden in PHASE 5 erstmals echt genutzt**; die übrige pH-/N-P-K-/Mykorrhiza-/Katastrophen-Simulation bleibt einer späteren Ausbaustufe zugeordnet. Der P3-Meilenstein (Master Zeile 153) nennt ausschließlich Zeit, Eichelfall, Samen und Schwierigkeitsgrade.
 
 ## 51. Savegame v4 und Vollbild-Zusatzbefund
 
@@ -436,7 +436,7 @@ Alle Modifikatoren liegen in `Global.difficulty_factor(key)` mit **NORMAL = 1.0 
 
 Geliefert werden `waldspiel-PHASE3.zip` (vollständiges Projekt, `project.godot` im Root), `PHASE3-ERGEBNIS.md` / `.html` (10 Screenshots als data-URI, 14 echte Code-Snippets, offline), `PHASE3-TESTPROTOKOLL.txt`, aktualisiertes `README.md` / `GODOT-IMPORT.txt` / `project.godot`, `tests/Phase3Smoke.gd`, `tools/build_phase3_report.py` und 11 neue `screenshots/phase3_*.png`.
 
-**Nicht in PHASE 3, bewusst nach hinten gestellt:** Skilltree-UI (PHASE 4), pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* (PHASE 5, Schalter liegen bereit), Tier-States/Interaktion über den einen Vogel hinaus (Master-Punkt 7 „vorbereitet für 5"), Tag/Nacht-Zyklus (vom User ausdrücklich ausgeschlossen).
+**Nicht in PHASE 3, bewusst nach hinten gestellt:** Skilltree-UI (PHASE 4), Tier-States/Interaktion (PHASE 5), pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* (spätere volle Simulation, Schalter liegen bereit), Tag/Nacht-Zyklus (vom User ausdrücklich ausgeschlossen).
 
 ---
 
@@ -493,7 +493,7 @@ Smoke: Aufprallhöhe = 320,0 px = `height_smooth_at(0)`, **316 Spritzer**, **0**
 
 Geliefert: `waldspiel-REVISION3.zip` (vollständiges Projekt), `REVISION3-ERGEBNIS.md` / `.html` (7 eingebettete Screenshots, 13 Code-Snippets, offline), `REVISION3-TESTPROTOKOLL.txt`, `tests/Revision3Smoke.gd`, `tools/build_revision3_report.py`, 7 `screenshots/rev3_*.png`, aktualisierte `README.md` / `GODOT-IMPORT.txt` / `project.godot` / `data/localization.csv`.
 
-**PHASE 4 wurde NICHT begonnen.** Kein GraphEdit, keine Skilltree-Nodes, keine Glucose-Kosten für Skills. `SeasonSystem.set_spread_bonus()` bleibt der reservierte Anschluss für „Verbreitung". Die pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* bleibt wie in §50 dokumentiert PHASE 5 zugeordnet.
+**Historischer Stand vor PHASE 4 (siehe §64):** damals kein GraphEdit, keine Skilltree-Nodes, keine Glucose-Kosten für Skills. Die pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* bleibt einer späteren Ausbaustufe zugeordnet.
 
 ## 59. REVISION 4 — Diagnose des ganzheitlichen Ruckelns
 
@@ -540,7 +540,7 @@ Bei 5 geladenen Chunks ≈ 335 ms pro Neuaufbau; R3 löste `queue_redraw()` bis 
 
 `Phase1Smoke` prüft jetzt `get_seed_count() == 0` und setzt für den P1-Tutorial-Test bewusst `set_seed_count(2)` — die ursprüngliche Vogel-/Keimling-Logik wird dadurch unverändert getestet. `tools/build_revision4_report.py`, `REVISION4-ERGEBNIS.md/.html`, `REVISION4-TESTPROTOKOLL.txt`, `tests/Revision4Smoke.gd` und 4 `screenshots/rev4_*.png` sind neu.
 
-**PHASE 4 wurde NICHT begonnen.** Kein GraphEdit, keine Skilltree-Nodes, keine Glucose-Kosten für Skills. `SeasonSystem.set_spread_bonus()` bleibt der reservierte Anschluss für „Verbreitung". Die pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* bleibt PHASE 5 zugeordnet.
+**Historischer Stand vor PHASE 4 (siehe §64):** damals kein GraphEdit, keine Skilltree-Nodes, keine Glucose-Kosten für Skills. Die pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Simulation* bleibt einer späteren Ausbaustufe zugeordnet.
 
 ## 64. PHASE 4 — Skilltree-Daten, Glucose-Kosten und globale Synchronität
 
@@ -559,7 +559,7 @@ Master-Punkt 6 verlangt **pro Baumart einen eigenen Skilltree**, im MVP **15 Kno
 | `rain_boost` / `reservoir_gain` / `winter_water` | `WaterSystem.tick()` | +30 % Niederschlag, +25 % Reservoir-Entnahme, +30 % Bodenwasser im Winter |
 | `spread` | `SeasonSystem.set_spread_bonus()` → Eichelfall/Keimung | **spread_bonus = 0,30** |
 | `water_consumption` | `BaseTree.photosynthesize()` | −10 % nach Parasiten-/Krankheits-Resistenz |
-| `parasite_risk` / `disease_risk` / `storm_risk` | `SkillTree.resistance()` (echte Zahlen, **0,5** = −50 %) | bereits gespeichert; die Ereignis-Simulation bleibt PHASE 5 |
+| `parasite_risk` / `disease_risk` / `storm_risk` | `SkillTree.resistance()` (echte Zahlen, **0,5** = −50 %) | PHASE 5 nutzt `parasite_risk` / `disease_risk` echt; `storm_risk` bleibt vorbereitet |
 
 `SkillTree.apply_effect()` synchronisiert `skill_glucose_mult`, `skill_root_water_mult`, `skill_water_consumption_mult` und `skill_max_leaves_bonus` auf jeder `BaseTree`-Instanz. `SeasonSystem._sync_skills()` abonniert `skilltree_changed`; `WaterSystem` und die Preisrechner lesen die Modifikatoren direkt. Damit sind die sieben Pflicht-Mutationen keine reinen UI-Flags.
 
@@ -588,7 +588,7 @@ Die R3-Regeln bleiben exakt erhalten: im Winter **keine Reservoir-Entnahme**, ke
 
 Neu: `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`, `PHASE4-ERGEBNIS.md/.html`, `PHASE4-TESTPROTOKOLL.txt`, 5 `screenshots/p4_*.png`. `Phase3Smoke` prüft jetzt `version >= 4`, damit v5-Saves die alte Save/Load-Regression nicht brechen.
 
-**PHASE 5 wurde NICHT begonnen.** Keine Tiere/StateMachine, kein Mistel-Befall, keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Ereignisse*. Die Resistenz- und Symbiose-Werte sind als echte Zahlen vorbereitet, die zugehörige Simulation bleibt dem nächsten Meilenstein vorbehalten.
+**Historischer Stand vor PHASE 5 (siehe §70):** damals keine Tiere/StateMachine, kein Mistel-Befall, keine Pilz-Simulation. Die Resistenz- und Symbiose-Werte waren als echte Zahlen vorbereitet.
 
 ## 69. PHASE-4-FIXRUNDE — Glucose, sichtbare Blätter, Schnee und Übergang
 
@@ -612,4 +612,30 @@ Die R3-Regeln bleiben unangetastet: Winter ohne Reservoir-Entnahme/Versickerung,
 | 6 Xvfb-Renders 1920×1080 (`p4_f5`, `p4_skilltree`, `p4_skilltree-locked`, `p4_snow`, `p4_snow-detail`, **`p4_thaw`**) | je Exit 0 / 0 Fehler |
 | ZIP `waldspiel-PHASE4-FIX.zip`: CRC, Root-Lage, `.godot` ausgeschlossen, Extrakt-Import + 9 Smokes | OK |
 
-`data/localization.csv` hat jetzt 137 Zeilen / 58 PHASE-4-Zeilen. Die vorherige `waldspiel-PHASE4.zip` bleibt als historischer Stand in `deliverables/` erhalten. **PHASE 5 wurde weiterhin nicht begonnen.**
+`data/localization.csv` hatte zu diesem Zeitpunkt 137 Zeilen / 58 PHASE-4-Zeilen. Die vorherige `waldspiel-PHASE4.zip` bleibt als historischer Stand in `deliverables/` erhalten. **PHASE 5 ist inzwischen in §70 dokumentiert und umgesetzt.**
+
+## 70. PHASE 5 — Tiere, Symbiose, Parasiten
+
+Der User bat nach der P4-Fixrunde um den Start von PHASE 5. Zwei Widersprüche im Master-Prompt wurden vorab per Rückfrage geklärt: **alle genannten Tiergruppen** sollten umgesetzt werden, und **Wurm/Ameise bleiben immer da**, während **Specht/Eichhörnchen erst ab Wald-Gesundheit > 50 %** erscheinen. Beides ist hiermit verbindlich dokumentiert.
+
+**Metrik.** `ForestHealth.gd` rechnet `0.02 × ΣBlätter + 0.12 × Baumzahl + 0.08 × Tierarten + 0.04 × Pilz-Patches`, geklemmt auf 0..1. Ein Keimling mit 2 Blättern und 2 Basisarten bleibt bei 0.32 (< 0.5); zwei Bäume mit je 6 Blättern erreichen > 0.5. `forest_health_changed` versorgt HUD und `WildlifeSystem`.
+
+**Tiere.** `WildlifeSystem.gd` spawnte 2 Würmer, 2 Ameisen und 1 `Anthill`; ab > 0.5 zusätzlich 1 Specht und 1 Eichhörnchen. `Animal.gd` ist eine echte StateMachine mit `IDLE / WANDER / EAT / HELP_TREE / CARRY`; Wurm/Ameise geben über `EAT` Futter (`food`), die Kolonie wächst alle 10 simulierten Sekunden um eine Ameise, der Hügel wächst mit. Die Kollision nutzt `BaseTree.get_bounds_rect()`; nur Specht im Hilfsflug und Eichhörnchen beim Transport dürfen direkt an den Baum. Alle Tiere, Hügel, Parasiten und Pilze sind per Linksklick anwählbar.
+
+**Specht & Ferntransport.** `parasite_spawned` schickt den Specht in `HELP_TREE`; bei Ankunft ruft er `ParasiteSystem.remove_parasites_at()` und entfernt einen Parasiten. Das Eichhörnchen geht alle 22 simulierten Sekunden in `CARRY`, Ziel ist `+2304 px` (Chunk 1, nicht Start-Chunk); `debug_force_remote_seed()` und der echte `on_seed_delivered()` benutzen denselben Pfad über `InteractionController.spawn_tree_at()`.
+
+**Parasiten.** `Parasite.gd` kennt `MISTLETOE` (0.35 Glucose/s) und `WORM` (0.22 Glucose/s). Die Spawn-Chance ist `0.15 × disaster_rate × resistance(parasite_risk)`; der Wurm-Entzug skaliert zusaetzlich mit `resistance(disease_risk)`. LEICHT schaltet Parasiten komplett ab. `mushroom_node` ergänzt `nutrients = 0.15`, `SkillTree.apply_effect()` setzt `BaseTree.nutrient_mult = 1.15`, und `FungusPatch.gd` zeichnet sichtbare Pilze. Resistenz (`parasite_res` / `disease_res`) entfernt bereits vorhandene Misteln bzw. Wurmbefall beim Freischalten. Die Formulierung „Specht hilft bei Wurmbefall" wird so interpretiert, dass **frei lebende Würmer nützlich** bleiben und ein separater Borkenlarven-Befall (`WORM`) gemeinsam mit der Mistel weggepickt wird.
+
+**Save v6.** `SaveManager` schreibt zusätzlich `wildlife` (Tiere, Futter, Kolonie, Hügel) und `parasites` (kind + tree_id). Beim Laden werden erst Skilltree und Bäume wiederhergestellt, dann Tiere und Parasiten; v5/v4/v3/v2/v1 bleiben lesbar. `Phase4Smoke` prüft deshalb `version >= 5`, `Phase5Smoke` exakt `6`.
+
+**HUD / Lokalisierung.** Neues Panel oben links: Wald-Gesundheit mit Balken, Futter, Tiere, Parasiten, Pilze. 35 neue DE/EN-Schlüssel (171 CSV-Zeilen insgesamt). `SKILL_MUSHROOM_DESC` nennt jetzt die aktiven +15 % Nährstoffe.
+
+**Bewusste Grenze.** PHASE-5-Milestone = Tiere, Specht, Pilz-Knoten, Mistel. Sturm-/Dürre-/Borkenkäfer-Ereignisse, pH-Wert, N-P-K und Mykorrhiza-Netz bleiben der *vollen Simulation* (Master 4.2) vorbehalten; `storm_risk`, `disaster_rate` und `soil_complexity` sind weiterhin vorbereitet, aber nicht als Ereignis-Simulation aktiv. Es wurde **keine PHASE 6** begonnen.
+
+| Prüfung | Ergebnis |
+|---|---|
+| `--headless --import` / F5 ohne Preset / `--quit-after 180` | je Exit 0 / 0 Fehler |
+| **10/10 Smokes** (P0/P1/P2/REV1/REV2/P3/REV3/REV4/PHASE4/PHASE5) | je `Ergebnis: OK` / **341 OK-Zeilen** / 0 Fehler |
+| `--phase5-smoke` | **57 OK-Zeilen**: Basis-Tiere, >50 %-Regel, StateMachine, Futter, Kolonie, Chunk 1, Glucose-Entzug, Specht, Resistenz, Pilze, Save v6, 35 DE/EN-Keys |
+| 6 Xvfb-Renders 1920×1080 (`p5_f5`, `p5_wildlife`, `p5_health`, `p5_parasite`, `p5_fungus`, `p5_remote`) | je Exit 0 / 25 Frames / 0 Fehler |
+| ZIP `waldspiel-PHASE5.zip`: CRC, Root-Lage, `.godot` ausgeschlossen, Extrakt-Import + 10 Smokes | OK |

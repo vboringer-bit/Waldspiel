@@ -18,6 +18,9 @@
 [ext_resource type="Script" path="res://src/ui/StartMenu.gd" id="16"]
 [ext_resource type="Script" path="res://src/systems/SkillTree.gd" id="17"]
 [ext_resource type="Script" path="res://src/ui/SkillTreeUI.gd" id="18"]
+[ext_resource type="Script" path="res://src/systems/ForestHealth.gd" id="19"]
+[ext_resource type="Script" path="res://src/systems/WildlifeSystem.gd" id="20"]
+[ext_resource type="Script" path="res://src/systems/ParasiteSystem.gd" id="21"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -48,6 +51,14 @@ script = ExtResource("6")
 z_index = 3
 script = ExtResource("14")
 
+[node name="Wildlife" type="Node2D" parent="World"]
+z_index = 40
+script = ExtResource("20")
+
+[node name="Parasites" type="Node2D" parent="World"]
+z_index = 45
+script = ExtResource("21")
+
 [node name="WorldCamera" type="Camera2D" parent="World"]
 position = Vector2(0, 300)
 script = ExtResource("5")
@@ -71,6 +82,9 @@ script = ExtResource("15")
 
 [node name="SkillTree" type="Node" parent="Systems"]
 script = ExtResource("17")
+
+[node name="ForestHealth" type="Node" parent="Systems"]
+script = ExtResource("19")
 
 [node name="Interaction" type="Node" parent="."]
 script = ExtResource("11")

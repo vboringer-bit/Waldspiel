@@ -178,11 +178,11 @@ func run() -> void:
 	_check(not skill_ui.is_open(), "Skilltree-UI schliesst wieder")
 
 	# --- 4) Save v5 mit Skill-Fortschritt ------------------------------------
-	_check(save_manager.save_game(), "Speichern (Format v5)")
+	_check(save_manager.save_game(), "Speichern (Format v6, v5-kompatibel)")
 	var raw := FileAccess.get_file_as_string("user://savegame.json")
 	var parsed = JSON.parse_string(raw)
-	_check(parsed is Dictionary and int((parsed as Dictionary).get("version", 0)) == 5,
-		"Savegame version = 5")
+	_check(parsed is Dictionary and int((parsed as Dictionary).get("version", 0)) >= 5,
+		"Savegame version >= 5 (PHASE 5 schreibt v6)")
 	var saved_ids: Array = []
 	if parsed is Dictionary:
 		var skills_dict: Dictionary = (parsed as Dictionary).get("skills", {})
@@ -191,7 +191,7 @@ func run() -> void:
 		"Skill-Fortschritt im Savegame (%d IDs)" % saved_ids.size())
 	skill_tree.reset()
 	_check(skill_tree.unlocked_count() == 0, "Zurueckgesetzt vor dem Laden")
-	_check(save_manager.load_game(), "Laden (Format v5)")
+	_check(save_manager.load_game(), "Laden (Format v6, v5-kompatibel)")
 	_check(skill_tree.unlocked_count() == count_before,
 		"Skill-Fortschritt nach Laden wiederhergestellt")
 

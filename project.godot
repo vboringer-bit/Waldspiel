@@ -1,5 +1,5 @@
 ; Engine configuration file.
-; Wald-Regeneration | PHASE 3 + REVISION 4 | Godot 4.7.2 stable (Forward+ / Vulkan)
+; Wald-Regeneration | PHASE 5 | Godot 4.7.2 stable (Forward+ / Vulkan)
 ; Alle Pfade relativ (res://). Siehe DECISIONS.md fuer begruendete Annahmen.
 
 config_version=5
@@ -7,7 +7,7 @@ config_version=5
 [application]
 
 config/name="Wald-Regeneration"
-config/description="2D-Seitenansicht: Regeneration eines Waldes nach dem Brand. REVISION 4: gecachte/batched Kontur-Geometrie gegen das Ruckeln, 2 Start-Eicheln auf dem Boden statt im Inventar, Platzierung nur ueber das Inventar-Icon und auf dem Boden, 5 Wachstumsstufen fuer Stamm und Wurzeln (duenn -> dick). REVISION 3: stufenloser Wasserpegel ohne Ruckler, Winter ohne Reservoir-Entnahme, Regen mit Oberflaechen-Spritzern. PHASE 3: Jahreszeiten (15 min/Jahr), x1/x3/x10 + Pause, Herbst-Eichelfall, Samen finden/vergraben, LEICHT/NORMAL/SCHWER, Save v4. Inkl. Regen-Auffuellung der Reservoirs, Vogel fliegt aus dem Bild, korrigierte Vollbild-Skalierung."
+config/description="2D-Seitenansicht: Wald-Regeneration nach dem Brand. PHASE 5: Wurm/Ameise mit Futter und Ameisenhuegel, Specht ab Wald-Gesundheit >50 %, Eichhoernchen traegt Samen in entfernte Chunks, Pilz-Symbiose mit Naehrstoffen, Mistel/Wurm-Befall als Parasiten. Save v6. Alle P0-P4/REV-Smokes bleiben gruen."
 run/main_scene="res://src/Main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://assets/placeholders/icon.png"

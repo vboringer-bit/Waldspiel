@@ -1,0 +1,150 @@
+WALD-REGENERATION — PHASE 5 — TIERE & SYMBIOSE — TESTPROTOKOLL
+Godot 4.7.2.stable.official.ed1daf0bf · 2026-11-05 · Europe/Berlin
+Xvfb 1920x1080x24 · --rendering-driver opengl3 (llvmpipe Software-Rasterizer)
+Ziel-Renderer des Projekts: Forward+ / Vulkan
+Alle Smokes OHNE --seed (P1 verlangt Zufalls-Seed); F5/Dauerlauf mit --seed=20261105.
+
+======================================================================
+1) IMPORT / F5 / DAUERLAUF
+======================================================================
+  godot --headless --path . --import                    Exit 0  0 Fehler
+  godot --headless --path . --quit-after 180           Exit 0  0 Fehler
+  [Main] PHASE 5 bereit: 0 Eicheln, 4 Tiere, Gesundheit 16%, AUTO aus (MANUELL).
+  AUTO bleibt aus (MANUELL); 0 Eicheln im Inventar, 4 Basis-Tiere,
+  Wald-Gesundheit 16 %, 5 Chunks, DE/EN, Skilltree 15 Knoten.
+
+======================================================================
+2) ALLE 10 SMOKES — REGRESSION P0–P4/REV + PHASE 5
+======================================================================
+  P0       --phase0-smoke      3 OK-Zeilen  Exit 0  OK  0 Fehler
+  P1       --phase1-smoke     26 OK-Zeilen  Exit 0  OK  0 Fehler
+  P2       --phase2-smoke     25 OK-Zeilen  Exit 0  OK  0 Fehler
+  REV1     --rev1-smoke       32 OK-Zeilen  Exit 0  OK  0 Fehler
+  REV2     --rev2-smoke       27 OK-Zeilen  Exit 0  OK  0 Fehler
+  P3       --p3-smoke         56 OK-Zeilen  Exit 0  OK  0 Fehler
+  REV3     --rev3-smoke       20 OK-Zeilen  Exit 0  OK  0 Fehler
+  REV4     --rev4-smoke       32 OK-Zeilen  Exit 0  OK  0 Fehler
+  PHASE4   --phase4-smoke     63 OK-Zeilen  Exit 0  OK  0 Fehler
+  PHASE5   --phase5-smoke     57 OK-Zeilen  Exit 0  OK  0 Fehler
+  --------------------------------------------------------------------
+  10 / 10 Smokes OK · 341 OK-Zeilen · 0 FEHLER · 0 SCRIPT ERROR
+
+======================================================================
+3) --phase5-smoke — 57 EINZELCHECKS (vollstaendiger Logauszug)
+======================================================================
+[SMOKE] === PHASE 5: Tiere, Symbiose, Parasiten ===
+[SMOKE] Start: Wald-Gesundheit unter 50 %                              OK
+[SMOKE] 2 Regenwuermer sind IMMER vorhanden                            OK
+[SMOKE] 2 Ameisen sind IMMER vorhanden                                 OK
+[SMOKE] Ameisenhuegel als Erd-Pixelhaufen vorhanden                    OK
+[SMOKE] Specht/Eichhoernchen bei schwachem Wald noch abwesend          OK
+[SMOKE] Basis-Biodiversitaet = 2 Tierarten                             OK
+[SMOKE] Keimling fuer PHASE-5-Tests vorhanden                          OK
+[SMOKE] Wald-Gesundheit 0.80 > 0.50 durch Blaetter + Baeume            OK
+[SMOKE] Specht siedelt sich ab > 50 % Gesundheit an                    OK
+[SMOKE] Eichhoernchen siedelt sich ab > 50 % Gesundheit an             OK
+[SMOKE] Jetzt 4 Tierarten (Biodiversitaet steigt)                      OK
+[SMOKE] Gesundheits-Metrik zaehlt Biodiversitaet mit                   OK
+[SMOKE] StateMachine: Zustand EAT gesetzt                              OK
+[SMOKE] StateMachine: EAT ist am Tier gespeichert                      OK
+[SMOKE] Automatischer Zyklus UND EAT geben Futter (+10)                OK
+[SMOKE] Ameisenkolonie vermehrt sich langsam                           OK
+[SMOKE] Neue Ameise wurde gespawnt                                     OK
+[SMOKE] Ameisenhuegel bleibt bestehen                                  OK
+[SMOKE] HUD zeigt Futter-Zaehler                                       OK
+[SMOKE] Eichhoernchen pflanzt einen neuen Baum                         OK
+[SMOKE] Neuer Baum liegt in Chunk 1 (nicht Start-Chunk)                OK
+[SMOKE] Mistel UND Wurmbefall am Baum sichtbar                         OK
+[SMOKE] Parasiten ziehen echte Glucose ab (48.86)                      OK
+[SMOKE] parasite_spawned schickt den Specht zum Baum                   OK
+[SMOKE] Specht pickt einen Parasiten weg                               OK
+[SMOKE] Entfernung ist als 'woodpecker' protokolliert                  OK
+[SMOKE] Voraussetzung: Effizientere Blaetter                           OK
+[SMOKE] Voraussetzung: Verbreitung                                     OK
+[SMOKE] Parasiten-Resistenz freigeschaltet                             OK
+[SMOKE] Resistenz -50 % wirkt auf Spawn-/Entzugs-Risiko                OK
+[SMOKE] Resistenz befreit den Baum von der Mistel                      OK
+[SMOKE] Entfernung ist als 'resistance' protokolliert                  OK
+[SMOKE] LEICHT: ueberhaupt keine Parasiten-Spawns                      OK
+[SMOKE] Voraussetzung fuer Symbiose: Wurzel-Knoten                     OK
+[SMOKE] Symbiose-Knoten mit zwei Vorbedingungen                        OK
+[SMOKE] Pilz-Knoten freigeschaltet                                     OK
+[SMOKE] Pilz-Symbiose erzeugt sichtbare Fungus-Patches                 OK
+[SMOKE] Pilze geben +15 % Naehrstoffe (echter Multiplikator)           OK
+[SMOKE] Pilz-Patches erhoehen die Wald-Gesundheit                      OK
+[SMOKE] Fotosynthese nutzt Naehrstoff-Multiplikator (7.18)             OK
+[SMOKE] HUD zeigt Wald-Gesundheit in Prozent                           OK
+[SMOKE] HUD zeigt Parasiten- und Pilz-Zaehler                          OK
+[SMOKE] Alle 35 PHASE-5-Schluessel in DE + EN uebersetzt               OK
+[SMOKE] Speichern (Format v6)                                          OK
+[SMOKE] Savegame version = 6                                           OK
+[SMOKE] Tiere/Futter und Parasiten liegen im Savegame                  OK
+[SMOKE] Laden (Format v6)                                              OK
+[SMOKE] Tiere/Futter nach Laden wiederhergestellt                      OK
+[SMOKE] Futter-Zaehler nach Laden identisch                            OK
+[SMOKE] Parasiten nach Laden wiederhergestellt                         OK
+[SMOKE] Pilz-Patches nach Laden wiederhergestellt                      OK
+[SMOKE] Baeume nach Laden wiederhergestellt                            OK
+[SMOKE] Naehrstoff-Multiplikator nach Laden erhalten                   OK
+[SMOKE] AUTO bleibt standardmaessig aus (P4-Fix)                       OK
+[SMOKE] Skilltree bleibt bei 15 Knoten                                 OK
+[SMOKE] Weiterhin 5 geladene Chunks                                    OK
+[SMOKE] Ergebnis: OK
+
+======================================================================
+4) SECHS XVFB-RENDERS — 1920x1080, --fixed-fps 10, 25 FRAMES
+======================================================================
+  p5_f5.png  <- ohne Preset                  Exit 0  25 Frames  1920x1080  0 Fehler
+  p5_wildlife.png  <- --phase5-shot-wildlife       Exit 0  25 Frames  1920x1080  0 Fehler
+  p5_health.png  <- --phase5-shot-health         Exit 0  25 Frames  1920x1080  0 Fehler
+  p5_parasite.png  <- --phase5-shot-parasite       Exit 0  25 Frames  1920x1080  0 Fehler
+  p5_fungus.png  <- --phase5-shot-fungus         Exit 0  25 Frames  1920x1080  0 Fehler
+  p5_remote.png  <- --phase5-shot-remote         Exit 0  25 Frames  1920x1080  0 Fehler
+  Visuell geprueft: Oekologie-Panel oben links mit gruenem Gesundheitsbalken;
+  Wurm/Ameise/Ameisenhuegel; Specht + Eichhoernchen ab 100 %; Mistel/
+  Wurmbefall + Specht; sichtbare rote Fungus-Patches; neuer Baum in
+  Chunk 1 beim Ferntransport; F5-Start zeigt weiterhin MANUELL.
+  p5_wildlife.png zeigt nach dem automatischen StateMachine-Zyklus
+  "Futter: 7" (nicht nur einen per Klick ausgeloesten Wert).
+
+======================================================================
+5) DATEN / LOKALISIERUNG / SAVE
+======================================================================
+  data/skilltrees/oak.tres            15 Knoten, "nutrients": 0.15, err=0
+  data/localization.csv               171 Zeilen, 35 neue DE/EN-Schluessel
+  SaveManager.FORMAT_VERSION         6, wildlife + parasites im JSON
+  Alte v5/v4/v3/v2/v1-Saves         weiter lesbar (Defaults)
+  Wald-Gesundheit                    0.02*Blatt + 0.12*Baum + 0.08*Art
+                                    + 0.04*Pilz-Patch, clamp 0..1, >0.5
+  Basis                              2 Wurm + 2 Ameise + 1 Huegel (immer)
+  Specht/Eichhoernchen               nur bei Gesundheit > 50 %
+  Parasiten                          Mistel 0.35 / Wurm 0.22 Glucose pro s
+  Pilz-Symbiose                     BaseTree.nutrient_mult = 1.15
+
+======================================================================
+6) LIEFER-ZIP / FRISCHER EXTRAKT
+======================================================================
+  python3 tools/build_zip.py PHASE5
+    -> deliverables/waldspiel-PHASE5.zip
+    project.godot im ZIP-Root · src/Main.tscn im ZIP-Root-Pfad
+    .godot/ ausgeschlossen · keine verschachtelten ZIPs · CRC OK
+  Frischer Extrakt nach /tmp/zip5final:
+    --headless --import                                  Exit 0 / 0 Fehler
+    10 / 10 Smokes                                       Exit 0 / OK / 0 Fehler
+  Hinweis: Xvfb/opengl3/llvmpipe ist nur der reproduzierbare Software-
+  Rasterizer fuer Screenshots; das Projekt selbst bleibt Forward+/Vulkan.
+
+======================================================================
+7) BEWUSSTE GRENZE / DOKUMENTIERTE ENTSCHEIDUNGEN
+======================================================================
+  Widerspruch "Tiere spawnen nur wenn Wald gesund" vs. "Wurm/Ameise immer
+  vorhanden" ist per User-Entscheidung in DECISIONS.md §70 festgehalten:
+  Wurm/Ameise = Basis-Biodiversitaet; Specht/Eichhoernchen = Gesundheits-Gate.
+  "Wurmbefall" wird als Borkenlarve interpretiert, damit frei lebende
+  Würmer weiterhin nuetzliche Futter-Tiere bleiben.
+  Sturm-/Duerr-/Borkenkaefer-Ereignisse sowie pH-/N-P-K-/Mykorrhiza-
+  Simulation bleiben der spaeteren "vollen Simulation" (Master 4.2)
+  vorbehalten; ihre Schalter/Faktoren sind weiterhin vorbereitet.
+  Keine PHASE 6 begonnen. Keine 3D-Nodes, kein C#, keine fremden Assets,
+  keine unerklaerten Addons; alle Tiere/Pilze/Parasiten sind zur Laufzeit
+  gezeichnete Platzhalter. Alle Pfade sind relativ.

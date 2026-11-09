@@ -1,3 +1,5 @@
+HINWEIS: Historischer Stand vor PHASE 5. Aktuell: PHASE5-TESTPROTOKOLL.txt / PHASE5-ERGEBNIS.html.
+
 WALD-REGENERATION — PHASE 4 + FIXRUNDE — TESTPROTOKOLL
 Godot 4.7.2.stable.official.ed1daf0bf · 2026-11-05 · Europe/Berlin
 Xvfb 1920x1080x24 · --rendering-driver opengl3 (llvmpipe Software-Rasterizer)
@@ -142,6 +144,6 @@ Extrakt -> --headless --import -> alle 9 Smokes: Exit 0 / Ergebnis: OK.
 ======================================================================
 7) BEWUSSTE GRENZE
 ======================================================================
-PHASE 5 wurde NICHT begonnen: keine Tiere, kein Mistel-Befall,
-keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
+Historischer Stand vor PHASE 5: Tiere, Mistel-Befall, Pilz-Symbiose und
+Parasiten sind inzwischen umgesetzt (siehe PHASE5-ERGEBNIS.html/.md).
 

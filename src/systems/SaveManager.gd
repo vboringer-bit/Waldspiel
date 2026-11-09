@@ -6,13 +6,11 @@ extends Node
 ## REVISION 2: `world_state` enthaelt die Volumen der ZUSAMMENHAENGENDEN
 ## Becken (`groups`) statt einzelner trockener Tiles.
 ## PHASE 3: Format v4 speichert zusaetzlich Schwierigkeitsgrad, Zeit/
-## Jahreszeit/Zeitskala und bereits eingesammelte Samen.
-## PHASE 4: Format v5 speichert zusaetzlich den globalen Skilltree-Fortschritt
-## pro Baumart. v4/v3/v2/v1 bleiben lesbar (fehlende Felder = Defaults).
-## PHASE-4-FIX: fehlt auto_mode, wird MANUELL (false) angenommen.
+## Jahreszeit/Zeitskala und bereits eingesammelte Samen. v3/v2/v1 bleiben
+## lesbar (fehlende Felder bekommen sinnvolle Defaults).
 
 const SAVE_PATH := "user://savegame.json"
-const FORMAT_VERSION := 5
+const FORMAT_VERSION := 4
 
 var interaction: InteractionController
 var chunk_manager: ChunkManager
@@ -46,7 +44,6 @@ func save_game() -> bool:
 		"difficulty": int(Global.difficulty),
 		"time": time_manager.to_dict() if time_manager != null else {},
 		"seeds": season_system.to_dict() if season_system != null else {},
-		"skills": SkillTree.instance.to_dict() if SkillTree.instance != null else {},
 		"trees": trees,
 		"world_state": world_state.to_dict() if world_state != null else {},
 	}
@@ -78,7 +75,7 @@ func load_game() -> bool:
 
 	Global.set_seed_from_save(int(data.get("seed", Global.world_seed)))
 	chunk_manager.set_world_seed(Global.world_seed)
-	Global.auto_mode = bool(data.get("auto_mode", false))
+	Global.auto_mode = bool(data.get("auto_mode", true))
 	Global.locale = String(data.get("locale", "de"))
 	Global.set_difficulty(int(data.get("difficulty", 1)))
 
@@ -91,10 +88,6 @@ func load_game() -> bool:
 		time_manager.from_dict(data.get("time", {}))
 	if season_system != null:
 		season_system.from_dict(data.get("seeds", {}))
-	# PHASE 4: Skill-Fortschritt VOR dem Neuaufbau der Baeume wiederherstellen,
-	# damit apply_effect() sofort auf die geladenen Instanzen wirkt.
-	if SkillTree.instance != null:
-		SkillTree.instance.from_dict(data.get("skills", {}))
 
 	interaction.clear_carrying(false)
 	interaction.clear_trees()

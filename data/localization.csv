@@ -9,12 +9,12 @@ HUD_YEAR,Jahr,Year
 HUD_NO_TREE,Kein Baum ausgewählt,No tree selected
 HUD_SELECTED,Ausgewählt,Selected
 HUD_SKILLTREE,Skilltree (T),Skill tree (T)
-HUD_HINT,"Boden-Eicheln anklicken = einsammeln   ·   Inventar-Eichel anklicken = aufnehmen   ·   Linksklick auf den Boden = platzieren   ·   Rechtsklick/Esc = zurücklegen   ·   MANUELL: Wurzel anklicken = wachsen   ·   R = Regen / Schnee   ·   T = Skilltree   ·   F11 = Vollbild","Click ground acorns to collect   ·   Click the inventory acorn to pick it up   ·   Left click on the ground = place   ·   Right click/Esc = put back   ·   MANUAL: click a root = grow   ·   R = rain / snow   ·   T = skill tree   ·   F11 = fullscreen"
+HUD_HINT,Boden-Eicheln anklicken = einsammeln   ·   Inventar-Eichel anklicken = aufnehmen   ·   Linksklick auf den Boden = platzieren   ·   Rechtsklick/Esc = zurücklegen   ·   MANUELL: Wurzel anklicken = wachsen   ·   R = Regen / Schnee   ·   T = Skilltree   ·   F11 = Vollbild,Click ground acorns to collect   ·   Click the inventory acorn to pick it up   ·   Left click on the ground = place   ·   Right click/Esc = put back   ·   MANUAL: click a root = grow   ·   R = rain / snow   ·   T = skill tree   ·   F11 = fullscreen
 BTN_SKILLTREE,Skilltree,Skill tree
 MODE_AUTO,AUTO,AUTO
 MODE_MANUAL,MANUELL,MANUAL
-MSG_BIRD_EVENT,"Der Vogel hat die erste platzierte Eichel geholt. Versuche es erneut.","A bird took the first placed acorn. Try again."
-MSG_GERMINATED,"Die Eichel keimt. Ein kleiner Baum wächst.","The acorn germinates. A little tree grows."
+MSG_BIRD_EVENT,Der Vogel hat die erste platzierte Eichel geholt. Versuche es erneut.,A bird took the first placed acorn. Try again.
+MSG_GERMINATED,Die Eichel keimt. Ein kleiner Baum wächst.,The acorn germinates. A little tree grows.
 MSG_RAIN,Es regnet,It is raining
 MSG_RAIN_STOP,Der Regen lässt nach,The rain is easing off
 MSG_SAVED,Spiel gespeichert.,Game saved.
@@ -24,10 +24,10 @@ MSG_SAVE_ERROR,Spielstand konnte nicht gelesen werden.,Could not read save game.
 MSG_NOT_ENOUGH_GLUCOSE,Zu wenig Glucose für einen Wachstumsschritt.,Not enough glucose for a growth step.
 MSG_GROW_ROOT,Neue Wurzel gewachsen (−10 Glucose).,New root grown (−10 glucose).
 MSG_GROW_LEAF,Neues Blatt gewachsen (−10 Glucose).,New leaf grown (−10 glucose).
-MSG_NO_SEEDS,"Keine Eichel im Inventar – sammle die Eicheln am Boden ein.","No acorn in inventory – pick up the acorns lying on the ground."
+MSG_NO_SEEDS,Keine Eichel im Inventar – sammle die Eicheln am Boden ein.,No acorn in inventory – pick up the acorns lying on the ground.
 MSG_SOIL_ONLY,Eicheln können nur auf dem Boden platziert werden.,Acorns can only be placed on soil.
-MSG_TREE_INFO,"Glucose %.1f  ·  Wasser %.0f%%  ·  Gesundheit %.0f%%  ·  %d Blätter  ·  %d Wurzeln","Glucose %.1f  ·  Water %.0f%%  ·  Health %.0f%%  ·  %d leaves  ·  %d roots"
-MSG_SOIL_INFO,"Boden: %s  ·  Tiefe %d px  ·  Wurzel-Kosten %.0f Glucose  ·  Seed %d","Soil: %s  ·  Depth %d px  ·  Root cost %.0f glucose  ·  Seed %d"
+MSG_TREE_INFO,Glucose %.1f  ·  Wasser %.0f%%  ·  Gesundheit %.0f%%  ·  %d Blätter  ·  %d Wurzeln,Glucose %.1f  ·  Water %.0f%%  ·  Health %.0f%%  ·  %d leaves  ·  %d roots
+MSG_SOIL_INFO,Boden: %s  ·  Tiefe %d px  ·  Wurzel-Kosten %.0f Glucose  ·  Seed %d,Soil: %s  ·  Depth %d px  ·  Root cost %.0f glucose  ·  Seed %d
 SEASON_SPRING,Frühling,Spring
 SEASON_SUMMER,Sommer,Summer
 SEASON_AUTUMN,Herbst,Autumn
@@ -47,91 +47,125 @@ SOIL_STONE,Stein,Stone
 SOIL_WATER,Wasserreservoir,Water reservoir
 SOIL_CAVE,Höhle,Cave
 SOIL_AIR,Luft,Air
-HUD_GROWTH_IDLE,"Wurzel anklicken → Vorschau + Kosten","Click a root → preview + cost"
-HUD_GROWTH_COST,"%s · −%.0f Glucose","%s · −%.0f glucose"
-HUD_RESERVOIR,"Reservoir: %.0f%%","Reservoir: %.0f%%"
+HUD_GROWTH_IDLE,Wurzel anklicken → Vorschau + Kosten,Click a root → preview + cost
+HUD_GROWTH_COST,%s · −%.0f Glucose,%s · −%.0f glucose
+HUD_RESERVOIR,Reservoir: %.0f%%,Reservoir: %.0f%%
 HUD_NO_RESERVOIR,Kein Reservoir erreicht,No reservoir reached
-MSG_GROW_ROOT_COST,"Wurzel wächst durch %s (−%.0f Glucose).","Root grows through %s (−%.0f glucose)."
+MSG_GROW_ROOT_COST,Wurzel wächst durch %s (−%.0f Glucose).,Root grows through %s (−%.0f glucose).
 MSG_ROOT_BLOCKED,Hier kann keine Wurzel mehr wachsen.,No root can grow here.
 MSG_RESERVOIR_DRY,Ein Wasserreservoir ist ausgetrocknet.,A water reservoir has dried up.
 HUD_ACORN_TIP,"Nur hier anklicken: Eichel aufnehmen, dann auf dem Boden platzieren","Pick up the acorn by clicking this icon, then place it on the ground"
 MSG_ACORN_CARRY,"Eichel aufgenommen – sie schwebt an der Maus. Linksklick AUF DEN BODEN platziert sie, Rechtsklick/Esc legt sie zurück.","Acorn picked up – it floats at the mouse. Left click ON THE GROUND to place it, right click/Esc puts it back."
-MSG_ACORN_RETURN,"Eichel zurück ins Inventar gelegt.","Acorn put back into the inventory."
-MSG_RAIN_REFILL,"Es regnet – die Wasserreservoirs füllen sich langsam wieder auf.","It is raining – the water reservoirs are slowly refilling."
-MSG_WINTER_GROWTH,"Im Winter ruht der Wald: kein Wachstum möglich.","In winter the forest rests: no growth is possible."
-MSG_SEED_FOUND,"Eichel gefunden (+1 im Inventar).","Acorn found (+1 in inventory)."
-MSG_SEED_BURIED,"Hier liegt eine Eichel flach vergraben. Mit einer Wurzel erreichbar.","An acorn is buried here. Reach it with a root."
-MSG_SEED_DUG_UP,"Eine Wurzel hat eine vergrabene Eichel freigelegt (+1).","A root uncovered a buried acorn (+1)."
-MSG_AUTUMN_DROP,"Herbst: Eicheln fallen unter den Kronen.","Autumn: acorns fall beneath the crowns."
-MSG_SEASON_CHANGED,"Jahreszeitenwechsel: %s","Season changed: %s"
-MSG_DIFFICULTY_SET,"Schwierigkeit: %s","Difficulty: %s"
-MSG_PAUSED,"Zeit angehalten (Leertaste = weiter).","Time paused (Space = resume)."
-MSG_RESUMED,"Zeit läuft weiter.","Time is running again."
-HUD_DIFFICULTY,"Schwierigkeit: %s","Difficulty: %s"
-START_TITLE,"Wald-Regeneration","Forest Regeneration"
-START_SUBTITLE,"Wähle vor dem Start einen Schwierigkeitsgrad.","Choose a difficulty before you start."
-START_HINT,"Jederzeit im HUD änderbar · Leertaste = Pause · x1 / x3 / x10 = Zeit spulen","Can be changed in the HUD any time · Space = pause · x1 / x3 / x10 = fast forward"
+MSG_ACORN_RETURN,Eichel zurück ins Inventar gelegt.,Acorn put back into the inventory.
+MSG_RAIN_REFILL,Es regnet – die Wasserreservoirs füllen sich langsam wieder auf.,It is raining – the water reservoirs are slowly refilling.
+MSG_WINTER_GROWTH,Im Winter ruht der Wald: kein Wachstum möglich.,In winter the forest rests: no growth is possible.
+MSG_SEED_FOUND,Eichel gefunden (+1 im Inventar).,Acorn found (+1 in inventory).
+MSG_SEED_BURIED,Hier liegt eine Eichel flach vergraben. Mit einer Wurzel erreichbar.,An acorn is buried here. Reach it with a root.
+MSG_SEED_DUG_UP,Eine Wurzel hat eine vergrabene Eichel freigelegt (+1).,A root uncovered a buried acorn (+1).
+MSG_AUTUMN_DROP,Herbst: Eicheln fallen unter den Kronen.,Autumn: acorns fall beneath the crowns.
+MSG_SEASON_CHANGED,Jahreszeitenwechsel: %s,Season changed: %s
+MSG_DIFFICULTY_SET,Schwierigkeit: %s,Difficulty: %s
+MSG_PAUSED,Zeit angehalten (Leertaste = weiter).,Time paused (Space = resume).
+MSG_RESUMED,Zeit läuft weiter.,Time is running again.
+HUD_DIFFICULTY,Schwierigkeit: %s,Difficulty: %s
+START_TITLE,Wald-Regeneration,Forest Regeneration
+START_SUBTITLE,Wähle vor dem Start einen Schwierigkeitsgrad.,Choose a difficulty before you start.
+START_HINT,Jederzeit im HUD änderbar · Leertaste = Pause · x1 / x3 / x10 = Zeit spulen,Can be changed in the HUD any time · Space = pause · x1 / x3 / x10 = fast forward
 START_EASY,"LEICHT – schneller, mehr Wasser und Samen","EASY – faster, more water and seeds"
-START_NORMAL,"NORMAL – halb-realistisch (Standard)","NORMAL – semi-realistic (default)"
+START_NORMAL,NORMAL – halb-realistisch (Standard),NORMAL – semi-realistic (default)
 START_HARD,"SCHWER – langsam, teuer, karge Ernten","HARD – slow, costly, sparse harvests"
-MSG_WINTER_WATER,"Winter: kein Wasser aus Reservoirs","Winter: no water from reservoirs"
-MSG_RAIN_SPLASH,"Regen prasselt auf die Oberfläche.","Rain splashes onto the surface."
-MSG_ACORN_GROUND_ONLY,"Eicheln nur auf dem Boden platzieren – nicht in den Himmel.","Place acorns on the ground only – not in the sky."
-SPECIES_OAK,"Eiche","Oak"
-SKILL_ROOT_TITLE,"Effizientere Wurzeln","More efficient roots"
-SKILL_ROOT_DESC,"+25 % Wasseraufnahme aus Boden und Regen.","+25 % water uptake from soil and rain."
-SKILL_RAIN_TITLE,"Regen-Aufnahme","Rain absorption"
-SKILL_RAIN_DESC,"+30 % Wasser waehrend Niederschlag.","+30 % water during precipitation."
-SKILL_TAP_TITLE,"Reservoir-Wurzeln","Reservoir roots"
-SKILL_TAP_DESC,"+25 % Entnahme aus Wasserreservoirs.","+25 % draw from water reservoirs."
-SKILL_DEEP_TITLE,"Tiefwurzler","Deep roots"
-SKILL_DEEP_DESC,"-20 % Glucose-Kosten fuer Wurzelwachstum.","-20 % glucose cost for root growth."
-SKILL_LEAF_TITLE,"Effizientere Blaetter","More efficient leaves"
-SKILL_LEAF_DESC,"+20 % Glucose durch Fotosynthese.","+20 % glucose from photosynthesis."
-SKILL_PHOTOSYN_TITLE,"Photosynthese plus","Photosynthesis plus"
-SKILL_PHOTOSYN_DESC,"Noch +15 % Glucose.","Another +15 % glucose."
-SKILL_CROWN_TITLE,"Kronenwuchs","Crown growth"
-SKILL_CROWN_DESC,"+2 Blaetter sofort und +2 Blatt-Obergrenze.","+2 leaves immediately and +2 leaf cap."
-SKILL_TRUNK_TITLE,"Sparsame Staemme","Efficient trunks"
-SKILL_TRUNK_DESC,"-20 % Glucose-Kosten fuer Stamm und Blaetter.","-20 % glucose cost for trunk and leaves."
-SKILL_SPREAD_TITLE,"Verbreitung","Dispersal"
-SKILL_SPREAD_DESC,"+30 % Keimrate und Eichelfall.","+30 % germination and acorn drop rate."
-SKILL_PARASITE_TITLE,"Parasiten-Resistenz","Parasite resistance"
-SKILL_PARASITE_DESC,"-50 % Befallschance (PHASE 5) und -10 % Wasserverbrauch.","-50 % infestation chance (PHASE 5) and -10 % water consumption."
-SKILL_DISEASE_TITLE,"Krankheits-Resistenz","Disease resistance"
-SKILL_DISEASE_DESC,"-50 % Krankheitschance (PHASE 5) und -10 % Wasserverbrauch.","-50 % disease chance (PHASE 5) and -10 % water consumption."
-SKILL_WOOD_TITLE,"Holz-Haerte","Wood hardness"
-SKILL_WOOD_DESC,"+50 % Sturm-Resistenz (PHASE 5) und +10 % Wasseraufnahme.","+50 % storm resistance (PHASE 5) and +10 % water uptake."
-SKILL_SYMBIOSIS_TITLE,"Symbiose","Symbiosis"
-SKILL_SYMBIOSIS_DESC,"Schaltet den Pilz-Knoten frei und gibt +10 % Wasseraufnahme.","Unlocks the fungus node and gives +10 % water uptake."
-SKILL_MUSHROOM_TITLE,"Pilz-Knoten","Fungus node"
-SKILL_MUSHROOM_DESC,"+10 % Glucose durch Naehrstoffe (Simulation folgt in PHASE 5).","+10 % glucose from nutrients (simulation follows in PHASE 5)."
-SKILL_WINTER_TITLE,"Winterhaerte","Winter hardiness"
-SKILL_WINTER_DESC,"+30 % Wasseraufnahme im Winter. Die Winterruhe bleibt bestehen.","+30 % water uptake in winter. Winter dormancy stays in place."
-SKILL_UI_TITLE,"SKILLTREE · EICHE","SKILL TREE · OAK"
-SKILL_UI_SUBTITLE,"15 Mutationen · global fuer alle Eichen · Freischalten kostet Glucose des ausgewaehlten Baums","15 mutations · shared by all oaks · unlocking costs glucose of the selected tree"
-SKILL_UI_CLOSE,"Schliessen (T)","Close (T)"
-SKILL_UI_GLUCOSE,"Glucose des ausgewaehlten Baums","Glucose of selected tree"
-SKILL_UI_HINT,"Mittlere Maustaste = Graph verschieben · Mausrad / +/- = Zoom · Knoten anklicken zum Freischalten","Middle mouse = pan graph · wheel / +/- = zoom · click a node to unlock"
-SKILL_UI_NO_TREE,"Kein Baum ausgewaehlt - bitte erst einen Baum anklicken.","No tree selected - click a tree first."
-SKILL_UI_UNLOCK,"Freischalten · %d Glucose","Unlock · %d glucose"
-SKILL_UI_UNLOCKED,"✓ Freigeschaltet","✓ Unlocked"
-SKILL_UI_LOCKED,"Gesperrt (Vorbedingung)","Locked (prerequisite)"
-SKILL_UI_AVAILABLE,"Verfuegbar","Available"
-SKILL_UI_COST,"Kosten","Cost"
-SKILL_UI_ZOOM_IN,"+","+"
-SKILL_UI_ZOOM_OUT,"−","−"
-SKILL_UI_ZOOM_RESET,"1:1","1:1"
-SKILL_UI_COUNT,"%d / 15 freigeschaltet","%d / 15 unlocked"
-SKILL_UI_BRANCH_WATER,"Wasser","Water"
-SKILL_UI_BRANCH_LEAF,"Glucose","Glucose"
-SKILL_UI_BRANCH_RESIST,"Resistenz","Resistance"
-SKILL_UI_BRANCH_SYMBIOSIS,"Symbiose","Symbiosis"
-MSG_SKILL_UNLOCKED,"Mutation freigeschaltet: %s","Mutation unlocked: %s"
-MSG_SKILL_NO_GLUCOSE,"Nicht genug Glucose fuer diese Mutation.","Not enough glucose for this mutation."
-MSG_SKILL_PREREQ,"Erst die Vorbedingungen freischalten.","Unlock the prerequisites first."
-MSG_SKILL_NO_TREE,"Waehle erst einen Baum aus.","Select a tree first."
-MSG_SNOW,"Es schneit","It is snowing"
-MSG_SNOW_STOP,"Der Schneefall laesst nach","The snowfall is easing off"
-MSG_SNOW_REFILL,"Es schneit – die Wasserreservoirs fuellen sich langsam wieder auf.","It is snowing – the water reservoirs are slowly refilling."
-MSG_SNOW_MELT,"Der Schnee geht langsam in Regen ueber.","Snow is slowly turning to rain."
+MSG_WINTER_WATER,Winter: kein Wasser aus Reservoirs,Winter: no water from reservoirs
+MSG_RAIN_SPLASH,Regen prasselt auf die Oberfläche.,Rain splashes onto the surface.
+MSG_ACORN_GROUND_ONLY,Eicheln nur auf dem Boden platzieren – nicht in den Himmel.,Place acorns on the ground only – not in the sky.
+SPECIES_OAK,Eiche,Oak
+SKILL_ROOT_TITLE,Effizientere Wurzeln,More efficient roots
+SKILL_ROOT_DESC,+25 % Wasseraufnahme aus Boden und Regen.,+25 % water uptake from soil and rain.
+SKILL_RAIN_TITLE,Regen-Aufnahme,Rain absorption
+SKILL_RAIN_DESC,+30 % Wasser waehrend Niederschlag.,+30 % water during precipitation.
+SKILL_TAP_TITLE,Reservoir-Wurzeln,Reservoir roots
+SKILL_TAP_DESC,+25 % Entnahme aus Wasserreservoirs.,+25 % draw from water reservoirs.
+SKILL_DEEP_TITLE,Tiefwurzler,Deep roots
+SKILL_DEEP_DESC,-20 % Glucose-Kosten fuer Wurzelwachstum.,-20 % glucose cost for root growth.
+SKILL_LEAF_TITLE,Effizientere Blaetter,More efficient leaves
+SKILL_LEAF_DESC,+20 % Glucose durch Fotosynthese.,+20 % glucose from photosynthesis.
+SKILL_PHOTOSYN_TITLE,Photosynthese plus,Photosynthesis plus
+SKILL_PHOTOSYN_DESC,Noch +15 % Glucose.,Another +15 % glucose.
+SKILL_CROWN_TITLE,Kronenwuchs,Crown growth
+SKILL_CROWN_DESC,+2 Blaetter sofort und +2 Blatt-Obergrenze.,+2 leaves immediately and +2 leaf cap.
+SKILL_TRUNK_TITLE,Sparsame Staemme,Efficient trunks
+SKILL_TRUNK_DESC,-20 % Glucose-Kosten fuer Stamm und Blaetter.,-20 % glucose cost for trunk and leaves.
+SKILL_SPREAD_TITLE,Verbreitung,Dispersal
+SKILL_SPREAD_DESC,+30 % Keimrate und Eichelfall.,+30 % germination and acorn drop rate.
+SKILL_PARASITE_TITLE,Parasiten-Resistenz,Parasite resistance
+SKILL_PARASITE_DESC,-50 % Befallschance (PHASE 5) und -10 % Wasserverbrauch.,-50 % infestation chance (PHASE 5) and -10 % water consumption.
+SKILL_DISEASE_TITLE,Krankheits-Resistenz,Disease resistance
+SKILL_DISEASE_DESC,-50 % Krankheitschance (PHASE 5) und -10 % Wasserverbrauch.,-50 % disease chance (PHASE 5) and -10 % water consumption.
+SKILL_WOOD_TITLE,Holz-Haerte,Wood hardness
+SKILL_WOOD_DESC,+50 % Sturm-Resistenz (PHASE 5) und +10 % Wasseraufnahme.,+50 % storm resistance (PHASE 5) and +10 % water uptake.
+SKILL_SYMBIOSIS_TITLE,Symbiose,Symbiosis
+SKILL_SYMBIOSIS_DESC,Schaltet den Pilz-Knoten frei und gibt +10 % Wasseraufnahme. Pilze liefern jetzt Naehrstoffe.,Unlocks the fungus node and gives +10 % water uptake. Fungi now provide nutrients.
+SKILL_MUSHROOM_TITLE,Pilz-Knoten,Fungus node
+SKILL_MUSHROOM_DESC,+10 % Glucose und +15 % Naehrstoffe durch Pilz-Symbiose (PHASE 5 aktiv).,+10 % glucose and +15 % nutrients from fungus symbiosis (active in PHASE 5).
+SKILL_WINTER_TITLE,Winterhaerte,Winter hardiness
+SKILL_WINTER_DESC,+30 % Wasseraufnahme im Winter. Die Winterruhe bleibt bestehen.,+30 % water uptake in winter. Winter dormancy stays in place.
+SKILL_UI_TITLE,SKILLTREE · EICHE,SKILL TREE · OAK
+SKILL_UI_SUBTITLE,15 Mutationen · global fuer alle Eichen · Freischalten kostet Glucose des ausgewaehlten Baums,15 mutations · shared by all oaks · unlocking costs glucose of the selected tree
+SKILL_UI_CLOSE,Schliessen (T),Close (T)
+SKILL_UI_GLUCOSE,Glucose des ausgewaehlten Baums,Glucose of selected tree
+SKILL_UI_HINT,Mittlere Maustaste = Graph verschieben · Mausrad / +/- = Zoom · Knoten anklicken zum Freischalten,Middle mouse = pan graph · wheel / +/- = zoom · click a node to unlock
+SKILL_UI_NO_TREE,Kein Baum ausgewaehlt - bitte erst einen Baum anklicken.,No tree selected - click a tree first.
+SKILL_UI_UNLOCK,Freischalten · %d Glucose,Unlock · %d glucose
+SKILL_UI_UNLOCKED,✓ Freigeschaltet,✓ Unlocked
+SKILL_UI_LOCKED,Gesperrt (Vorbedingung),Locked (prerequisite)
+SKILL_UI_AVAILABLE,Verfuegbar,Available
+SKILL_UI_COST,Kosten,Cost
+SKILL_UI_ZOOM_IN,+,+
+SKILL_UI_ZOOM_OUT,−,−
+SKILL_UI_ZOOM_RESET,1:1,1:1
+SKILL_UI_COUNT,%d / 15 freigeschaltet,%d / 15 unlocked
+SKILL_UI_BRANCH_WATER,Wasser,Water
+SKILL_UI_BRANCH_LEAF,Glucose,Glucose
+SKILL_UI_BRANCH_RESIST,Resistenz,Resistance
+SKILL_UI_BRANCH_SYMBIOSIS,Symbiose,Symbiosis
+MSG_SKILL_UNLOCKED,Mutation freigeschaltet: %s,Mutation unlocked: %s
+MSG_SKILL_NO_GLUCOSE,Nicht genug Glucose fuer diese Mutation.,Not enough glucose for this mutation.
+MSG_SKILL_PREREQ,Erst die Vorbedingungen freischalten.,Unlock the prerequisites first.
+MSG_SKILL_NO_TREE,Waehle erst einen Baum aus.,Select a tree first.
+MSG_SNOW,Es schneit,It is snowing
+MSG_SNOW_STOP,Der Schneefall laesst nach,The snowfall is easing off
+MSG_SNOW_REFILL,Es schneit – die Wasserreservoirs fuellen sich langsam wieder auf.,It is snowing – the water reservoirs are slowly refilling.
+MSG_SNOW_MELT,Der Schnee geht langsam in Regen ueber.,Snow is slowly turning to rain.
+HUD_PHASE5,PHASE 5 · Tiere & Symbiose,PHASE 5 · Wildlife & symbiosis
+HUD_FOREST_HEALTH,Wald-Gesundheit,Forest health
+HUD_FOOD,Futter,Food
+HUD_WILDLIFE,Tiere,Wildlife
+HUD_PARASITES,Parasiten,Parasites
+HUD_FUNGI,Pilze,Fungi
+ANIMAL_WORM,Regenwurm,Earthworm
+ANIMAL_ANT,Ameise,Ant
+ANIMAL_WOODPECKER,Specht,Woodpecker
+ANIMAL_SQUIRREL,Eichhoernchen,Squirrel
+STATE_IDLE,ruhig,idle
+STATE_WANDER,unterwegs,wandering
+STATE_EAT,frisst,eating
+STATE_HELP_TREE,hilft am Baum,helping a tree
+STATE_CARRY,traegt eine Eichel,carrying an acorn
+MSG_ANIMAL_INFO,%s — Zustand: %s,%s — state: %s
+MSG_ANTHILL_INFO,Ameisenhuegel: %d Tiere,Anthill: %d ants
+MSG_FOOD_GAINED,Wurm/Ameise geben Futter (+1).,Worm/ant provides food (+1).
+MSG_ANTHILL_GROWN,Der Ameisenhuegel waechst langsam.,The anthill is slowly growing.
+MSG_WILDLIFE_ARRIVED,Der Wald ist gesund: Specht und Eichhoernchen siedeln sich an.,The forest is healthy: woodpecker and squirrel arrive.
+MSG_WILDLIFE_LEFT,Wald-Gesundheit unter 50 %: Specht und Eichhoernchen ziehen weiter.,Forest health below 50%: woodpecker and squirrel move on.
+MSG_WOODPECKER_HELP,Der Specht pickt Parasiten vom Baum.,The woodpecker picks parasites off the tree.
+MSG_SEED_CARRIED,Ein Eichhoernchen traegt eine Eichel in einen entfernten Chunk.,A squirrel carries an acorn to a distant chunk.
+MSG_TREE_PLANTED_REMOTE,In einem entfernten Chunk ist ein neuer Baum gekeimt.,A new tree germinated in a distant chunk.
+MSG_PARASITE_SPAWN,Ein Parasit hat den Baum befallen.,A parasite has infested the tree.
+MSG_PARASITE_MISTLETOE,Mistel,Mistletoe
+MSG_PARASITE_WORM,Wurm-Befall,Worm pest
+MSG_PARASITE_INFO,Parasit am Baum: %s,Tree parasite: %s
+MSG_PARASITE_REMOVED,Parasit entfernt (%s).,Parasite removed (%s).
+BY_WOODPECKER,vom Specht,by woodpecker
+BY_RESISTANCE,durch Resistenz,by resistance
+MSG_RESISTANCE_CLEAN,Parasiten-Resistenz befreit den Baum.,Parasite resistance clears the tree.
+MSG_FUNGUS_SPAWN,Pilz-Symbiose gibt Naehrstoffe (+15 % Glucose).,Fungus symbiosis provides nutrients (+15% glucose).
+MSG_FUNGUS_INFO,Pilz-Knoten aktiv: Naehrstoffe fuer den Baum.,Fungus node active: nutrients for the tree.

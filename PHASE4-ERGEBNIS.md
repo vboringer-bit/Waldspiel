@@ -1,7 +1,7 @@
 # PHASE 4 — Ergebnis + Fixrunde
 
 **Godot 4.7.2 stable · GDScript · Forward+/Vulkan · 2026-11-05**  
-15 GraphEdit-Knoten, echte Glucose-Kosten und Effekte, Save v5 — plus Fixrunde: AUTO aus, sichtbare Skill-Blätter, längerer Schnee und sanfter Übergang zu Regen. **PHASE 5 wurde nicht begonnen.**
+15 GraphEdit-Knoten, echte Glucose-Kosten und Effekte, Save v5 — plus Fixrunde: AUTO aus, sichtbare Skill-Blätter, längerer Schnee und sanfter Übergang zu Regen. *Historischer Stand vor PHASE 5; aktueller Bericht: `PHASE5-ERGEBNIS.html/.md`.*
 
 ## 1 · Screenshots (echte Godot-Renders)
 
@@ -500,8 +500,8 @@ Extrakt -> --headless --import -> alle 9 Smokes: Exit 0 / Ergebnis: OK.
 ======================================================================
 7) BEWUSSTE GRENZE
 ======================================================================
-PHASE 5 wurde NICHT begonnen: keine Tiere, kein Mistel-Befall,
-keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
+Historischer Stand vor PHASE 5: Tiere, Mistel-Befall, Pilz-Symbiose und
+Parasiten sind inzwischen umgesetzt (siehe PHASE5-ERGEBNIS.html/.md).
 ```
 
 ## 4 · Abnahme PHASE 4 + Fixrunde
@@ -522,7 +522,7 @@ keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
 
 ## 5 · Hinweise / bewusste Grenzen
 
-- Die Ereignis-Simulation für Parasiten, Krankheit, Sturm, Pilz-Symbiose sowie pH/N-P-K/Mykorrhiza/Katastrophen bleibt PHASE 5. Die Resistenz- und Symbiose-Werte sind bereits echte Zahlen, aber es spawnen noch keine Tiere oder Misteln.
+- Historischer Stand vor PHASE 5: Tiere, Parasiten und Pilz-Symbiose sind inzwischen umgesetzt (siehe PHASE5-ERGEBNIS.html/.md). Sturm-/pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse bleiben der späteren vollen Simulation vorbehalten.
 - Xvfb + opengl3/llvmpipe ist ein Software-Rasterizer und nur für reproduzierbare Renders genutzt; Ziel-Renderer des Projekts bleibt Forward+ / Vulkan. Das Tau-Bild verwendet --fixed-fps 10, damit der 3,5-s-Übergang in 25 Frames sichtbar wird.
 - Keine neuen externen Assets, Addons oder C#-Dateien. Schneeflocken, GraphNodes und Linien werden zur Laufzeit gezeichnet; alle Pfade sind relativ.
 - Die ZIP im Ordner deliverables/ ist der eingefrorene Lieferstand der Fixrunde. Die vorherige waldspiel-PHASE4.zip bleibt als historischer Stand erhalten.
@@ -535,4 +535,4 @@ keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
 - `screenshots/p4_*.png` (6 Renders), `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`
 - Neue/geänderte Quellen der Fixrunde: `Global.gd`, `GrowthSystem.gd`, `Tree.gd`, `SkillTree.gd`, `tools/generate_skilltree.gd`, `data/skilltrees/oak.tres`, `RainEffect.gd`, `HUD.gd`, `EventBus.gd`, `Main.gd`, `localization.csv`
 
-**Nächster Schritt: PHASE 5 — Tiere, Parasiten, Pilz-Symbiose, pH/Katastrophen (noch nicht begonnen).**
+**PHASE 5 ist inzwischen umgesetzt — siehe `PHASE5-ERGEBNIS.html` / `.md`.**

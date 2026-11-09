@@ -99,7 +99,7 @@ CHECKS = [
 ]
 
 NOTES = [
-    "Die Ereignis-Simulation für Parasiten, Krankheit, Sturm, Pilz-Symbiose sowie pH/N-P-K/Mykorrhiza/Katastrophen bleibt PHASE 5. Die Resistenz- und Symbiose-Werte sind bereits echte Zahlen, aber es spawnen noch keine Tiere oder Misteln.",
+    "Historischer Stand vor PHASE 5: Tiere, Parasiten und Pilz-Symbiose sind inzwischen umgesetzt (siehe PHASE5-ERGEBNIS.html/.md). Sturm-/pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse bleiben der späteren vollen Simulation vorbehalten.",
     "Xvfb + opengl3/llvmpipe ist ein Software-Rasterizer und nur für reproduzierbare Renders genutzt; Ziel-Renderer des Projekts bleibt Forward+ / Vulkan. Das Tau-Bild verwendet --fixed-fps 10, damit der 3,5-s-Übergang in 25 Frames sichtbar wird.",
     "Keine neuen externen Assets, Addons oder C#-Dateien. Schneeflocken, GraphNodes und Linien werden zur Laufzeit gezeichnet; alle Pfade sind relativ.",
     "Die ZIP im Ordner deliverables/ ist der eingefrorene Lieferstand der Fixrunde. Die vorherige waldspiel-PHASE4.zip bleibt als historischer Stand erhalten.",
@@ -128,7 +128,7 @@ def build_md() -> str:
     protocol = (ROOT / "PHASE4-TESTPROTOKOLL.txt").read_text(encoding="utf-8")
     out = ["# PHASE 4 — Ergebnis + Fixrunde", "",
            "**Godot 4.7.2 stable · GDScript · Forward+/Vulkan · 2026-11-05**  ",
-           "15 GraphEdit-Knoten, echte Glucose-Kosten und Effekte, Save v5 — plus Fixrunde: AUTO aus, sichtbare Skill-Blätter, längerer Schnee und sanfter Übergang zu Regen. **PHASE 5 wurde nicht begonnen.**", "",
+           "15 GraphEdit-Knoten, echte Glucose-Kosten und Effekte, Save v5 — plus Fixrunde: AUTO aus, sichtbare Skill-Blätter, längerer Schnee und sanfter Übergang zu Regen. *Historischer Stand vor PHASE 5; aktueller Bericht: `PHASE5-ERGEBNIS.html/.md`.*", "",
            "## 1 · Screenshots (echte Godot-Renders)", ""]
     for f, title, sub in SHOTS:
         out += [f"### {title}", f"*{sub}*", "", f"![{title}](screenshots/{f})", ""]
@@ -149,7 +149,7 @@ def build_md() -> str:
             "- `PHASE4-ERGEBNIS.html` / `.md`, `PHASE4-TESTPROTOKOLL.txt`, `DECISIONS.md` §§64–69, `README.md`, `GODOT-IMPORT.txt`",
             "- `screenshots/p4_*.png` (6 Renders), `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`",
             "- Neue/geänderte Quellen der Fixrunde: `Global.gd`, `GrowthSystem.gd`, `Tree.gd`, `SkillTree.gd`, `tools/generate_skilltree.gd`, `data/skilltrees/oak.tres`, `RainEffect.gd`, `HUD.gd`, `EventBus.gd`, `Main.gd`, `localization.csv`",
-            "", "**Nächster Schritt: PHASE 5 — Tiere, Parasiten, Pilz-Symbiose, pH/Katastrophen (noch nicht begonnen).**", ""]
+            "", "**PHASE 5 ist inzwischen umgesetzt — siehe `PHASE5-ERGEBNIS.html` / `.md`.**", ""]
     return "\n".join(out)
 
 
@@ -211,7 +211,7 @@ def build_html() -> str:
   <li><code class="inl">screenshots/p4_*.png</code>, <code class="inl">tests/Phase4Smoke.gd</code>, <code class="inl">tools/generate_skilltree.gd</code>, <code class="inl">tools/build_phase4_report.py</code></li>
 </ul>
 
-<footer><strong>PHASE 5 wurde nicht begonnen.</strong> Als Nächstes: Tiere, Parasiten, Pilz-Symbiose sowie pH-/N-P-K-/Mykorrhiza-/Katastrophen-Simulation. Die Resistenzwerte sind bereits als echte Zahlen vorbereitet.</footer>
+<footer><strong>Historischer Stand vor PHASE 5.</strong> Tiere, Parasiten und Pilz-Symbiose sind inzwischen umgesetzt; Details im aktuellen <code>PHASE5-ERGEBNIS.html</code>. Sturm-/pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse bleiben einer späteren Ausbaustufe vorbehalten.</footer>
 </div></body></html>
 """
 

@@ -44,18 +44,6 @@ var trunk_tiles: int = 0
 var season: int = 0
 var growth_blocked: bool = false
 
-## PHASE 4: vom globalen Skilltree per apply_effect(tree_instance)
-## gesetzte, PRO INSTANZ gespeicherte Wirksfaktoren. Default 1.0 haelt alle
-## P0-P3/REV-Smokes unveraendert, solange kein Knoten freigeschaltet ist.
-var skill_glucose_mult: float = 1.0
-var skill_water_consumption_mult: float = 1.0
-var skill_root_water_mult: float = 1.0
-var skill_max_leaves_bonus: int = 0
-## PHASE-4-FIX: wie viele Skill-Blaetter dieser Instanz bereits gutgeschrieben
-## wurden. Verhindert, dass apply_effect() bei jedem Refresh erneut Blaetter
-## erzeugt (und macht Save/Load doppelter Boni sicher).
-var skill_leaf_grants: int = 0
-
 ## PHASE 2: alle Segmente; root_count == root_segments.size().
 var root_segments: Array[RootSegment] = []
 
@@ -132,24 +120,19 @@ func _sprite(path: String, pos: Vector2, parent: Node2D) -> Sprite2D:
 # --------------------------------------------------------------------------- #
 # Wachstum (PHASE 1 API bleibt erhalten)
 # --------------------------------------------------------------------------- #
-func add_trunk_tile() -> bool:
+func add_trunk_tile() -> void:
 	if trunk_tiles >= MAX_TRUNK:
-		return false
+		return
 	var spr := _sprite(TRUNK_PATH,
 		Vector2(0.0, -16.0 * float(trunk_tiles + 1)), _trunk)
 	_trunk_sprites.append(spr)
 	trunk_tiles += 1
 	_refresh_growth_visuals()
-	return true
 
 
-func add_leaf() -> bool:
-	# PHASE-4-FIX: dieselbe Obergrenze wie can_grow("leaf") verwenden!
-	# Vorher blockte diese Funktion bei 12, waehrend can_grow() mit dem
-	# Skill "Kronenwuchs" bereits 14 erlaubte. grow_part() meldete trotzdem
-	# Erfolg -> AUTO zahlte Glucose, ohne dass ein Blatt sichtbar wurde.
-	if leaves_count >= MAX_LEAVES + skill_max_leaves_bonus:
-		return false
+func add_leaf() -> void:
+	if leaves_count >= MAX_LEAVES:
+		return
 	var i := leaves_count
 	var col := i % 4
 	var row := int(i / 4)
@@ -157,17 +140,16 @@ func add_leaf() -> bool:
 	_sprite(LEAF_PATH, pos, _leaves)
 	leaves_count += 1
 	_refresh_growth_visuals()
-	return true
 
 
 ## PHASE 2: erzeugt ein echtes RootSegment statt nur einen Zaehler zu erhoehen.
-func add_root() -> bool:
+func add_root() -> void:
 	if not can_grow("root"):
-		return false
+		return
 	if root_segments.is_empty():
 		_add_root_segment(Vector2i.ZERO, Vector2i(0, 1), null, true)
-		return true
-	return grow_root_from(deepest_tip(), true) != null
+	else:
+		grow_root_from(deepest_tip(), true)
 
 
 ## PHASE 3: Winter = Laubbaeume kahl, kein Wachstum, keine Fotosynthese.
@@ -191,11 +173,9 @@ func can_grow(part: String) -> bool:
 	if growth_blocked:
 		return false
 	if part == "root":
-		# root_count ist der gespeicherte Zaehler; max() verhindert, dass ein
-		# Smoke-Debug-Zustand trotz "voll" noch can_grow() meldet.
-		return maxi(root_segments.size(), root_count) < MAX_ROOTS
+		return root_segments.size() < MAX_ROOTS
 	if part == "leaf":
-		return leaves_count < MAX_LEAVES + skill_max_leaves_bonus
+		return leaves_count < MAX_LEAVES
 	if part == "trunk":
 		return trunk_tiles < MAX_TRUNK
 	return false
@@ -204,23 +184,15 @@ func can_grow(part: String) -> bool:
 func grow_part(part: String) -> bool:
 	if not can_grow(part):
 		return false
-	# PHASE-4-FIX: nur bei ECHTEM Zuwachs true zurueckgeben. Sonst zieht
-	# GrowthSystem.glucose ab, obwohl z.B. kein freies Wurzel-Tile existiert.
 	if part == "root":
-		return add_root()
-	if part == "leaf":
-		return add_leaf()
-	if part == "trunk":
-		return add_trunk_tile()
-	return false
-
-
-## PHASE-4-FIX: "Kronenwuchs" gibt die +2 Blaetter SOFORT sichtbar, nicht nur
-## eine hoehere Obergrenze. Idempotent ueber skill_leaf_grants.
-func apply_skill_leaf_grants(total: int) -> void:
-	var want := clampi(total, 0, skill_max_leaves_bonus)
-	while skill_leaf_grants < want and add_leaf():
-		skill_leaf_grants += 1
+		add_root()
+	elif part == "leaf":
+		add_leaf()
+	elif part == "trunk":
+		add_trunk_tile()
+	else:
+		return false
+	return true
 
 
 # --------------------------------------------------------------------------- #
@@ -288,15 +260,6 @@ func _refresh_growth_visuals() -> void:
 # --------------------------------------------------------------------------- #
 # Debug-Hooks (Smoke-Test Revision 4)
 # --------------------------------------------------------------------------- #
-## Smoke-Test: alle drei Wachstums-Caps direkt setzen, damit AUTO keine
-## Wachstumsmoeglichkeit mehr findet. Nur fuer Headless-Tests gedacht.
-func debug_mark_full() -> void:
-	leaves_count = MAX_LEAVES + skill_max_leaves_bonus
-	trunk_tiles = MAX_TRUNK
-	root_count = MAX_ROOTS
-	root_segments.clear()
-
-
 func debug_stage() -> int:
 	return growth_stage()
 
@@ -427,18 +390,16 @@ func photosynthesize(dt: float, sunlight: float = 1.0,
 	if sunlight <= 0.0 or growth <= 0.0:
 		return
 	glucose += float(leaves_count) * species.photosynthesis_efficiency \
-		* sunlight * growth * Global.difficulty_factor("photosynthesis") \
-		* skill_glucose_mult * dt
+		* sunlight * growth * Global.difficulty_factor("photosynthesis") * dt
 	water = maxf(water - species.water_consumption_rate \
-		* Global.difficulty_factor("water_consumption") \
-		* skill_water_consumption_mult * dt, 0.0)
+		* Global.difficulty_factor("water_consumption") * dt, 0.0)
 
 
 ## rate kommt von WaterSystem (Boden + Reservoir + Regen).
 func absorb_water(dt: float, rate: float) -> void:
 	if not _built:
 		return
-	water = clampf(water + rate * skill_root_water_mult * dt, 0.0, 100.0)
+	water = clampf(water + rate * dt, 0.0, 100.0)
 
 
 # --------------------------------------------------------------------------- #
@@ -475,21 +436,11 @@ func to_dict() -> Dictionary:
 		"leaves": leaves_count,
 		"roots": root_count,
 		"trunk": trunk_tiles,
-		"skill_leaf_grants": skill_leaf_grants,
 		"root_segments": segments,
 	}
 
 
 func from_dict(d: Dictionary) -> void:
-	# PHASE-4-FIX: geskillte Blattobergrenze muss VOR add_leaf() bekannt sein,
-	# sonst werden gespeicherte Blaetter 13/14 beim Laden verworfen.
-	var st := SkillTree.instance
-	if st != null:
-		skill_glucose_mult = st.modifier("glucose")
-		skill_water_consumption_mult = st.modifier("water_consumption")
-		skill_root_water_mult = st.modifier("root_water")
-		skill_max_leaves_bonus = int(roundf(st.bonus("max_leaves")))
-	skill_leaf_grants = int(d.get("skill_leaf_grants", 0))
 	glucose = float(d.get("glucose", 0.0))
 	water = float(d.get("water", species.starting_water))
 	health = float(d.get("health", 100.0))

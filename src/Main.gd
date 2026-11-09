@@ -22,6 +22,9 @@ extends Node2D
 @onready var _rain: RainEffect = $RainLayer/RainEffect
 @onready var _skill_tree: SkillTree = $Systems/SkillTree
 @onready var _skill_ui: SkillTreeUI = $SkillTreeUI
+@onready var _forest_health: ForestHealth = $Systems/ForestHealth
+@onready var _wildlife: WildlifeSystem = $World/Wildlife
+@onready var _parasites: ParasiteSystem = $World/Parasites
 
 var _last_fit: Vector2i = Vector2i.ZERO
 
@@ -42,11 +45,18 @@ func _ready() -> void:
 	var state := _chunk_manager.world_state
 	_growth.setup(_chunk_manager.generator, _time)
 	_water.setup(state, _chunk_manager.generator, _time)
+	_forest_health.setup(_wildlife, _parasites, _skill_tree)
+	_wildlife.setup(_chunk_manager.generator, _trees, _camera, _time,
+		_season, _interaction, _skill_tree, _forest_health, _parasites)
+	_parasites.setup(_chunk_manager.generator, _trees, _time, _skill_tree,
+		_forest_health)
 	_interaction.setup(_camera, _chunk_manager, _trees, _bird_layer,
-		_water, _growth, state, _ghost, _season)
+		_water, _growth, state, _ghost, _season, _wildlife, _parasites)
 	_season.setup(_chunk_manager, _trees, _camera, _time, _interaction)
-	_save.setup(_interaction, _chunk_manager, state, _time, _season)
-	_hud.setup(_interaction, _growth, _water, _time, _save, state)
+	_save.setup(_interaction, _chunk_manager, state, _time, _season,
+		_wildlife, _parasites, _forest_health)
+	_hud.setup(_interaction, _growth, _water, _time, _save, state,
+		_wildlife, _forest_health, _parasites)
 	_skill_ui.setup(_interaction)
 	_start_menu.setup(_should_show_start_menu(args))
 	_apply_presets(args)
@@ -99,9 +109,16 @@ func _ready() -> void:
 			_chunk_manager, _camera, state, _time, _season, _save,
 			_rain, _hud)
 		add_child(smoke4)
+	elif args.has("--phase5-smoke"):
+		var smoke5 = preload("res://tests/Phase5Smoke.gd").new()
+		smoke5.setup(_interaction, _skill_tree, _forest_health, _wildlife,
+			_parasites, _save, _time, _season, _growth, _water,
+			_chunk_manager, _camera, state, _hud)
+		add_child(smoke5)
 
-	print("[Main] PHASE 4 bereit: %d Eicheln, Skilltree, Schnee im Winter, AUTO aus (MANUELL)." % [
-		_interaction.get_seed_count()])
+	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
+		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
+		_forest_health.value * 100.0])
 
 
 ## Gleichmaessig auf die Fensterflaeche skalieren. Mit aspect="expand" wird
@@ -177,6 +194,64 @@ func _apply_presets(args: PackedStringArray) -> void:
 			" scale=", get_tree().root.content_scale_factor,
 			" mode=", get_tree().root.content_scale_mode,
 			" aspect=", get_tree().root.content_scale_aspect)
+	# --- PHASE 5: Tiere, Symbiose, Parasiten ---------------------------------
+	if args.has("--phase5-shot-wildlife"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 360.0))
+		_p5_grow_tree(0.0, 2)
+		_wildlife.debug_step(12.0)
+		_forest_health.recompute()
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_FOOD_GAINED"))
+	elif args.has("--phase5-shot-health"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 360.0))
+		_p5_grow_tree(-420.0, 6)
+		_p5_grow_tree(0.0, 6)
+		_p5_grow_tree(420.0, 6)
+		_forest_health.recompute()
+		_wildlife.debug_sync_advanced()
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_WILDLIFE_ARRIVED"))
+	elif args.has("--phase5-shot-parasite"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.45)
+		_camera.teleport_to(Vector2(0.0, 330.0))
+		var ptree := _p5_grow_tree(0.0, 6)
+		_wildlife.debug_force_advanced()
+		_parasites.debug_infest(ptree, Parasite.Kind.MISTLETOE)
+		_parasites.debug_infest(ptree, Parasite.Kind.WORM)
+		_wildlife.debug_pose_help(ptree)
+		_forest_health.recompute()
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_WOODPECKER_HELP"))
+	elif args.has("--phase5-shot-fungus"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.35)
+		_camera.teleport_to(Vector2(0.0, 360.0))
+		_p5_grow_tree(0.0, 8)
+		_skill_tree.debug_unlock("root_efficiency")
+		_skill_tree.debug_unlock("leaf_efficiency")
+		_skill_tree.debug_unlock("symbiosis")
+		_skill_tree.debug_unlock("mushroom_node")
+		_parasites.debug_sync_fungi()
+		_forest_health.recompute()
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_FUNGUS_SPAWN"))
+	elif args.has("--phase5-shot-remote"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(0.7)
+		_camera.teleport_to(Vector2(1200.0, 380.0))
+		_p5_grow_tree(0.0, 4)
+		_wildlife.debug_force_advanced()
+		_wildlife.debug_pose_carry()
+		_wildlife.debug_force_remote_seed()
+		_forest_health.recompute()
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_TREE_PLANTED_REMOTE"))
+
 	# --- PHASE 4: Skilltree + Winter-Schnee ----------------------------------
 	if args.has("--phase4-shot-skilltree"):
 		_camera.set_zoom_immediate(1.0)
@@ -412,3 +487,41 @@ func _apply_presets(args: PackedStringArray) -> void:
 	elif args.has("--phase0-shot-pan"):
 		_camera.set_zoom_immediate(0.75)
 		_camera.teleport_to(Vector2(4300.0, 500.0))
+
+
+# --------------------------------------------------------------------------- #
+# PHASE 5: deterministische Screenshot-Zustaende
+# --------------------------------------------------------------------------- #
+func _p5_freeze() -> void:
+	_growth.set_process(false)
+	_water.set_process(false)
+	_season.set_process(false)
+	_rain.set_process(false)
+	_time.set_process(false)
+	_hud.set_process(false)
+	_wildlife.set_process(false)
+	_parasites.set_process(false)
+	_parasites.debug_set_spawns_frozen(true)
+
+
+func _p5_reset_world() -> void:
+	_p5_freeze()
+	Global.set_difficulty(Global.Difficulty.NORMAL)
+	Global.auto_mode = false
+	_skill_tree.reset()
+	_interaction.clear_trees()
+	_interaction.set_seed_count(0)
+	_wildlife.reset()
+	_parasites.debug_clear()
+	_parasites.debug_sync_fungi()
+	_time.debug_set_season(TimeManager.Season.SPRING, 1, 0.20)
+	_forest_health.recompute()
+	_hud.refresh()
+
+
+func _p5_grow_tree(p_x: float, leaves: int) -> BaseTree:
+	var t := _interaction.spawn_tree_at(Vector2(p_x, 0.0), {})
+	while t.leaves_count < leaves and t.add_leaf():
+		pass
+	t.set_season(TimeManager.Season.SPRING)
+	return t

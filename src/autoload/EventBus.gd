@@ -47,11 +47,3 @@ signal time_scale_changed(scale: float, paused: bool)
 signal difficulty_changed(difficulty: int)
 signal acorn_dropped(position: Vector2)
 signal seed_found(id: String, buried: bool)
-
-# --- PHASE 4: Skilltree + Winter-Schnee ------------------------------------
-signal skill_unlocked(node_id: String)
-signal skilltree_changed
-signal skilltree_open_requested
-signal precipitation_mode_changed(snow: bool)
-## PHASE-4-FIX: 0.0 = Regen, 1.0 = Schnee, dazwischen = sanfter Uebergang.
-signal precipitation_blend_changed(snow_blend: float)

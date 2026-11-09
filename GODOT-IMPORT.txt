@@ -1,4 +1,4 @@
-WALD-REGENERATION — PHASE 4 + FIXRUNDE — Godot 4.7.2 stable
+WALD-REGENERATION — PHASE 5 — Godot 4.7.2 stable
 ======================================================================
 
 Dieses ZIP enthaelt das KOMPLETTE, lauffaehige Projekt. project.godot liegt
@@ -26,17 +26,18 @@ Steuerung:
   Linksklick Eichel-Icon   NUR HIER: Inventar-Eichel AUFNEHMEN, sie schwebt
     (HUD)                   dann an der Maus. Ein Klick irgendwo im Bild
                            nimmt KEINE Eichel aus dem Inventar.
-  Linksklick beim Tragen   Eichel NUR AUF DEM BODEN platzieren (nicht im
-                           Himmel / nicht ueber dem HUD)
-  Linksklick Huegel        PHASE 3: flach vergrabene Eichel (nur mit Wurzel
-                           in Reichweite erreichbar)
+  Linksklick beim Tragen   Eichel NUR AUF DEM BODEN platzieren
+  Linksklick Huegel        PHASE 3: flach vergrabene Eichel
+  Linksklick Tier/Huegel   PHASE 5: Wurm, Ameise, Specht, Eichhoernchen,
+                           Ameisenhuegel, Mistel/Wurmbefall oder Pilz-Patch
+                           geben eine Info (Toast).
+  Rechtsklick              Tier-/Parasiten-Info, Baumwerte oder Bodenmaterial
   Rechtsklick / Esc        getragene Eichel zuruecklegen / Info zu Huegel
   MANUELL: Wurzel klicken  Wurzel waechst in Erd-Richtung, Kosten nach Boden
                            (Ghost-Preview zeigt Ziel + Preis)
   HUD AUTO/MANUELL         Start = MANUELL. AUTO per Button zuschaltbar;
                            ein ausgewachsener Baum verbraucht dann trotzdem
                            KEINE Glucose mehr.
-  Rechtsklick (sonst)      Info (Baumwerte / Bodenmaterial + Kosten)
   WASD / Maus am Rand      Kamera schwenken
   Mausrad                  Zoom 0.5x … 2.0x
   R                        Niederschlag sofort (Dev-Hook): REGEN im Fruehling/
@@ -46,57 +47,47 @@ Steuerung:
   Esc (Skilltree offen)    Skilltree schliessen
   Mittlere Maustaste       Skilltree-Graph verschieben
   Mausrad / + / - / 1:1    Skilltree-Graph zoomen (0.35x … 1.8x)
-  Knoten-Button klicken    Mutation gegen Glucose freischalten, wenn alle
-                           Vorbedingungen erfuellt sind
+  Knoten-Button klicken    Mutation gegen Glucose freischalten
   F11                      Vollbild an/aus
   HUD                      AUTO/MANUELL, DE/EN, Speichern, Laden
 
-NEU IN DER PHASE-4-FIXRUNDE:
-  * AUTO ist STANDARDMÄSSIG AUS (MANUELL). Es bleibt per HUD-Button
-    zuschaltbar und funktioniert dann wie vorher. Alte Saves ohne das Feld
-    laden ebenfalls MANUELL.
-  * Ein AUSGEWACHSENER BAUM verbraucht keine Glucose mehr. Ursache war:
-    can_grow("leaf") erlaubte mit Kronenwuchs 14 Blaetter, add_leaf() blockte
-    aber bei 12, grow_part() meldete trotzdem Erfolg. Jetzt geben alle
-    Wachstumsfunktionen nur bei ECHTEM Zuwachs true zurueck.
-  * "Kronenwuchs" gibt +2 Blaetter SOFORT SICHTBAR auf allen Eichen (auch neu
-    gespawnten), nicht nur eine hoehere Obergrenze. skill_leaf_grants
-    verhindert Duplikate bei Refresh und Save/Load; Feld liegt in Save v5.
-  * Schnee bleibt 5–9 s liegen (vorher 1,6–3,2 s), Puffer 320 Punkte.
-  * Wird es MITTEN im Schneefall Fruehling, gibt es keinen harten Schnitt:
-    snow_blend laeuft in 3,5 s von Schnee zu Regen. Flocken, Regenlinien,
-    Spritzer und HUD-Text werden ueberblendet; liegender Schnee schmilzt
-    beschleunigt. Toast/HUD: "Der Schnee geht langsam in Regen ueber."
-  * Neues Screenshot-Preset --phase4-shot-thaw (Xvfb mit --fixed-fps 10).
+NEU IN PHASE 5 — TIERE & SYMBIOSE:
+  * Oben links: Panel mit WALD-GESUNDHEIT (Balken), FUTTER, TIERE,
+    PARASITEN und PILZEN.
+    Gesundheit = 0.02*Blaetter + 0.12*Baeume + 0.08*Tierarten
+                 + 0.04*Pilz-Patches (0..1).
+  * Wurm + Ameise sind IMMER da (2 + 2 Tiere + 1 Ameisenhuegel).
+    Sie geben in der StateMachine EAT echtes FUTTER; die Ameisenkolonie
+    vermehrt sich langsam, der Huegel waechst mit.
+  * Ab Wald-Gesundheit > 50 % siedeln sich SPECHT und EICHHOERNCHEN an;
+    unter 50 % ziehen sie wieder weiter.
+  * SPECHT: reagiert auf Parasiten-Befall, fliegt in HELP_TREE zum Baum
+    und pickt Mistel/Wurmbefall weg. Anklickbar mit Zustands-Info.
+  * EICHHOERNCHEN: traegt in CARRY eine Eichel in Chunk 1 (+2304 px) und
+    pflanzt dort einen neuen, echten Baum.
+  * MISTEL und WURM-BEFALL ziehen pro simulierter Sekunde Glucose ab.
+    LEICHT bleibt befallfrei; NORMAL/SCHWER spawnen abhaengig von
+    disaster_rate und Resistenz. Parasiten-Resistenz oder Specht entfernen.
+    Frei lebende Würmer bleiben nuetzliche Futter-Tiere.
+  * PILZ-SYMBIOSE: "Symbiose" schaltet "Pilz-Knoten" frei; dieser gibt
+    +15 % NAEHRSTOFFE (BaseTree.nutrient_mult) und zeichnet sichtbare
+    FungusPatch-Pilze an allen Eichen. Fotosynthese steigt echt.
+  * Alle Tiere/Pilze/Parasiten weichen Baum-Bounds aus bzw. sind anwaehlbar;
+    einfache StateMachine: IDLE / WANDER / EAT / HELP_TREE / CARRY.
+  * Savegame FORMAT v6 speichert Tiere, Futter, Kolonie, Huegel und Parasiten.
+    v5/v4/v3/v2/v1-Spielstaende bleiben lesbar.
+  * 35 neue DE/EN-Zeilen in data/localization.csv (171 Zeilen insgesamt).
 
-NEU IN PHASE 4:
-  * Skilltree-UI mit echtem GraphEdit: 15 Knoten, 14 Vorbedingungs-Linien,
-    Zoom/Pan, Minimap, HUD-Button oben rechts und Taste T.
-  * data/skilltrees/oak.tres enthaelt alle 7 Pflicht-Mutationen:
-    Effizientere Wurzeln (+25 % Wasser), Effizientere Blaetter (+20 %
-    Glucose), Symbiose/Pilz-Knoten, Parasiten-/Krankheits-Resistenz,
-    Holz-Haerte (Sturm-Resistenz) und Verbreitung (+30 % Keimrate).
-  * Freischalten kostet Glucose des ausgewaehlten Baums. Der Fortschritt
-    ist GLOBAL PRO ART: alle Eichen teilen ihn, auch neu gespawnte.
-    (Master 4.2: Glucose pro Baum-Instanz, Skilltree pro Art synchron.)
-  * Effekte wirken auf ECHTE Werte: Wasseraufnahme, Fotosynthese,
-    Blatt-Obergrenze, Wurzel-/Stamm-/Blatt-Kosten, Regen- und
-    Reservoir-Faktoren, Winter-Bodenwasser, Eichelfall/Keimung und
-    Wasserverbrauch. Resistenzwerte (z.B. 0.5 = -50 %) sind gespeichert;
-    die Ereignis-Simulation folgt erst in PHASE 5.
-  * Savegame FORMAT v5 speichert Skill-Fortschritt + skill_leaf_grants.
-    v4/v3/v2/v1-Spielstaende bleiben lesbar.
-  * WINTER: SCHNEE statt Regen. 240 langsame weisse Flocken mit leichtem
-    Seitenschwingen, keine blauen Linien, keine Spritzer, keine Rippen.
-    Beim Auftreffen bleiben Schneepunkte auf der exakten Gelaendelinie
-    liegen. HUD/Toast: "Es schneit".
-  * R3-Winterregeln bleiben: KEINE Reservoir-Entnahme, keine passive
-    Versickerung, aber Niederschlag fuellt die Becken weiter auf.
-  * 58 DE/EN-Zeilen in data/localization.csv; Skilltree- und HUD-Texte
-    schalten mit DE/EN um.
-  * Neuer Test: --phase4-smoke (63 OK-Zeilen).
+AUS PHASE 4 + FIXRUNDE (weiterhin enthalten):
+  * GraphEdit-Skilltree mit 15 Knoten / 14 Vorbedingungen, Glucose-Kosten,
+    globale Synchronisation pro Baumart, echte Effekte, DE/EN.
+  * Save v5-Felder (Skills, skill_leaf_grants) bleiben in v6 erhalten.
+  * Winter-Schnee: 5–9 s Liegezeit, 3,5 s sanfter Uebergang zu Regen,
+    keine Spritzer/Rippen im Winter, R3-Reservoir-Regeln unveraendert.
+  * AUTO standardmaessig AUS; ausgewachsener Baum verbraucht keine Glucose.
+  * "Kronenwuchs" gibt +2 sofort sichtbare Blaetter (grant_leaves=2).
 
-NEU IN REVISION 4 / 3 / PHASE 3 / ... bleibt vollstaendig enthalten:
+AUS PHASE 0-3 / REVISION 1-4 (weiterhin enthalten):
   5 Wuchsstufen, 2 Start-Eicheln am Boden, Performance-Fix (1→7 FPS),
   stufenloser Pegel, Winterruhe, Regen-Spritzer, Jahreszeiten, Zeitspulen,
   Samen finden/vergraben, Herbst-Eichelfall, Schwierigkeitsgrade,
@@ -114,29 +105,34 @@ Tests (im Projektordner, OHNE --seed):
   godot --headless --path . -- --rev3-smoke      # 20 OK-Zeilen: OK
   godot --headless --path . -- --rev4-smoke      # 32 OK-Zeilen: OK
   godot --headless --path . -- --phase4-smoke    # 63 OK-Zeilen: OK
+  godot --headless --path . -- --phase5-smoke    # 57 OK-Zeilen: OK
   --------------------------------------------------------------------
-  9 / 9 Smokes OK · 284 OK-Zeilen · 0 FEHLER · 0 SCRIPT ERROR
+  10 / 10 Smokes OK · 341 OK-Zeilen · 0 FEHLER · 0 SCRIPT ERROR
 
-Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed):
-  --phase4-shot-skilltree           (5/15 freigeschaltet, 260 Glucose)
-  --phase4-shot-skilltree-locked    (0/15, gesperrte Vorbedingungen)
-  --phase4-shot-snow                (Winter-Schnee, HUD "Es schneit")
-  --phase4-shot-snow-detail         (Flocken + 5–9 s liegende Punkte)
-  --phase4-shot-thaw                (sanfter Uebergang; --fixed-fps 10)
+Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed,
+--fixed-fps 10):
+  Ohne Preset                          -> screenshots/p5_f5.png
+  --phase5-shot-wildlife               -> screenshots/p5_wildlife.png
+  --phase5-shot-health                 -> screenshots/p5_health.png
+  --phase5-shot-parasite               -> screenshots/p5_parasite.png
+  --phase5-shot-fungus                 -> screenshots/p5_fungus.png
+  --phase5-shot-remote                 -> screenshots/p5_remote.png
+  --phase4-shot-skilltree / -locked / -snow / -snow-detail / -thaw
   --p3-shot-difficulty / -spring / -autumn / -winter / -seeds
   --p3-shot-rain-refill / -bird-mid / -bird-exit
-  --rev2-shot-edges                 (Regression)
+  --rev2-shot-edges
   --rev3-shot-rain-splash / -water-a / -water-b
   --rev4-shot-start / -carry / -stages / -water
-  --p3-debug-sizes                  (Viewport-/Skalierungs-Debug)
-  Ohne Preset: F5-Startbild (screenshots/p4_f5.png, zeigt MANUELL)
+  --p3-debug-sizes                      (Viewport-/Skalierungs-Debug)
 
-Dokumente: README.md, DECISIONS.md (Abschnitte 1–69),
-PHASE4-ERGEBNIS.html/.md, PHASE4-TESTPROTOKOLL.txt sowie die historischen
-REVISION4-/REVISION3-/PHASE3-/REVISION2-/REVISION1-/PHASE0-/PHASE1-/PHASE2-
-Berichte. Die HTML-Berichte enthalten die Bilder als data-URIs und
+Dokumente: README.md, DECISIONS.md (Abschnitte 1–70),
+PHASE5-ERGEBNIS.html/.md, PHASE5-TESTPROTOKOLL.txt sowie die historischen
+PHASE4-/REVISION4-/REVISION3-/PHASE3-/REVISION2-/REVISION1-/PHASE0-/PHASE1-/
+PHASE2-Berichte. Die HTML-Berichte enthalten die Bilder als data-URIs und
 funktionieren offline.
 
 Hinweis: user://savegame.json liegt NICHT im ZIP, sondern im
 Godot-Benutzerdatenordner und wird beim ersten Speichern angelegt.
-PHASE 4 + Fixrunde sind abgeschlossen; PHASE 5 wurde NICHT begonnen.
+PHASE 5 ist abgeschlossen. Sturm-/Duerr-/Borkenkaefer-Ereignisse sowie
+pH-/N-P-K-/Mykorrhiza-Simulation bleiben der spaeteren "vollen Simulation"
+(Master-Punkt 4.2) vorbehalten; es wurde keine PHASE 6 begonnen.
