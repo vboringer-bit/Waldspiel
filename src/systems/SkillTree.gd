@@ -135,6 +135,10 @@ func apply_effect(_node_id: String, tree_instance: Node) -> void:
 	t.skill_water_consumption_mult = modifier("water_consumption")
 	t.skill_root_water_mult = modifier("root_water")
 	t.skill_max_leaves_bonus = int(roundf(bonus("max_leaves")))
+	# PHASE-4-FIX: "Kronenwuchs" schenkt die +2 Blaetter sofort sichtbar.
+	# Idempotent, weil apply_effect() bei jedem Refresh / Spielstand-Laden
+	# erneut auf allen Baeumen laeuft.
+	t.apply_skill_leaf_grants(int(roundf(bonus("grant_leaves"))))
 
 
 func _apply_all(tree: Node) -> void:

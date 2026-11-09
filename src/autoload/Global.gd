@@ -17,7 +17,10 @@ var difficulty: Difficulty = Difficulty.NORMAL
 ## PHASE 3: Schwierigkeit ist VOR Spielstart waehlbar (StartMenu) und danach
 ## jederzeit im HUD. --difficulty=... setzt sie fuer Tests/Screenshots.
 var difficulty_chosen: bool = false
-var auto_mode: bool = true
+## PHASE-4-FIX: Standard = MANUELL. Der Spieler schaltet AUTO bewusst im HUD ein.
+## Grund: sonst kauft AUTO bei ~10 Glucose sofort Wachstum und setzt den Zaehler
+## fuer den Spieler ueberraschend auf 0 zurueck.
+var auto_mode: bool = false
 var locale: String = "de":
 	set(value):
 		locale = value

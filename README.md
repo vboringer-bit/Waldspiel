@@ -3,9 +3,9 @@
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen, natürliche Vermehrung, ein **Skilltree mit 15 Mutationen** und **Schnee statt Regen im Winter**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · **PHASE 4 ✅ (Skilltree + Winter-Schnee, 9/9 Smokes OK)** · PHASE 5 ⏳ (**noch nicht begonnen**)
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · **PHASE 4 ✅ + Fixrunde ✅ (9/9 Smokes OK)** · PHASE 5 ⏳ (**noch nicht begonnen**)
 
-**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-PHASE4.zip` (ersetzt `waldspiel-REVISION4.zip` als aktuellen Stand). Dazu `PHASE4-ERGEBNIS.md` / `.html` mit Screenshots und Code-Snippets.
+**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-PHASE4-FIX.zip` (aktueller Stand; `waldspiel-PHASE4.zip` bleibt als historischer Stand erhalten). Dazu aktualisierte `PHASE4-ERGEBNIS.md` / `.html` mit 6 Screenshots und Code-Snippets.
 
 ---
 
@@ -13,11 +13,21 @@
 
 1. **GraphEdit-Skilltree mit 15 Knoten.** `data/skilltrees/oak.tres` enthält die 7 Pflicht-Mutationen und 8 weitere Knoten als echte `SkillNodeData`-Resources, dazu **14 Vorbedingungs-Linien**. `SkillTreeUI.gd` zeigt sie als zoombaren, pannbaren Graphen (`0.35× … 1.8×`, Minimap, mittlere Maustaste, Mausrad, `+ / − / 1:1`). Der HUD-Button oben rechts oder **`T`** öffnet, `Esc` schließt. Die eingebaute GraphEdit-Leiste ist zugunsten eigener Buttons ausgeblendet, damit sie nicht über dem Titel liegt.
 2. **Freischalten kostet echte Glucose.** `SkillTree.can_unlock()` prüft Vorbedingung + Kontostand des ausgewählten Baums; `unlock()` zieht exakt die Knotenkosten ab. Wie in Master-Punkt 4.2 festgelegt bleibt Glucose **pro Baum-Instanz**, der Skilltree-Fortschritt dagegen **global pro Art**: alle Eichen (auch neu gespawnte) bekommen denselben Stand. `SaveManager` speichert ihn in **Format v5**; alte v4/v3/v2/v1-Saves bleiben lesbar.
-3. **Effekte verändern echte Werte.** `root_efficiency` → `12,5 Wasser/s` statt `10`; `leaf_efficiency` → Fotosynthese × `1,20`; `crown_growth` → `MAX_LEAVES + 2`; `spread` → `spread_bonus = 0,30` für Eichelfall/Keimung; `deep_roots`/`trunk_saver` → −20 % Wachstumskosten; `rain_absorption`/`reservoir_tap`/`winter_hardy` → echte Wasserfaktoren; Resistenzen → gespeicherte −50 %-Werte und −10 % Wasserverbrauch. Die Ereignis-Simulation für Parasiten/Krankheit/Sturm/Pilze bleibt bewusst **PHASE 5**.
-4. **Im Winter schneit es.** Dasselbe Niederschlags-Event zeichnet jetzt langsame, seitlich schwingende **weiße Flocken** statt blauer Regenlinien, legt beim Auftreffen auf der echten Geländelinie kurz Schneepunkte ab und erzeugt **keine Spritzer/Rippen**. HUD und Toast sagen „Es schneit". Die R3-Regeln bleiben: keine Reservoir-Entnahme, keine Versickerung, aber Auffüllen läuft weiter. Im Frühling regnet es wieder mit Spritzern.
-5. **Alles bleibt lauffähig.** DE/EN (57 neue Lokalisierungszeilen), Save/Load, Zeitspulen, 5 Chunks, Nearest, Startmenü und alle 8 bisherigen Smokes sind unverändert geprüft. `--phase4-smoke` ergänzt **50 Checks**; insgesamt **9/9 Smokes · 271 Checks · 0 Fehler**. Screenshots: `p4_f5.png`, `p4_skilltree.png`, `p4_skilltree-locked.png`, `p4_snow.png`, `p4_snow-detail.png`.
+3. **Effekte verändern echte Werte.** `root_efficiency` → `12,5 Wasser/s` statt `10`; `leaf_efficiency` → Fotosynthese × `1,20`; `crown_growth` → **+2 sofort sichtbare Blätter** und `MAX_LEAVES + 2`; `spread` → `spread_bonus = 0,30` für Eichelfall/Keimung; `deep_roots`/`trunk_saver` → −20 % Wachstumskosten; `rain_absorption`/`reservoir_tap`/`winter_hardy` → echte Wasserfaktoren; Resistenzen → gespeicherte −50 %-Werte und −10 % Wasserverbrauch. Die Ereignis-Simulation für Parasiten/Krankheit/Sturm/Pilze bleibt bewusst **PHASE 5**.
+4. **Im Winter schneit es.** Dasselbe Niederschlags-Event zeichnet jetzt langsame, seitlich schwingende **weiße Flocken** statt blauer Regenlinien, legt beim Auftreffen auf der echten Geländelinie **5–9 s** Schneepunkte ab und erzeugt **keine Spritzer/Rippen**. HUD und Toast sagen „Es schneit". Die R3-Regeln bleiben: keine Reservoir-Entnahme, keine Versickerung, aber Auffüllen läuft weiter. Wird es mitten im Ereignis Frühling, blendet der Niederschlag über **3,5 s** sanft zu Regen über; danach sind Spritzer wieder aktiv.
+5. **Alles bleibt lauffähig.** DE/EN (58 Lokalisierungszeilen), Save/Load, Zeitspulen, 5 Chunks, Nearest, Startmenü und alle 8 bisherigen Smokes sind unverändert geprüft. Nach der Fixrunde: `--phase4-smoke` **63 OK-Zeilen**, insgesamt **9/9 Smokes · 284 OK-Zeilen · 0 Fehler**. Screenshots: `p4_f5.png`, `p4_skilltree.png`, `p4_skilltree-locked.png`, `p4_snow.png`, `p4_snow-detail.png`, `p4_thaw.png`.
 
 **PHASE 5 wurde nicht begonnen** — keine Tiere, kein Mistel-Befall, keine Pilz-/pH-/N-P-K-/Katastrophen-Simulation.
+
+---
+
+## PHASE-4-FIXRUNDE — drei gemeldete Punkte
+
+1. **Glucose bleibt stehen.** `AUTO` ist jetzt **standardmäßig aus** (HUD zeigt `MANUELL`); nach bewusstem Umschalten funktioniert es wie vorher. Zusätzlich war ein echter Bug die Ursache für Verbrauch am ausgewachsenen Baum: `can_grow("leaf")` erlaubte mit dem Skill 14 Blätter, `add_leaf()` blockte aber bei 12 — `grow_part()` meldete trotzdem Erfolg und AUTO zog 10 Glucose ab, ohne dass ein Blatt entstand. Jetzt geben alle Wachstumsfunktionen nur bei **echtem Zuwachs** `true` zurück; ein voller Baum verbraucht **0 Glucose**.
+2. **Kronenwuchs zeigt sofort +2 Blätter.** Der Knoten hat zusätzlich `grant_leaves = 2`; `SkillTree.apply_effect()` schenkt die Blätter direkt auf **allen** Eichen (auch neu gespawnten). `skill_leaf_grants` verhindert Duplikate bei Refresh und Save/Load und liegt mit in Format v5.
+3. **Schnee liegt länger und taut sanft.** Liegezeit **5–9 s** statt 1,6–3,2 s. Wird es **mitten im Schneefall Frühling**, läuft `snow_blend` in **3,5 s** von Schnee zu Regen: Flocken und erste Regenlinien sind gleichzeitig sichtbar, liegende Punkte schmelzen beschleunigt statt hart gelöscht zu werden. HUD/Toast: „Der Schnee geht langsam in Regen ueber." Neues Screenshot-Preset `--phase4-shot-thaw` (`--fixed-fps 10`).
+
+Die R3-Winterregeln, alle alten Smokes, Save/Load und DE/EN bleiben erhalten. **PHASE 5 wurde weiterhin nicht begonnen.**
 
 ---
 
@@ -69,7 +79,7 @@
 | **HUD `x1 / x3 / x10`** | **PHASE 3:** Zeitspulen; alle Simulationen nutzen `delta * time_scale` |
 | **HUD „Schwierigkeit: …“** | **PHASE 3:** LEICHT → NORMAL → SCHWER → LEICHT |
 | `F11` | Vollbild an/aus |
-| HUD | AUTO/MANUELL, DE/EN, Speichern, Laden |
+| HUD | AUTO/MANUELL (**Start: MANUELL**), DE/EN, Speichern, Laden |
 
 **Vogel-Timing:** Die **erste platzierte** Eichel wird weiterhin vom Vogel geklaut — aber erst **nach** dem Platzierungsversuch. **PHASE-3-Korrektur:** er fliegt jetzt kamera-/viewport-abhängig **bis hinter den linken Bildrand**, statt mitten in der Luft zu verschwinden. Danach keimt die zweite Eichel.
 
@@ -194,7 +204,7 @@ Reproduzierbare Screenshots (Godot + Xvfb, `--seed=20261105 --windowed`):
 ## ZIP (vollständig, Godot-importierbar)
 
 ```bash
-python3 tools/build_zip.py PHASE4   # -> deliverables/waldspiel-PHASE4.zip
+python3 tools/build_zip.py PHASE4-FIX   # -> deliverables/waldspiel-PHASE4-FIX.zip
 ```
 
 `project.godot` liegt im **ZIP-Root**, `.godot/`-Cache und generierte `.translation` sind ausgeschlossen; alle Quellen, Assets, `.import`/`.uid`, Tests, Berichte und Screenshots sind drin. CRC-Test ist Teil des Skripts.

@@ -100,7 +100,7 @@ func _ready() -> void:
 			_rain, _hud)
 		add_child(smoke4)
 
-	print("[Main] PHASE 3 + REVISION 3 bereit: %d Eicheln, Jahreszeiten x1/x3/x10, Herbst-Eichelfall, Samen finden/vergraben, Schwierigkeitsgrade." % [
+	print("[Main] PHASE 4 bereit: %d Eicheln, Skilltree, Schnee im Winter, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count()])
 
 
@@ -212,6 +212,22 @@ func _apply_presets(args: PackedStringArray) -> void:
 		_water.set_process(false)
 		_season.set_process(false)
 		_hud.refresh()
+	elif args.has("--phase4-shot-thaw"):
+		# PHASE-4-FIX: mitten im Schneefall wird es Fruehling. Der Uebergang
+		# soll im Bild sichtbar sein (Flocken + erste Regenlinien + Tau-Meldung).
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 360.0))
+		_time.debug_set_season(TimeManager.Season.WINTER, 3, 0.40)
+		_water.force_rain(60.0)
+		_rain.debug_populate(46)
+		_rain.debug_unfreeze()
+		_growth.set_process(false)
+		_water.set_process(false)
+		_season.set_process(false)
+		_hud.refresh()
+		get_tree().create_timer(1.0).timeout.connect(func():
+			_time.debug_set_season(TimeManager.Season.SPRING, 4, 0.20)
+			_hud.refresh())
 	elif args.has("--phase4-shot-skilltree-locked"):
 		_camera.set_zoom_immediate(1.0)
 		_camera.teleport_to(Vector2(0.0, 330.0))

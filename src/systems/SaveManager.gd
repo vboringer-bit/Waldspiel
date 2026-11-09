@@ -9,6 +9,7 @@ extends Node
 ## Jahreszeit/Zeitskala und bereits eingesammelte Samen.
 ## PHASE 4: Format v5 speichert zusaetzlich den globalen Skilltree-Fortschritt
 ## pro Baumart. v4/v3/v2/v1 bleiben lesbar (fehlende Felder = Defaults).
+## PHASE-4-FIX: fehlt auto_mode, wird MANUELL (false) angenommen.
 
 const SAVE_PATH := "user://savegame.json"
 const FORMAT_VERSION := 5
@@ -77,7 +78,7 @@ func load_game() -> bool:
 
 	Global.set_seed_from_save(int(data.get("seed", Global.world_seed)))
 	chunk_manager.set_world_seed(Global.world_seed)
-	Global.auto_mode = bool(data.get("auto_mode", true))
+	Global.auto_mode = bool(data.get("auto_mode", false))
 	Global.locale = String(data.get("locale", "de"))
 	Global.set_difficulty(int(data.get("difficulty", 1)))
 

@@ -53,3 +53,5 @@ signal skill_unlocked(node_id: String)
 signal skilltree_changed
 signal skilltree_open_requested
 signal precipitation_mode_changed(snow: bool)
+## PHASE-4-FIX: 0.0 = Regen, 1.0 = Schnee, dazwischen = sanfter Uebergang.
+signal precipitation_blend_changed(snow_blend: float)

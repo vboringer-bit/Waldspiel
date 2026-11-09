@@ -9,6 +9,9 @@ extends Node
 ## 4) Winter: SCHNEE statt Regen (keine Spritzer, keine Flocken unter dem
 ##    Boden), aber R3-Regeln (keine Entnahme, Auffuellen laeuft) bleiben.
 ## 5) Regression: Fruehling regnet weiter wie in REVISION 3.
+## 6) PHASE-4-FIX: AUTO standardmaessig aus, ausgewachsener Baum verbraucht
+##    keine Glucose, Kronenwuchs gibt +2 SICHTBARE Blaetter, Schnee bleibt
+##    laenger liegen und taut beim Saisonwechsel sanft zu Regen.
 
 var interaction: InteractionController
 var skill_tree: SkillTree
@@ -69,6 +72,7 @@ func run() -> void:
 	rain.set_process(false)
 	skill_tree.reset()
 	Global.locale = "de"
+	_check(not Global.auto_mode, "AUTO standardmaessig aus (MANUELL)")
 
 	# --- 1) Daten / Graph -----------------------------------------------------
 	_check(skill_tree != null and skill_tree.data != null,
@@ -143,6 +147,13 @@ func run() -> void:
 		"Ketten-Freischaltung bis Kronenwuchs")
 	_check(tree.skill_max_leaves_bonus == 2,
 		"+2 Blaetter: can_grow('leaf') real erweitert")
+	var crown := skill_tree.node_data("crown_growth")
+	_check(crown != null and is_equal_approx(float(crown.effects.get("grant_leaves", 0.0)), 2.0),
+		"Kronenwuchs enthaelt grant_leaves = 2")
+	_check(tree.skill_leaf_grants == 2,
+		"Kronenwuchs: +2 Blaetter SOFORT gutgeschrieben")
+	_check(tree2 != null and tree2.skill_leaf_grants == 2,
+		"+2 Blaetter auch auf allen anderen Eichen (global synchron)")
 
 	_check(skill_tree.unlock("symbiosis", tree),
 		"Symbiose mit ZWEI Vorbedingungen")
@@ -184,6 +195,41 @@ func run() -> void:
 	_check(skill_tree.unlocked_count() == count_before,
 		"Skill-Fortschritt nach Laden wiederhergestellt")
 
+	# --- 4b) PHASE-4-FIX: AUTO / Blatt-Cap / ausgewachsener Baum -------------
+	var loaded_tree: BaseTree = interaction.selected_tree
+	_check(loaded_tree != null and loaded_tree.skill_leaf_grants == 2,
+		"Save v5 stellt Skill-Blaetter ohne Duplikate wieder her")
+	if loaded_tree != null:
+		var leaves_loaded := loaded_tree.leaves_count
+		skill_tree._apply_to_all()
+		_check(loaded_tree.leaves_count == leaves_loaded,
+			"apply_effect() erzeugt keine doppelten Skill-Blaetter")
+
+	# Cap-Test: mit Bonus muessen 13 + 14 entstehen, 15 muss scheitern.
+	var cap_tree: BaseTree = interaction.spawn_tree_at(Vector2(800.0, 0.0), {})
+	cap_tree.skill_max_leaves_bonus = 2
+	cap_tree.leaves_count = 12
+	var ok13 := cap_tree.grow_part("leaf")
+	var ok14 := cap_tree.grow_part("leaf")
+	var ok15 := cap_tree.grow_part("leaf")
+	_check(ok13 and ok14 and not ok15 and cap_tree.leaves_count == 14,
+		"add_leaf() respektiert Cap 14; grow_part() luegt nicht mehr")
+
+	# Ausgewachsener Baum darf in AUTO keine Glucose mehr verbrauchen.
+	time_manager.debug_set_season(TimeManager.Season.SPRING, 1, 0.20)
+	time_manager.set_paused(false)
+	time_manager.set_time_scale(1.0)
+	var full_tree: BaseTree = interaction.spawn_tree_at(Vector2(1000.0, 0.0), {})
+	full_tree.debug_mark_full()
+	full_tree.set_season(TimeManager.Season.SPRING)
+	full_tree.water = 0.0          # Fotosynthese aus, damit nur AUTO-Kauf zaehlt
+	full_tree.glucose = 50.0
+	Global.auto_mode = true
+	growth.tick(1.0)
+	_check(is_equal_approx(full_tree.glucose, 50.0),
+		"Ausgewachsener Baum: AUTO verbraucht KEINE Glucose")
+	Global.auto_mode = false
+
 	# --- 5) WINTER: Schnee statt Regen ---------------------------------------
 	time_manager.debug_set_season(TimeManager.Season.WINTER, 3, 0.40)
 	water.force_rain(30.0)
@@ -200,6 +246,9 @@ func run() -> void:
 		"Schnee erzeugt KEINE Regen-Spritzer")
 	_check(rain.debug_snow_settle_count() > 0,
 		"Flocken bleiben auf der Oberflaeche liegen")
+	var life_range := rain.debug_settle_life_range()
+	_check(life_range.x >= 5.0 and life_range.y <= 9.0,
+		"Schnee bleibt 5-9 s liegen (statt 1,6-3,2 s)")
 	_check(rain.debug_drops_below_surface() == 0,
 		"Keine Flocken unter der Geländelinie")
 
@@ -214,13 +263,28 @@ func run() -> void:
 	_check(is_equal_approx(water.last_reservoir_rate, 0.0),
 		"Winter: weiterhin KEINE Reservoir-Entnahme (R3)")
 
-	# --- 6) Regression: Fruehling regnet wieder ------------------------------
+	# --- 6) Sanfter Uebergang Schnee -> Regen --------------------------------
 	time_manager.debug_set_season(TimeManager.Season.SPRING, 4, 0.20)
+	_check(rain.debug_is_transitioning() and rain.debug_snow_blend() > 0.9,
+		"Saisonwechsel startet WEICHEN Uebergang (kein harter Schnitt)")
+	_check(rain.debug_snow_settle_count() > 0,
+		"Liegender Schnee bleibt beim Uebergang erhalten")
+	for _i in 3:
+		rain.debug_step(0.1)
+	hud.refresh()
+	_check(hud.debug_rain_label_text() == "Der Schnee geht langsam in Regen ueber.",
+		"HUD zeigt Tau-Meldung waehrend des Uebergangs")
+	for _i in 37:
+		rain.debug_step(0.1)
+	_check(not rain.debug_is_transitioning() and rain.debug_snow_blend() < 0.01,
+		"Uebergang endet nach 3,5 s bei reinem Regen")
 	_check(not rain.debug_is_snow() and not water.is_snowfall(),
 		"Fruehling: wieder Regen")
+	# Auch Flocken, die noch WAEHREND des Uebergangs gelandet sind, schmelzen.
+	for _i in 30:
+		rain.debug_step(0.1)
 	_check(rain.debug_snow_settle_count() == 0,
-		"Schnee-Punkte beim Saisonwechsel entfernt")
-	rain.debug_step(0.1)
+		"Schnee ist sanft geschmolzen (nicht hart geloescht)")
 	_check(rain.debug_splash_count() > splashes_before,
 		"Regen-Spritzer im Fruehling weiter aktiv (REV3)")
 
@@ -242,7 +306,7 @@ func _check_localizations() -> void:
 		"SKILL_UI_UNLOCKED", "SKILL_UI_LOCKED", "SKILL_UI_AVAILABLE",
 		"SKILL_UI_COUNT", "MSG_SKILL_UNLOCKED", "MSG_SKILL_NO_GLUCOSE",
 		"MSG_SKILL_PREREQ", "MSG_SKILL_NO_TREE", "MSG_SNOW",
-		"MSG_SNOW_STOP", "MSG_SNOW_REFILL"])
+		"MSG_SNOW_STOP", "MSG_SNOW_REFILL", "MSG_SNOW_MELT"])
 	var missing := 0
 	for key in keys:
 		Global.locale = "de"

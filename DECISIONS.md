@@ -589,3 +589,27 @@ Die R3-Regeln bleiben exakt erhalten: im Winter **keine Reservoir-Entnahme**, ke
 Neu: `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`, `PHASE4-ERGEBNIS.md/.html`, `PHASE4-TESTPROTOKOLL.txt`, 5 `screenshots/p4_*.png`. `Phase3Smoke` prüft jetzt `version >= 4`, damit v5-Saves die alte Save/Load-Regression nicht brechen.
 
 **PHASE 5 wurde NICHT begonnen.** Keine Tiere/StateMachine, kein Mistel-Befall, keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-*Ereignisse*. Die Resistenz- und Symbiose-Werte sind als echte Zahlen vorbereitet, die zugehörige Simulation bleibt dem nächsten Meilenstein vorbehalten.
+
+## 69. PHASE-4-FIXRUNDE — Glucose, sichtbare Blätter, Schnee und Übergang
+
+Der User meldete nach dem Spielen drei Punkte. Alle drei wurden ohne PHASE-5-Features behoben.
+
+**1) Glucose 10 → 0 und Verbrauch am ausgewachsenen Baum.** Ursache war eine Kombination aus Standard-AUTO und einem echten Logikfehler: `Global.auto_mode` stand auf `true`, `GrowthSystem` kaufte bei Erreichen der ~10 Glucose sofort ein Wachstumsteil. Schlimmer noch: `can_grow("leaf")` erlaubte mit `crown_growth` bereits 14 Blätter, aber `add_leaf()` blockte weiterhin hart bei `MAX_LEAVES = 12`; `grow_part()` meldete trotzdem `true`, also zog AUTO Glucose ab, **ohne dass ein Blatt entstand**. Bei einem ausgewachsenen Baum wiederholte sich das endlos.
+
+Fix: `Global.auto_mode = false` (Standard MANUELL, per HUD weiterhin bewusst zuschaltbar; fehlendes Save-Feld lädt ebenfalls `false`). `add_trunk_tile()`, `add_leaf()` und `add_root()` geben jetzt `bool` zurück; `grow_part()` gibt nur bei **echtem Zuwachs** `true` zurück. `add_leaf()` nutzt `MAX_LEAVES + skill_max_leaves_bonus`. Damit verbraucht ein voll ausgewachsener Baum in AUTO **0 Glucose** (Smoke 50,0 → 50,0), und AUTO funktioniert nach Umschalten ansonsten unverändert.
+
+**2) „Keine zusätzlichen Blätter trotz Skill".** `crown_growth` erhöhte nur das Cap, fügte aber keine Blätter hinzu — und wegen des obigen Bugs konnte es sie auch nicht nachwachsen lassen. Der Knoten enthält jetzt zusätzlich `grant_leaves = 2.0`. `SkillTree.apply_effect()` setzt erst `skill_max_leaves_bonus` und ruft dann `BaseTree.apply_skill_leaf_grants(2)` auf: **+2 sofort sichtbare Blätter auf allen Eichen**, inklusive neu gespawnter. `skill_leaf_grants` pro Instanz macht das idempotent (keine Duplikate bei `skilltree_changed`, neuem Baum oder Save/Load) und wird in **Format v5** mitgespeichert; `BaseTree.from_dict()` stellt die Cap-Erhöhung vor dem Blattaufbau wieder her, damit gespeicherte Blätter 13/14 nicht verworfen werden. `SKILL_CROWN_DESC` sagt jetzt in DE/EN ausdrücklich „sofort".
+
+**3) Schnee länger liegen + sanfter Übergang.** `RainEffect` hatte `1,6–3,2 s` Liegezeit und löschte beim Saisonwechsel alle Effekte hart. Neu: `SNOW_SETTLE_MIN/MAX = 5,0/9,0 s`, `MAX_SETTLE = 320`, `MODE_FADE_SECONDS = 3,5`, `SETTLE_MELT_MULTIPLIER = 3,0`. Ein neues `snow_blend` (1 = Schnee, 0 = Regen) wird bei `season_changed` **während laufenden Niederschlags** über 3,5 s nach `move_toward()` geführt; neue Niederschlags-Events snappen dagegen weiterhin sofort auf die aktuelle Jahreszeit. Drops tragen beide Parametersätze, Flocken/Geschwindigkeit/Drift, Regenlinien, Spritzer, Rippen und liegende Punkte werden überblendet. Vorhandener Schnee bleibt erhalten und schmilzt beschleunigt statt zu verschwinden. `EventBus.precipitation_blend_changed(float)` versorgt das HUD; neuer DE/EN-Text `MSG_SNOW_MELT` („Der Schnee geht langsam in Regen ueber.") erscheint als Toast **und** HUD-Label. Neues Preset `--phase4-shot-thaw` (Xvfb mit `--fixed-fps 10`) zeigt Flocken und erste Regenlinien gleichzeitig.
+
+Die R3-Regeln bleiben unangetastet: Winter ohne Reservoir-Entnahme/Versickerung, aber Niederschlag füllt weiter auf; im Frühling sind Spritzer wieder aktiv. `FORMAT_VERSION` bleibt 5 (zusätzliches Feld, alte Saves lesbar). `Phase3Smoke` akzeptiert weiter `version >= 4`.
+
+| Prüfung | Ergebnis |
+|---|---|
+| `--headless --import` / F5 ohne Preset / `--quit-after 180` | je Exit 0 / 0 Fehler |
+| **9/9 Smokes** (P0/P1/P2/REV1/REV2/P3/REV3/REV4/PHASE4) | je `Ergebnis: OK` / **284 OK-Zeilen** / 0 Fehler |
+| `--phase4-smoke` | **63 OK-Zeilen**, u.a. AUTO-Standard, 50,0→50,0, Cap 14, `grant_leaves`, 5–9 s, 3,5 s Blend, Tau-Text |
+| 6 Xvfb-Renders 1920×1080 (`p4_f5`, `p4_skilltree`, `p4_skilltree-locked`, `p4_snow`, `p4_snow-detail`, **`p4_thaw`**) | je Exit 0 / 0 Fehler |
+| ZIP `waldspiel-PHASE4-FIX.zip`: CRC, Root-Lage, `.godot` ausgeschlossen, Extrakt-Import + 9 Smokes | OK |
+
+`data/localization.csv` hat jetzt 137 Zeilen / 58 PHASE-4-Zeilen. Die vorherige `waldspiel-PHASE4.zip` bleibt als historischer Stand in `deliverables/` erhalten. **PHASE 5 wurde weiterhin nicht begonnen.**

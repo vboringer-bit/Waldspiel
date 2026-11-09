@@ -52,6 +52,8 @@ var _acc: float = 0.0
 var _ghost_cost: float = -1.0
 var _ghost_material: String = ""
 var _ghost_affordable: bool = true
+## PHASE-4-FIX: 0 = Regen, 1 = Schnee, dazwischen sanfter Uebergang.
+var _precipitation_blend: float = -1.0
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
@@ -259,6 +261,20 @@ func _is_winter() -> bool:
 	return time_manager != null and time_manager.is_winter()
 
 
+func _on_precipitation_blend_changed(blend: float) -> void:
+	_precipitation_blend = clampf(blend, 0.0, 1.0)
+	refresh()
+
+
+func _precipitation_text() -> String:
+	var blend := _precipitation_blend
+	if blend < 0.0:
+		blend = 1.0 if _is_winter() else 0.0
+	if blend > 0.05 and blend < 0.95:
+		return tr("MSG_SNOW_MELT")
+	return tr("MSG_SNOW") if blend >= 0.5 else tr("MSG_RAIN")
+
+
 func debug_rain_label_text() -> String:
 	return _rain_label.text
 
@@ -287,6 +303,7 @@ func _connect() -> void:
 	_pause_button.pressed.connect(_on_pause_pressed)
 	EventBus.season_changed.connect(func(_y, _s): refresh())
 	EventBus.precipitation_mode_changed.connect(func(_snow): refresh())
+	EventBus.precipitation_blend_changed.connect(_on_precipitation_blend_changed)
 	EventBus.time_scale_changed.connect(func(_s, _p): refresh())
 	EventBus.difficulty_changed.connect(func(_d): refresh_texts())
 
@@ -362,7 +379,7 @@ func refresh_texts() -> void:
 	_save_button.text = tr("UI_SAVE")
 	_load_button.text = tr("UI_LOAD")
 	_water_caption.text = tr("HUD_WATER")
-	_rain_label.text = tr("MSG_SNOW") if _is_winter() else tr("MSG_RAIN")
+	_rain_label.text = _precipitation_text()
 	_mode_button.text = tr("MODE_AUTO") if Global.auto_mode else tr("MODE_MANUAL")
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_difficulty()
@@ -392,7 +409,7 @@ func refresh() -> void:
 	_refresh_difficulty()
 	_refresh_time_controls()
 	_rain_label.visible = water_system != null and water_system.raining
-	_rain_label.text = tr("MSG_SNOW") if _is_winter() else tr("MSG_RAIN")
+	_rain_label.text = _precipitation_text()
 	_mode_button.text = tr("MODE_AUTO") if Global.auto_mode else tr("MODE_MANUAL")
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_reservoir_label(tree)

@@ -49,7 +49,7 @@ func _initialize() -> void:
 		["leaf_efficiency"], {"glucose": 0.15},
 		Vector2(330.0, 220.0), "leaf"))
 	d.nodes.append(_node("crown_growth", "CROWN", "CROWN", 26.0,
-		["photosynthesis_plus"], {"max_leaves": 2.0},
+		["photosynthesis_plus"], {"max_leaves": 2.0, "grant_leaves": 2.0},
 		Vector2(660.0, 220.0), "leaf"))
 	d.nodes.append(_node("trunk_saver", "TRUNK", "TRUNK", 34.0,
 		["crown_growth"], {"growth_cost": -0.20},

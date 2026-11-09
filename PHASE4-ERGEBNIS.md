@@ -1,14 +1,14 @@
-# PHASE 4 — Ergebnis: Skilltree + Winter-Schnee
+# PHASE 4 — Ergebnis + Fixrunde
 
 **Godot 4.7.2 stable · GDScript · Forward+/Vulkan · 2026-11-05**  
-15 GraphEdit-Knoten, echte Glucose-Kosten und Effekte, Save v5 — und im Winter Schnee statt Regen. **PHASE 5 wurde nicht begonnen.**
+15 GraphEdit-Knoten, echte Glucose-Kosten und Effekte, Save v5 — plus Fixrunde: AUTO aus, sichtbare Skill-Blätter, längerer Schnee und sanfter Übergang zu Regen. **PHASE 5 wurde nicht begonnen.**
 
 ## 1 · Screenshots (echte Godot-Renders)
 
-### F5-Start: Skilltree-Button und unveränderte Welt
-*Normaler Start ohne Preset · zwei Eicheln am Boden · HUD zeigt × 0 · neuer Button „Skilltree (T)“ oben rechts*
+### F5-Start: AUTO ist jetzt aus (MANUELL)
+*Normaler Start ohne Preset · zwei Eicheln am Boden · HUD zeigt × 0 · Button „Skilltree (T)“ oben rechts · Modus MANUELL*
 
-![F5-Start: Skilltree-Button und unveränderte Welt](screenshots/p4_f5.png)
+![F5-Start: AUTO ist jetzt aus (MANUELL)](screenshots/p4_f5.png)
 
 ### GraphEdit-Skilltree: 5 von 15 Mutationen frei
 *15 GraphNodes, 14 Verbindungslinien, Minimap, Zweigfarben, Status „Freigeschaltet / Verfügbar / Gesperrt“, 260,0 Glucose*
@@ -26,9 +26,14 @@
 ![Winter: Schnee statt Regen](screenshots/p4_snow.png)
 
 ### Detail: Flocken auf der echten Geländelinie
-*Liegengebliebene Schneepunkte auf height_smooth_at(wx) · Wasserreservoir unverändert · keine Rippen*
+*Liegengebliebene Schneepunkte auf height_smooth_at(wx) · jetzt 5–9 s Lebensdauer · Wasserreservoir unverändert*
 
 ![Detail: Flocken auf der echten Geländelinie](screenshots/p4_snow-detail.png)
+
+### Fix: sanfter Übergang Schnee → Regen
+*Mitten im Ereignis wird es Frühling · Flocken UND erste blaue Regenlinien gleichzeitig · HUD „Der Schnee geht langsam in Regen ueber.“*
+
+![Fix: sanfter Übergang Schnee → Regen](screenshots/p4_thaw.png)
 
 ## 2 · Code-Snippets (aus den echten Projektdateien)
 
@@ -45,7 +50,7 @@
 @export var branch: String = "water"
 ```
 
-### generate_skilltree.gd — die ersten Pflicht-Mutationen
+### generate_skilltree.gd — Pflicht-Mutationen + grant_leaves
 
 ```gdscript
 	d.nodes.append(_node("root_efficiency", "ROOT", "ROOT", 10.0, [],
@@ -53,18 +58,17 @@
 	d.nodes.append(_node("rain_absorption", "RAIN", "RAIN", 18.0,
 		["root_efficiency"], {"rain_boost": 0.30},
 		Vector2(330.0, 0.0), "water"))
-	d.nodes.append(_node("reservoir_tap", "TAP", "TAP", 26.0,
-		["rain_absorption"], {"reservoir_gain": 0.25},
-		Vector2(660.0, 0.0), "water"))
-	d.nodes.append(_node("deep_roots", "DEEP", "DEEP", 34.0,
-		["reservoir_tap"], {"root_cost": -0.20},
-		Vector2(990.0, 0.0), "water"))
 
 	d.nodes.append(_node("leaf_efficiency", "LEAF", "LEAF", 10.0, [],
 		{"glucose": 0.20}, Vector2(0.0, 220.0), "leaf"))
 	d.nodes.append(_node("photosynthesis_plus", "PHOTOSYN", "PHOTOSYN", 18.0,
 		["leaf_efficiency"], {"glucose": 0.15},
 		Vector2(330.0, 220.0), "leaf"))
+
+	d.nodes.append(_node("crown_growth", "CROWN", "CROWN", 26.0,
+		["photosynthesis_plus"], {"max_leaves": 2.0, "grant_leaves": 2.0},
+		Vector2(660.0, 220.0), "leaf"))
+	d.nodes.append(_node("trunk_saver", "TRUNK", "TRUNK", 34.0,
 ```
 
 ### SkillTree.gd — Kosten + Vorbedingung prüfen
@@ -99,7 +103,7 @@ func unlock(id: String, payer: BaseTree) -> bool:
 	_recompute_mods()
 ```
 
-### SkillTree.gd — apply_effect() auf echte Baumwerte
+### SkillTree.gd — apply_effect() inkl. sofortiger Blätter
 
 ```gdscript
 func apply_effect(_node_id: String, tree_instance: Node) -> void:
@@ -110,6 +114,10 @@ func apply_effect(_node_id: String, tree_instance: Node) -> void:
 	t.skill_water_consumption_mult = modifier("water_consumption")
 	t.skill_root_water_mult = modifier("root_water")
 	t.skill_max_leaves_bonus = int(roundf(bonus("max_leaves")))
+	# PHASE-4-FIX: "Kronenwuchs" schenkt die +2 Blaetter sofort sichtbar.
+	# Idempotent, weil apply_effect() bei jedem Refresh / Spielstand-Laden
+	# erneut auf allen Baeumen laeuft.
+	t.apply_skill_leaf_grants(int(roundf(bonus("grant_leaves"))))
 ```
 
 ### SkillTreeUI.gd — echtes GraphEdit ohne überlagerte Leiste
@@ -166,6 +174,9 @@ var skill_glucose_mult: float = 1.0
 var skill_water_consumption_mult: float = 1.0
 var skill_root_water_mult: float = 1.0
 var skill_max_leaves_bonus: int = 0
+## PHASE-4-FIX: wie viele Skill-Blaetter dieser Instanz bereits gutgeschrieben
+## wurden. Verhindert, dass apply_effect() bei jedem Refresh erneut Blaetter
+## erzeugt (und macht Save/Load doppelter Boni sicher).
 
 func photosynthesize(dt: float, sunlight: float = 1.0,
 		growth: float = 1.0) -> void:
@@ -179,11 +190,6 @@ func photosynthesize(dt: float, sunlight: float = 1.0,
 		* sunlight * growth * Global.difficulty_factor("photosynthesis") \
 		* skill_glucose_mult * dt
 	water = maxf(water - species.water_consumption_rate \
-
-func absorb_water(dt: float, rate: float) -> void:
-	if not _built:
-		return
-	water = clampf(water + rate * skill_root_water_mult * dt, 0.0, 100.0)
 ```
 
 ### WaterSystem.gd — Winterruhe + echte Skill-Faktoren
@@ -212,25 +218,38 @@ func _sync_skills() -> void:
 	set_spread_bonus(st.bonus("spread") if st != null else 0.0)
 ```
 
-### RainEffect.gd — Winter = Schnee, keine Spritzer
+### RainEffect.gd — längere Liegezeit + weicher Modus-Wechsel
 
 ```gdscript
-func _sync_mode() -> void:
-	snow_mode = time_manager != null and time_manager.is_winter()
+const SNOW_SETTLE_MIN := 5.0
+const SNOW_SETTLE_MAX := 9.0
+const SETTLE_MELT_MULTIPLIER := 3.0
+const MODE_FADE_SECONDS := 3.5
+const SNOW_COLOR := Color(0.95, 0.97, 1.0, 0.92)
 
-func _spawn_landing(wx: float, wy: float) -> void:
-	if snow_mode:
-		if _settle.size() >= MAX_SETTLE:
-			return
-		var life := _rng.randf_range(1.6, 3.2)
-		_settle.append({
-			"px": wx + _rng.randf_range(-2.0, 2.0),
-			"py": wy - 1.0,
-			"r": _rng.randf_range(1.2, 2.6),
-			"life": life, "max": life,
-		})
-		return
-	_spawn_splash(wx, wy)
+var raining: bool = false
+
+func _sync_mode(snap: bool) -> void:
+	var winter := time_manager != null and time_manager.is_winter()
+	snow_mode = winter
+	_target_blend = 1.0 if winter else 0.0
+	if snap or not raining:
+		snow_blend = _target_blend
+		_transitioning = false
+	else:
+		_transitioning = absf(snow_blend - _target_blend) > 0.001
+	_emit_blend(true)
+
+func _on_season_changed(_year: int, _season: int) -> void:
+	var was_winter := snow_mode
+	_sync_mode(false)
+	if raining and _transitioning:
+		# WICHTIG: _settle / _splashes NICHT loeschen. Der liegende Schnee
+		# schmilzt in _update_landing() beschleunigt, waehrend Flocken zu
+		# Regentropfen ueberblenden.
+		if was_winter and not snow_mode:
+			EventBus.toast.emit(tr("MSG_SNOW_MELT"))
+	_emit_blend(true)
 ```
 
 ### SaveManager.gd — Format v5 mit skills
@@ -246,29 +265,98 @@ func _spawn_landing(wx: float, wy: float) -> void:
 	interaction.clear_carrying(false)
 ```
 
-### Phase4Smoke.gd — echte Werte statt Tooltips
+### FIX: Global.gd — AUTO startet aus
 
 ```gdscript
-	# --- 2) Freischalten / echte Effekte -------------------------------------
-	interaction.debug_plant_twice()
-	var tree: BaseTree = interaction.selected_tree
-	_check(tree != null, "Baum fuer Glucose-Bezahlung vorhanden")
-	if tree == null:
-		_finish()
-		return
-	tree.glucose = 500.0
-	_check(skill_tree.can_unlock("root_efficiency", tree),
-		"can_unlock(): Wurzel-Knoten bezahlbar")
-	_check(not skill_tree.is_available("deep_roots")
-		and not skill_tree.can_unlock("deep_roots", tree),
-		"Vorbedingung sperrt Tiefwurzler")
-	var before := tree.glucose
+## PHASE-4-FIX: Standard = MANUELL. Der Spieler schaltet AUTO bewusst im HUD ein.
+## Grund: sonst kauft AUTO bei ~10 Glucose sofort Wachstum und setzt den Zaehler
+## fuer den Spieler ueberraschend auf 0 zurueck.
+var auto_mode: bool = false
+```
+
+### FIX: Tree.gd — add_leaf() respektiert Cap 14
+
+```gdscript
+func add_leaf() -> bool:
+	# PHASE-4-FIX: dieselbe Obergrenze wie can_grow("leaf") verwenden!
+	# Vorher blockte diese Funktion bei 12, waehrend can_grow() mit dem
+	# Skill "Kronenwuchs" bereits 14 erlaubte. grow_part() meldete trotzdem
+	# Erfolg -> AUTO zahlte Glucose, ohne dass ein Blatt sichtbar wurde.
+	if leaves_count >= MAX_LEAVES + skill_max_leaves_bonus:
+		return false
+	var i := leaves_count
+	var col := i % 4
+	var row := int(i / 4)
+	var pos := Vector2((float(col) - 1.5) * 16.0, -40.0 - float(row) * 16.0)
+	_sprite(LEAF_PATH, pos, _leaves)
+	leaves_count += 1
+	_refresh_growth_visuals()
+	return true
+
+func grow_part(part: String) -> bool:
+	if not can_grow(part):
+		return false
+	# PHASE-4-FIX: nur bei ECHTEM Zuwachs true zurueckgeben. Sonst zieht
+	# GrowthSystem.glucose ab, obwohl z.B. kein freies Wurzel-Tile existiert.
+	if part == "root":
+		return add_root()
+	if part == "leaf":
+		return add_leaf()
+	if part == "trunk":
+		return add_trunk_tile()
+	return false
+```
+
+### FIX: Tree.gd — Kronenwuchs gibt +2 Blätter sofort
+
+```gdscript
+func apply_skill_leaf_grants(total: int) -> void:
+	var want := clampi(total, 0, skill_max_leaves_bonus)
+	while skill_leaf_grants < want and add_leaf():
+		skill_leaf_grants += 1
+```
+
+### FIX: GrowthSystem.gd — nur bei echtem Zuwachs zahlen
+
+```gdscript
+		if tree.grow_part(part):
+			tree.glucose -= cost
+			EventBus.tree_grew.emit(tree, part)
+```
+
+### FIX: Phase4Smoke.gd — regressionssichere checks
+
+```gdscript
+	# --- 4b) PHASE-4-FIX: AUTO / Blatt-Cap / ausgewachsener Baum -------------
+	var loaded_tree: BaseTree = interaction.selected_tree
+	_check(loaded_tree != null and loaded_tree.skill_leaf_grants == 2,
+		"Save v5 stellt Skill-Blaetter ohne Duplikate wieder her")
+	if loaded_tree != null:
+		var leaves_loaded := loaded_tree.leaves_count
+		skill_tree._apply_to_all()
+		_check(loaded_tree.leaves_count == leaves_loaded,
+			"apply_effect() erzeugt keine doppelten Skill-Blaetter")
+
+	# Cap-Test: mit Bonus muessen 13 + 14 entstehen, 15 muss scheitern.
+	var cap_tree: BaseTree = interaction.spawn_tree_at(Vector2(800.0, 0.0), {})
+	cap_tree.skill_max_leaves_bonus = 2
+	cap_tree.leaves_count = 12
+	var ok13 := cap_tree.grow_part("leaf")
+	var ok14 := cap_tree.grow_part("leaf")
+	var ok15 := cap_tree.grow_part("leaf")
+	_check(ok13 and ok14 and not ok15 and cap_tree.leaves_count == 14,
+		"add_leaf() respektiert Cap 14; grow_part() luegt nicht mehr")
+
+	# Ausgewachsener Baum darf in AUTO keine Glucose mehr verbrauchen.
+	time_manager.debug_set_season(TimeManager.Season.SPRING, 1, 0.20)
+	time_manager.set_paused(false)
+	time_manager.set_time_scale(1.0)
 ```
 
 ## 3 · Testprotokoll
 
 ```text
-WALD-REGENERATION — PHASE 4 — TESTPROTOKOLL
+WALD-REGENERATION — PHASE 4 + FIXRUNDE — TESTPROTOKOLL
 Godot 4.7.2.stable.official.ed1daf0bf · 2026-11-05 · Europe/Berlin
 Xvfb 1920x1080x24 · --rendering-driver opengl3 (llvmpipe Software-Rasterizer)
 Ziel-Renderer des Projekts: Forward+ / Vulkan
@@ -280,7 +368,7 @@ Ziel-Renderer des Projekts: Forward+ / Vulkan
 F5 ohne Preset (Xvfb, 1920x1080, 25 Frames)          Exit 0 / 0 Fehler
 --headless --path . --quit-after 180
     -- --seed=20261105 --windowed                     Exit 0 / 0 Fehler
-Godot-Import der neuen .tres/.gd/.uid-Dateien         0 Parse/Load-Fehler
+Godot-Import aller neuen .tres/.gd/.uid-Dateien       0 Parse/Load-Fehler
 
 ======================================================================
 2) SMOKE-TESTS (headless, ohne --seed, Legacy-Seed bleibt zufaellig)
@@ -293,12 +381,13 @@ Godot-Import der neuen .tres/.gd/.uid-Dateien         0 Parse/Load-Fehler
 --p3-smoke           Exit 0  Ergebnis: OK   56 OK-Zeilen   0 Fehler
 --rev3-smoke         Exit 0  Ergebnis: OK   20 OK-Zeilen   0 Fehler
 --rev4-smoke         Exit 0  Ergebnis: OK   32 OK-Zeilen   0 Fehler
---phase4-smoke       Exit 0  Ergebnis: OK   50 OK-Zeilen   0 Fehler
+--phase4-smoke       Exit 0  Ergebnis: OK   63 OK-Zeilen   0 Fehler
 ----------------------------------------------------------------------
-9 / 9 Smokes OK · 271 OK-Zeilen (inkl. je 1 Ergebniszeile) · 0 FEHLER · 0 SCRIPT ERROR
+9 / 9 Smokes OK · 284 OK-Zeilen (inkl. je 1 Ergebniszeile) · 0 FEHLER · 0 SCRIPT ERROR
 
 PHASE4-Checks im Detail:
 [SMOKE] === PHASE 4: Skilltree + Winter-Schnee ===
+[SMOKE] AUTO standardmaessig aus (MANUELL)                         OK
 [SMOKE] SkillTree + data/skilltrees/oak.tres geladen               OK
 [SMOKE] Genau 15 MVP-Knoten                                        OK
 [SMOKE] Alle 7 Pflicht-Mutationen aus Master-Punkt 6               OK
@@ -320,6 +409,9 @@ PHASE4-Checks im Detail:
 [SMOKE] P3-Anschluss set_spread_bonus() = +30 %                    OK
 [SMOKE] Ketten-Freischaltung bis Kronenwuchs                       OK
 [SMOKE] +2 Blaetter: can_grow('leaf') real erweitert               OK
+[SMOKE] Kronenwuchs enthaelt grant_leaves = 2                      OK
+[SMOKE] Kronenwuchs: +2 Blaetter SOFORT gutgeschrieben             OK
+[SMOKE] +2 Blaetter auch auf allen anderen Eichen (global synchron) OK
 [SMOKE] Symbiose mit ZWEI Vorbedingungen                           OK
 [SMOKE] Parasiten-Resistenz freigeschaltet                         OK
 [SMOKE] Resistenzwert -50 % gespeichert (PHASE-5-Anschluss)        OK
@@ -336,17 +428,26 @@ PHASE4-Checks im Detail:
 [SMOKE] Zurueckgesetzt vor dem Laden                               OK
 [SMOKE] Laden (Format v5)                                          OK
 [SMOKE] Skill-Fortschritt nach Laden wiederhergestellt             OK
+[SMOKE] Save v5 stellt Skill-Blaetter ohne Duplikate wieder her    OK
+[SMOKE] apply_effect() erzeugt keine doppelten Skill-Blaetter      OK
+[SMOKE] add_leaf() respektiert Cap 14; grow_part() luegt nicht mehr OK
+[SMOKE] Ausgewachsener Baum: AUTO verbraucht KEINE Glucose         OK
 [SMOKE] Winter: Niederschlag ist SCHNEE                            OK
 [SMOKE] HUD zeigt „Es schneit“                                     OK
 [SMOKE] Schnee erzeugt KEINE Regen-Spritzer                        OK
 [SMOKE] Flocken bleiben auf der Oberflaeche liegen                 OK
+[SMOKE] Schnee bleibt 5-9 s liegen (statt 1,6-3,2 s)               OK
 [SMOKE] Keine Flocken unter der Geländelinie                       OK
 [SMOKE] Schnee fuellt Reservoirs weiter auf (R3 erhalten)          OK
 [SMOKE] Winter: weiterhin KEINE Reservoir-Entnahme (R3)            OK
+[SMOKE] Saisonwechsel startet WEICHEN Uebergang (kein harter Schnitt) OK
+[SMOKE] Liegender Schnee bleibt beim Uebergang erhalten            OK
+[SMOKE] HUD zeigt Tau-Meldung waehrend des Uebergangs              OK
+[SMOKE] Uebergang endet nach 3,5 s bei reinem Regen                OK
 [SMOKE] Fruehling: wieder Regen                                    OK
-[SMOKE] Schnee-Punkte beim Saisonwechsel entfernt                  OK
+[SMOKE] Schnee ist sanft geschmolzen (nicht hart geloescht)        OK
 [SMOKE] Regen-Spritzer im Fruehling weiter aktiv (REV3)            OK
-[SMOKE] Alle 50 P4-Schluessel in DE + EN uebersetzt                OK
+[SMOKE] Alle 51 P4-Schluessel in DE + EN uebersetzt                OK
 [SMOKE] Weiterhin 5 geladene Chunks                                OK
 [SMOKE] Ergebnis: OK
 
@@ -359,58 +460,79 @@ Ohne Preset / F5            Exit 0 / 25 Frames / 0 Fehler -> p4_f5.png
                             Exit 0 / 25 Frames / 0 Fehler -> p4_skilltree-locked.png
 --phase4-shot-snow          Exit 0 / 25 Frames / 0 Fehler -> p4_snow.png
 --phase4-shot-snow-detail   Exit 0 / 25 Frames / 0 Fehler -> p4_snow-detail.png
-Sichtpruefung: Skilltree 15 Knoten / 14 Linien, keine ueberlagerte
-GraphEdit-Leiste; Winter zeigt weisse Flocken, keine blauen Linien,
-keine Spritzer; F5-HUD hat den Button "Skilltree (T)".
+--phase4-shot-thaw (--fixed-fps 10)
+                            Exit 0 / 25 Frames / 0 Fehler -> p4_thaw.png
+Sichtpruefung: F5 zeigt MANUELL; Skilltree 15 Knoten / 14 Linien;
+Winter zeigt weisse Flocken ohne Spritzer; Tau-Bild zeigt GLEICHZEITIG
+Flocken + erste blaue Regenlinien und HUD "Der Schnee geht langsam
+in Regen ueber." bei Jahr 4 · Fruehling.
 
 ======================================================================
-4) DATEN / SAVE / LOKALISIERUNG
+4) FIXRUNDE — AKZEPTANZ
 ======================================================================
-data/skilltrees/oak.tres     15 Knoten, 14 Vorbedingungen, err=0
-tools/generate_skilltree.gd  Godot-4.7-ResourceSaver, deterministisch
+AUTO standardmaessig AUS (Global.auto_mode = false)         OK
+Ausgewachsener Baum: AUTO verbraucht 0 Glucose              OK
+crown_growth: grant_leaves=2 -> +2 SICHTBARE Blaetter       OK
+add_leaf() Cap = 14; grow_part() nur bei echtem Zuwachs     OK
+Save v5: skill_leaf_grants verhindert Duplikate              OK
+Schnee bleibt 5-9 s liegen (vorher 1,6-3,2 s)               OK
+Saisonwechsel waehrend Schnee: 3,5 s snow_blend 1 -> 0      OK
+HUD/Toast "Der Schnee geht langsam in Regen ueber."          OK
+Liegender Schnee schmilzt beschleunigt, nicht hart geloescht OK
+R3: Winter keine Entnahme, Auffuellen laeuft weiter          OK
+
+======================================================================
+5) DATEN / SAVE / LOKALISIERUNG
+======================================================================
+data/skilltrees/oak.tres     15 Knoten, 14 Vorbedingungen, grant_leaves=2
+tools/generate_skilltree.gd  Godot-4.7-ResourceSaver, err=0
 SaveManager.FORMAT_VERSION   5; skills vor trees wiederhergestellt
-data/localization.csv        136 Zeilen, 57 neue PHASE-4-Zeilen (DE+EN)
+data/localization.csv        137 Zeilen, 58 PHASE-4-Zeilen (DE+EN)
 Phase3Smoke                  version >= 4 (v5 kompatibel)
 
 ======================================================================
-5) ZIP / EXTRAKT-VERIFIKATION
+6) ZIP / EXTRAKT-VERIFIKATION
 ======================================================================
-deliverables/waldspiel-PHASE4.zip: project.godot im Root, CRC OK,
-keine .godot-Dateien, keine .zip-in-.zip, alle neuen P4-Dateien drin.
+deliverables/waldspiel-PHASE4-FIX.zip: project.godot im Root, CRC OK,
+keine .godot-Dateien, keine .zip-in-.zip, alle neuen FIX-Dateien drin.
 Extrakt -> --headless --import -> alle 9 Smokes: Exit 0 / Ergebnis: OK.
 
 ======================================================================
-6) BEWUSSTE GRENZE
+7) BEWUSSTE GRENZE
 ======================================================================
 PHASE 5 wurde NICHT begonnen: keine Tiere, kein Mistel-Befall,
 keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
-Resistenz- und Symbiose-Werte sind als echte Zahlen vorbereitet.
 ```
 
-## 4 · Abnahme PHASE 4
+## 4 · Abnahme PHASE 4 + Fixrunde
 
 - ✅ **GraphEdit-Skilltree mit 15 Knoten:** `data/skilltrees/oak.tres` enthält 15 `SkillNodeData`-Resources und **14 Vorbedingungs-Linien**. `SkillTreeUI.gd` zeigt sie zoombar (0,35×–1,8×), pannbar, mit Minimap und eigenen +/−/1:1-Buttons. Die eingebaute GraphEdit-Leiste ist ausgeblendet, damit sie Titel und erste Zeile nicht überdeckt.
 - ✅ **Alle 7 Pflicht-Mutationen:** Effizientere Wurzeln (+25 % Wasser), Effizientere Blätter (+20 % Glucose), Symbiose/Pilz-Knoten, Parasiten-Resistenz, Krankheits-Resistenz, Holz-Härte/Sturm-Resistenz, Verbreitung (+30 % Keimrate). Dazu 8 weitere Knoten als MVP-Grundgerüst.
 - ✅ **Freischalten kostet Glucose:** `can_unlock()` prüft Vorbedingung + Kontostand, `unlock()` zieht exakt die Kosten ab. Gemäß Master 4.2 bleibt Glucose pro Baum-Instanz, der Skilltree-Fortschritt **global pro Art**: alle Eichen — auch neu gespawnte — teilen ihn.
-- ✅ **Effekte wirken auf echte Werte:** 10 Wasser/s werden nach `root_efficiency` zu **12,5**; Fotosynthese × **1,20**; `MAX_LEAVES + 2`; `spread_bonus = 0,30`; −20 % Wurzel-/Stammkosten; echte Regen-, Reservoir- und Winter-Wasserfaktoren; −10 % Wasserverbrauch; Resistenzwerte **0,5** (−50 %) gespeichert.
-- ✅ **HUD, Tasten, DE/EN:** Button „Skilltree (T)“ oben rechts, `T` öffnet/schließt, `Esc` schließt, mittlere Maustaste pannt. 57 neue Lokalisierungszeilen; der Smoke prüft **50** P4-Schlüssel in DE und EN. Events aktualisieren UI nach Freischalten, Baumwahl, Laden und Sprachwechsel.
-- ✅ **Save/Load v5:** Skill-Fortschritt liegt als `skills` im JSON und wird **vor** den Bäumen wiederhergestellt. v4/v3/v2/v1 bleiben lesbar; `Phase3Smoke` akzeptiert `version >= 4`.
-- ✅ **Winter-Schnee statt Regen:** dasselbe Niederschlags-Event, aber 240 langsame weiße Flocken mit Sinus-Drift, **keine blauen Linien, keine Spritzer, keine Rippen**, dafür kurz liegende Schneepunkte auf `height_smooth_at(wx)`. HUD/Toast „Es schneit“. Frühling stellt Regen + Spritzer wieder her.
+- ✅ **Effekte wirken auf echte Werte:** 10 Wasser/s werden nach `root_efficiency` zu **12,5**; Fotosynthese × **1,20**; `spread_bonus = 0,30`; −20 % Wurzel-/Stammkosten; echte Regen-, Reservoir- und Winter-Wasserfaktoren; −10 % Wasserverbrauch; Resistenzwerte **0,5** (−50 %) gespeichert.
+- ✅ **FIX — keine unsichtbaren Blätter mehr:** `add_leaf()` nutzt jetzt dieselbe Obergrenze wie `can_grow()` (`MAX_LEAVES + skill_max_leaves_bonus`). `crown_growth` enthält `grant_leaves = 2` und schenkt die **+2 Blätter sofort sichtbar** auf allen Eichen; `skill_leaf_grants` verhindert Duplikate bei Refresh und Save/Load.
+- ✅ **FIX — Glucose bleibt stehen:** `Global.auto_mode` startet **aus** (MANUELL); AUTO funktioniert nach bewusstem Umschalten weiter wie vorher. `grow_part()` gibt nur noch bei **echtem Zuwachs** `true` zurück — ein ausgewachsener Baum oder ein blockiertes Wurzel-Tile verbraucht keine Glucose mehr. Smoke: 50,0 → **50,0**.
+- ✅ **HUD, Tasten, DE/EN:** Button „Skilltree (T)“ oben rechts, `T` öffnet/schließt, `Esc` schließt, mittlere Maustaste pannt. 58 Lokalisierungszeilen; der Smoke prüft **51** P4-Schlüssel in DE und EN. Events aktualisieren UI nach Freischalten, Baumwahl, Laden und Sprachwechsel.
+- ✅ **Save/Load v5:** Skill-Fortschritt und `skill_leaf_grants` liegen im JSON und werden **vor** den Bäumen wiederhergestellt. v4/v3/v2/v1 bleiben lesbar; `Phase3Smoke` akzeptiert `version >= 4`.
+- ✅ **Winter-Schnee statt Regen:** dasselbe Niederschlags-Event, aber 240 langsame weiße Flocken mit Sinus-Drift, **keine blauen Linien, keine Spritzer, keine Rippen**, dafür liegende Schneepunkte auf `height_smooth_at(wx)`. HUD/Toast „Es schneit“. Frühling stellt Regen + Spritzer wieder her.
+- ✅ **FIX — Schnee bleibt länger liegen:** Lebensdauer **5–9 s** statt 1,6–3,2 s, Puffer von 220 auf 320 Punkte erhöht. Beim Saisonwechsel werden die Punkte nicht mehr hart gelöscht.
+- ✅ **FIX — sanfter Übergang:** wird es **mitten im Schneefall** Frühling, läuft `snow_blend` in **3,5 s** von 1,0 nach 0,0. Flocken, Regenlinien, Spritzer und HUD-Text werden überblendet; liegender Schnee schmilzt beschleunigt. Toast/HUD: „Der Schnee geht langsam in Regen ueber.“ Screenshot `p4_thaw.png`.
 - ✅ **REVISION 3 erhalten:** Winter ohne Reservoir-Entnahme und ohne passive Versickerung, aber Niederschlag füllt weiter auf (`last_reservoir_rate = 0`). Smoke misst steigenden Füllstand bei Schnee.
-- ✅ **Regression & F5:** Import, F5 ohne Preset, 180-Frame-Dauerlauf und **9/9 Smokes** (P0/P1/P2/REV1/REV2/P3/REV3/REV4/PHASE4) laufen mit Exit 0 / **271 OK-Zeilen** / 0 Fehlern. 5 Xvfb-Renders 1920×1080 sind fehlerfrei und visuell geprüft.
+- ✅ **Regression & F5:** Import, F5 ohne Preset, 180-Frame-Dauerlauf und **9/9 Smokes** (P0/P1/P2/REV1/REV2/P3/REV3/REV4/PHASE4) laufen mit Exit 0 / **284 OK-Zeilen** / 0 Fehlern. 6 Xvfb-Renders 1920×1080 sind fehlerfrei und visuell geprüft.
 
 ## 5 · Hinweise / bewusste Grenzen
 
 - Die Ereignis-Simulation für Parasiten, Krankheit, Sturm, Pilz-Symbiose sowie pH/N-P-K/Mykorrhiza/Katastrophen bleibt PHASE 5. Die Resistenz- und Symbiose-Werte sind bereits echte Zahlen, aber es spawnen noch keine Tiere oder Misteln.
-- Xvfb + opengl3/llvmpipe ist ein Software-Rasterizer und nur für reproduzierbare Renders genutzt; Ziel-Renderer des Projekts bleibt Forward+ / Vulkan. Es werden keine FPS-Versprechen für diese Testumgebung abgegeben.
+- Xvfb + opengl3/llvmpipe ist ein Software-Rasterizer und nur für reproduzierbare Renders genutzt; Ziel-Renderer des Projekts bleibt Forward+ / Vulkan. Das Tau-Bild verwendet --fixed-fps 10, damit der 3,5-s-Übergang in 25 Frames sichtbar wird.
 - Keine neuen externen Assets, Addons oder C#-Dateien. Schneeflocken, GraphNodes und Linien werden zur Laufzeit gezeichnet; alle Pfade sind relativ.
-- Die ZIP im Ordner deliverables/ ist der eingefrorene Lieferstand. Zum Weiterarbeiten immer den Repo-Root bzw. die neueste ZIP importieren.
+- Die ZIP im Ordner deliverables/ ist der eingefrorene Lieferstand der Fixrunde. Die vorherige waldspiel-PHASE4.zip bleibt als historischer Stand erhalten.
 
 ## 6 · Lieferumfang
 
-- `deliverables/waldspiel-PHASE4.zip` — vollständiges, Godot-importierbares Projekt (`project.godot` im ZIP-Root, `.godot` ausgeschlossen, CRC OK)
-- `PHASE4-ERGEBNIS.html` / `.md`, `PHASE4-TESTPROTOKOLL.txt`, `DECISIONS.md` §§64–68, `README.md`, `GODOT-IMPORT.txt`
-- `screenshots/p4_*.png` (5 Renders), `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`
-- Neue Quellen: `SkillNodeData.gd`, `SkillTreeData.gd`, `SkillTree.gd`, `SkillTreeUI.gd`, `data/skilltrees/oak.tres`; geänderte Systeme: `Tree.gd`, `WaterSystem.gd`, `GrowthSystem.gd`, `InteractionController.gd`, `SeasonSystem.gd`, `SaveManager.gd`, `RainEffect.gd`, `HUD.gd`, `Main.gd/.tscn`, `EventBus.gd`, `localization.csv`
+- `deliverables/waldspiel-PHASE4-FIX.zip` — vollständiges, Godot-importierbares Projekt (`project.godot` im ZIP-Root, `.godot` ausgeschlossen, CRC OK)
+- `deliverables/waldspiel-PHASE4.zip` — historischer Stand vor der Fixrunde
+- `PHASE4-ERGEBNIS.html` / `.md`, `PHASE4-TESTPROTOKOLL.txt`, `DECISIONS.md` §§64–69, `README.md`, `GODOT-IMPORT.txt`
+- `screenshots/p4_*.png` (6 Renders), `tests/Phase4Smoke.gd`, `tools/generate_skilltree.gd`, `tools/build_phase4_report.py`
+- Neue/geänderte Quellen der Fixrunde: `Global.gd`, `GrowthSystem.gd`, `Tree.gd`, `SkillTree.gd`, `tools/generate_skilltree.gd`, `data/skilltrees/oak.tres`, `RainEffect.gd`, `HUD.gd`, `EventBus.gd`, `Main.gd`, `localization.csv`
 
 **Nächster Schritt: PHASE 5 — Tiere, Parasiten, Pilz-Symbiose, pH/Katastrophen (noch nicht begonnen).**

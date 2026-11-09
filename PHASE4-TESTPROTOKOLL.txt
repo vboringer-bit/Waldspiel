@@ -1,4 +1,4 @@
-WALD-REGENERATION — PHASE 4 — TESTPROTOKOLL
+WALD-REGENERATION — PHASE 4 + FIXRUNDE — TESTPROTOKOLL
 Godot 4.7.2.stable.official.ed1daf0bf · 2026-11-05 · Europe/Berlin
 Xvfb 1920x1080x24 · --rendering-driver opengl3 (llvmpipe Software-Rasterizer)
 Ziel-Renderer des Projekts: Forward+ / Vulkan
@@ -10,7 +10,7 @@ Ziel-Renderer des Projekts: Forward+ / Vulkan
 F5 ohne Preset (Xvfb, 1920x1080, 25 Frames)          Exit 0 / 0 Fehler
 --headless --path . --quit-after 180
     -- --seed=20261105 --windowed                     Exit 0 / 0 Fehler
-Godot-Import der neuen .tres/.gd/.uid-Dateien         0 Parse/Load-Fehler
+Godot-Import aller neuen .tres/.gd/.uid-Dateien       0 Parse/Load-Fehler
 
 ======================================================================
 2) SMOKE-TESTS (headless, ohne --seed, Legacy-Seed bleibt zufaellig)
@@ -23,12 +23,13 @@ Godot-Import der neuen .tres/.gd/.uid-Dateien         0 Parse/Load-Fehler
 --p3-smoke           Exit 0  Ergebnis: OK   56 OK-Zeilen   0 Fehler
 --rev3-smoke         Exit 0  Ergebnis: OK   20 OK-Zeilen   0 Fehler
 --rev4-smoke         Exit 0  Ergebnis: OK   32 OK-Zeilen   0 Fehler
---phase4-smoke       Exit 0  Ergebnis: OK   50 OK-Zeilen   0 Fehler
+--phase4-smoke       Exit 0  Ergebnis: OK   63 OK-Zeilen   0 Fehler
 ----------------------------------------------------------------------
-9 / 9 Smokes OK · 271 OK-Zeilen (inkl. je 1 Ergebniszeile) · 0 FEHLER · 0 SCRIPT ERROR
+9 / 9 Smokes OK · 284 OK-Zeilen (inkl. je 1 Ergebniszeile) · 0 FEHLER · 0 SCRIPT ERROR
 
 PHASE4-Checks im Detail:
 [SMOKE] === PHASE 4: Skilltree + Winter-Schnee ===
+[SMOKE] AUTO standardmaessig aus (MANUELL)                         OK
 [SMOKE] SkillTree + data/skilltrees/oak.tres geladen               OK
 [SMOKE] Genau 15 MVP-Knoten                                        OK
 [SMOKE] Alle 7 Pflicht-Mutationen aus Master-Punkt 6               OK
@@ -50,6 +51,9 @@ PHASE4-Checks im Detail:
 [SMOKE] P3-Anschluss set_spread_bonus() = +30 %                    OK
 [SMOKE] Ketten-Freischaltung bis Kronenwuchs                       OK
 [SMOKE] +2 Blaetter: can_grow('leaf') real erweitert               OK
+[SMOKE] Kronenwuchs enthaelt grant_leaves = 2                      OK
+[SMOKE] Kronenwuchs: +2 Blaetter SOFORT gutgeschrieben             OK
+[SMOKE] +2 Blaetter auch auf allen anderen Eichen (global synchron) OK
 [SMOKE] Symbiose mit ZWEI Vorbedingungen                           OK
 [SMOKE] Parasiten-Resistenz freigeschaltet                         OK
 [SMOKE] Resistenzwert -50 % gespeichert (PHASE-5-Anschluss)        OK
@@ -66,17 +70,26 @@ PHASE4-Checks im Detail:
 [SMOKE] Zurueckgesetzt vor dem Laden                               OK
 [SMOKE] Laden (Format v5)                                          OK
 [SMOKE] Skill-Fortschritt nach Laden wiederhergestellt             OK
+[SMOKE] Save v5 stellt Skill-Blaetter ohne Duplikate wieder her    OK
+[SMOKE] apply_effect() erzeugt keine doppelten Skill-Blaetter      OK
+[SMOKE] add_leaf() respektiert Cap 14; grow_part() luegt nicht mehr OK
+[SMOKE] Ausgewachsener Baum: AUTO verbraucht KEINE Glucose         OK
 [SMOKE] Winter: Niederschlag ist SCHNEE                            OK
 [SMOKE] HUD zeigt „Es schneit“                                     OK
 [SMOKE] Schnee erzeugt KEINE Regen-Spritzer                        OK
 [SMOKE] Flocken bleiben auf der Oberflaeche liegen                 OK
+[SMOKE] Schnee bleibt 5-9 s liegen (statt 1,6-3,2 s)               OK
 [SMOKE] Keine Flocken unter der Geländelinie                       OK
 [SMOKE] Schnee fuellt Reservoirs weiter auf (R3 erhalten)          OK
 [SMOKE] Winter: weiterhin KEINE Reservoir-Entnahme (R3)            OK
+[SMOKE] Saisonwechsel startet WEICHEN Uebergang (kein harter Schnitt) OK
+[SMOKE] Liegender Schnee bleibt beim Uebergang erhalten            OK
+[SMOKE] HUD zeigt Tau-Meldung waehrend des Uebergangs              OK
+[SMOKE] Uebergang endet nach 3,5 s bei reinem Regen                OK
 [SMOKE] Fruehling: wieder Regen                                    OK
-[SMOKE] Schnee-Punkte beim Saisonwechsel entfernt                  OK
+[SMOKE] Schnee ist sanft geschmolzen (nicht hart geloescht)        OK
 [SMOKE] Regen-Spritzer im Fruehling weiter aktiv (REV3)            OK
-[SMOKE] Alle 50 P4-Schluessel in DE + EN uebersetzt                OK
+[SMOKE] Alle 51 P4-Schluessel in DE + EN uebersetzt                OK
 [SMOKE] Weiterhin 5 geladene Chunks                                OK
 [SMOKE] Ergebnis: OK
 
@@ -89,30 +102,46 @@ Ohne Preset / F5            Exit 0 / 25 Frames / 0 Fehler -> p4_f5.png
                             Exit 0 / 25 Frames / 0 Fehler -> p4_skilltree-locked.png
 --phase4-shot-snow          Exit 0 / 25 Frames / 0 Fehler -> p4_snow.png
 --phase4-shot-snow-detail   Exit 0 / 25 Frames / 0 Fehler -> p4_snow-detail.png
-Sichtpruefung: Skilltree 15 Knoten / 14 Linien, keine ueberlagerte
-GraphEdit-Leiste; Winter zeigt weisse Flocken, keine blauen Linien,
-keine Spritzer; F5-HUD hat den Button "Skilltree (T)".
+--phase4-shot-thaw (--fixed-fps 10)
+                            Exit 0 / 25 Frames / 0 Fehler -> p4_thaw.png
+Sichtpruefung: F5 zeigt MANUELL; Skilltree 15 Knoten / 14 Linien;
+Winter zeigt weisse Flocken ohne Spritzer; Tau-Bild zeigt GLEICHZEITIG
+Flocken + erste blaue Regenlinien und HUD "Der Schnee geht langsam
+in Regen ueber." bei Jahr 4 · Fruehling.
 
 ======================================================================
-4) DATEN / SAVE / LOKALISIERUNG
+4) FIXRUNDE — AKZEPTANZ
 ======================================================================
-data/skilltrees/oak.tres     15 Knoten, 14 Vorbedingungen, err=0
-tools/generate_skilltree.gd  Godot-4.7-ResourceSaver, deterministisch
+AUTO standardmaessig AUS (Global.auto_mode = false)         OK
+Ausgewachsener Baum: AUTO verbraucht 0 Glucose              OK
+crown_growth: grant_leaves=2 -> +2 SICHTBARE Blaetter       OK
+add_leaf() Cap = 14; grow_part() nur bei echtem Zuwachs     OK
+Save v5: skill_leaf_grants verhindert Duplikate              OK
+Schnee bleibt 5-9 s liegen (vorher 1,6-3,2 s)               OK
+Saisonwechsel waehrend Schnee: 3,5 s snow_blend 1 -> 0      OK
+HUD/Toast "Der Schnee geht langsam in Regen ueber."          OK
+Liegender Schnee schmilzt beschleunigt, nicht hart geloescht OK
+R3: Winter keine Entnahme, Auffuellen laeuft weiter          OK
+
+======================================================================
+5) DATEN / SAVE / LOKALISIERUNG
+======================================================================
+data/skilltrees/oak.tres     15 Knoten, 14 Vorbedingungen, grant_leaves=2
+tools/generate_skilltree.gd  Godot-4.7-ResourceSaver, err=0
 SaveManager.FORMAT_VERSION   5; skills vor trees wiederhergestellt
-data/localization.csv        136 Zeilen, 57 neue PHASE-4-Zeilen (DE+EN)
+data/localization.csv        137 Zeilen, 58 PHASE-4-Zeilen (DE+EN)
 Phase3Smoke                  version >= 4 (v5 kompatibel)
 
 ======================================================================
-5) ZIP / EXTRAKT-VERIFIKATION
+6) ZIP / EXTRAKT-VERIFIKATION
 ======================================================================
-deliverables/waldspiel-PHASE4.zip: project.godot im Root, CRC OK,
-keine .godot-Dateien, keine .zip-in-.zip, alle neuen P4-Dateien drin.
+deliverables/waldspiel-PHASE4-FIX.zip: project.godot im Root, CRC OK,
+keine .godot-Dateien, keine .zip-in-.zip, alle neuen FIX-Dateien drin.
 Extrakt -> --headless --import -> alle 9 Smokes: Exit 0 / Ergebnis: OK.
 
 ======================================================================
-6) BEWUSSTE GRENZE
+7) BEWUSSTE GRENZE
 ======================================================================
 PHASE 5 wurde NICHT begonnen: keine Tiere, kein Mistel-Befall,
 keine Pilz-Simulation, keine pH-/N-P-K-/Mykorrhiza-/Katastrophen-Ereignisse.
-Resistenz- und Symbiose-Werte sind als echte Zahlen vorbereitet.
 

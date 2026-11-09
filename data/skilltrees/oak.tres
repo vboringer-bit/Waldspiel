@@ -80,6 +80,7 @@ desc_key = "SKILL_CROWN_DESC"
 cost = 26.0
 prerequisites = Array[String](["photosynthesis_plus"])
 effects = {
+"grant_leaves": 2.0,
 "max_leaves": 2.0
 }
 graph_position = Vector2(660, 220)
