@@ -1,0 +1,49 @@
+; Engine configuration file.
+; Wald-Regeneration | PHASE 3 + REVISION 4 | Godot 4.7.2 stable (Forward+ / Vulkan)
+; Alle Pfade relativ (res://). Siehe DECISIONS.md fuer begruendete Annahmen.
+
+config_version=5
+
+[application]
+
+config/name="Wald-Regeneration"
+config/description="2D-Seitenansicht: Regeneration eines Waldes nach dem Brand. REVISION 4: gecachte/batched Kontur-Geometrie gegen das Ruckeln, 2 Start-Eicheln auf dem Boden statt im Inventar, Platzierung nur ueber das Inventar-Icon und auf dem Boden, 5 Wachstumsstufen fuer Stamm und Wurzeln (duenn -> dick). REVISION 3: stufenloser Wasserpegel ohne Ruckler, Winter ohne Reservoir-Entnahme, Regen mit Oberflaechen-Spritzern. PHASE 3: Jahreszeiten (15 min/Jahr), x1/x3/x10 + Pause, Herbst-Eichelfall, Samen finden/vergraben, LEICHT/NORMAL/SCHWER, Save v4. Inkl. Regen-Auffuellung der Reservoirs, Vogel fliegt aus dem Bild, korrigierte Vollbild-Skalierung."
+run/main_scene="res://src/Main.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://assets/placeholders/icon.png"
+boot_splash/bg_color=Color(0.89, 0.84, 0.73, 1)
+boot_splash/show_image=false
+
+[autoload]
+
+Global="*res://src/autoload/Global.gd"
+EventBus="*res://src/autoload/EventBus.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/resizable=true
+; Direkt im Vollbild starten: 3 = WINDOW_MODE_FULLSCREEN. F11 schaltet um.
+; Tests/Screenshots koennen mit --windowed in den Fenstermodus wechseln.
+window/size/mode=3
+window/stretch/mode="canvas_items"
+; "expand" skaliert den 1920x1080-Viewport selbst auf JEDEN Monitor.
+; Main._fit_display() haelt content_scale_factor bewusst auf 1.0 (PHASE 3:
+; sonst doppelte Skalierung -> HUD bei 2560x1440 rechts abgeschnitten).
+window/stretch/aspect="expand"
+
+[layer_names]
+
+2d_physics/layer_1="terrain"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+textures/canvas_textures/default_texture_filter=0
+textures/canvas_textures/default_texture_repeat=0
+textures/default_filters/use_nearest_mipmap_filter=false
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+environment/defaults/default_clear_color=Color(0.89, 0.84, 0.73, 1)
+anti_aliasing/quality/msaa_2d=0

@@ -1,0 +1,113 @@
+WALD-REGENERATION — REVISION 4 — TESTPROTOKOLL
+Godot 4.7.2.stable.official.ed1daf0bf · 2026-11-05 · Europe/Berlin
+Xvfb 1920x1080x24 · --rendering-driver opengl3 (llvmpipe Software-Rasterizer)
+Ziel-Renderer des Projekts: Forward+ / Vulkan
+
+======================================================================
+1) IMPORT / DAUERLAUF
+======================================================================
+--headless --path . --import                         Exit 0 / 0 Fehler
+--headless --path . --quit-after 180
+    -- --seed=20261105 --windowed                   Exit 0 / 0 Fehler
+PNG/Asset-Importe: 65 .import-Dateien, 0 fehlende Bild-Imports
+(erwartete Ausnahmen ohne .import: src/Main.tscn, data/species/oak.tres)
+
+======================================================================
+2) SMOKE-TESTS (headless, ohne --seed, Legacy-Seed bleibt zufaellig)
+======================================================================
+--phase0-smoke   Exit 0  Ergebnis: OK    3 Checks   0 Fehler
+--phase1-smoke   Exit 0  Ergebnis: OK   26 Checks   0 Fehler
+--phase2-smoke   Exit 0  Ergebnis: OK   25 Checks   0 Fehler
+--rev1-smoke     Exit 0  Ergebnis: OK   32 Checks   0 Fehler
+--rev2-smoke     Exit 0  Ergebnis: OK   27 Checks   0 Fehler
+--p3-smoke       Exit 0  Ergebnis: OK   56 Checks   0 Fehler
+--rev3-smoke     Exit 0  Ergebnis: OK   20 Checks   0 Fehler
+--rev4-smoke     Exit 0  Ergebnis: OK   32 Checks   0 Fehler
+----------------------------------------------------------------------
+8 / 8 Smokes OK · 221 Checks · 0 FEHLER · 0 SCRIPT ERROR
+
+REV4-Checks im Detail (Auszug):
+[SMOKE] Eigener Wasser-CanvasItem als Kind vorhanden         OK
+[SMOKE] Isolinien + Schichtpolygone im Cache (kein Noise-Redraw) OK
+[SMOKE] 6 Pegel-Redraws bauen Erde/Hoehlen NICHT neu auf     OK
+[SMOKE] Nur die Wasser-Kontur wird neu gezeichnet            OK
+[SMOKE] Statik wurde insgesamt hoechstens 1x gezeichnet      OK
+[SMOKE] Konstante STARTING_SEEDS = 0                         OK
+[SMOKE] Spielstart: 0 Eicheln im Inventar                    OK
+[SMOKE] Genau 2 Start-Eicheln auf dem Boden                  OK
+[SMOKE] Im Startbild genau 2 FREI liegende Eicheln           OK
+[SMOKE] Boden-Eichel anklicken -> +1 Inventar (wie bisher)   OK
+[SMOKE] Weltklick auf leeren Boden nimmt KEINE Inventar-Eichel OK
+[SMOKE] Nur Klick auf das Eichel-Icon nimmt Eichel auf       OK
+[SMOKE] Klick in den Himmel platziert die Eichel NICHT       OK
+[SMOKE] Klick auf den Boden platziert die schwebende Eichel  OK
+[SMOKE] Keimling: Stufe 0, Stamm duenn (0.30)                OK
+[SMOKE] Wachstum wechselt mehrere sichtbare Stufen (0 -> 4)  OK
+[SMOKE] Stamm wird deutlich dicker (0.30 -> 1.00)            OK
+[SMOKE] Wurzeln werden deutlich dicker (0.25 -> 1.00)        OK
+[SMOKE] Stamm verjuengt sich nach oben (realistisch)         OK
+[SMOKE] Tiefe Wurzelspitze bleibt duenner als der Wurzelhals OK
+[SMOKE] 16px-Kollisionsraster der Wurzeln unveraendert       OK
+[SMOKE] Wuchsstufe + Breite ueber Save/Load erhalten         OK
+[SMOKE] Neuer Hinweistext in DE + EN vorhanden               OK
+[SMOKE] Weiterhin 5 geladene Chunks                          OK
+
+======================================================================
+3) PERFORMANCE — Diagnose und A/B auf derselben Maschine
+======================================================================
+Temporaere --r4-profile-Instrumentierung (restlos entfernt), R3-Zustand:
+    TerrainContours._draw() = 66,1–68,6 ms pro Chunk
+      erase   0,7 ms | layers 23–24 ms | caves 31–32 ms | water 11–12 ms
+    5 Chunks ≈ 335 ms pro Pegel-Redraw · R3 loeste bis zu 25 Redraws/s aus
+    --print-fps --p3-shot-spring: ~1–2 FPS / ~500 ms pro Frame
+
+REVISION 4:
+    statische Befehlsliste 1x pro Chunk, Wasser-Item separat
+    Isolinien/Schichtpolygone klassenweit gecacht (seed|chunk|kind)
+    zusammengefasste Zell-/Randstreifen: ~1.400–4.500 statt ~26.000 Befehle
+    Noise-Abfrage nur noch bei |v| <= 0,21 (Isolinien-Kante)
+    Redraw nur bei >= 0,4 px Pegelaenderung, hoechstens alle 0,08 s
+
+A/B, je 2 Laeufe, 250 Frames, --seed=20261105 --windowed --p3-shot-spring:
+    R3 (waldspiel-REVISION3.zip, entpackt):  median 1 FPS  (min 1 / max 2)
+    R4 (aktueller Workspace):                median 7 FPS  (min 5 / max 9)
+    -> ~7x schneller, keine 335ms-Einbrueche mehr
+    --rev3-shot-rain-splash (R4): 7 FPS / 0 Fehler (Regen bleibt Echtzeit)
+    --rev4-shot-start       (R4): 7 FPS / 0 Fehler
+
+Hinweis: llvmpipe ist ein Software-Rasterizer; der verbleibende Rest ist
+Füllrate/Overdraw bei 1920x1080. Auf dem Ziel-Renderer Forward+/Vulkan
+entfällt dieser Anteil. Die beseitigten 67ms-Haupt-Thread-Spitzen waren
+renderer-unabhängig und damit die eigentliche Ruckler-Ursache.
+
+======================================================================
+4) VISUELLE PRUEFUNG (Xvfb + opengl3 + --write-movie, je 25 Frames)
+======================================================================
+--rev4-shot-start   -> screenshots/rev4_start.png   Exit 0 / 0 Fehler
+    2 orangene Eicheln auf der Oberkante, HUD "× 0", kein Baum
+--rev4-shot-carry   -> screenshots/rev4_carry.png   Exit 0 / 0 Fehler
+    schwebende Eichel + Platzierungsvorschau, HUD-Icon markiert,
+    Toast "Linksklick AUF DEN BODEN platziert sie"
+--rev4-shot-stages  -> screenshots/rev4_stages.png  Exit 0 / 0 Fehler
+    links Keimling (Stufe 0, 0.30), rechts Stufe 4 (1.00), Wurzeln sichtbar
+--rev4-shot-water   -> screenshots/rev4_water.png   Exit 0 / 0 Fehler
+    R3-Regression: 53 % Pegel, fraktionale Zelle, trockener Leerboden oben
+
+======================================================================
+5) ZIP-VERIFIKATION (Extrakt /tmp/zipr4, unabhaengig vom Workspace)
+======================================================================
+python3 tools/build_zip.py REVISION4
+    -> /home/user/waldspiel-REVISION4.zip
+    251 Dateien / 28,49 MiB · project.godot im ZIP-Root · CRC-Test OK
+    .godot ausgeschlossen · 8 screenshots/rev4_* inkl. .import enthalten
+Extrakt --headless --import                         Exit 0 / 0 Fehler
+Extrakt-Smokes (alle 8, ohne --seed)                je Exit 0 / Ergebnis: OK
+    phase0 / phase1 / phase2 / rev1 / rev2 / p3 / rev3 / rev4
+Extrakt-Zaehlung: 64 PNG / 65 .import / 39 .gd / 0 fehlende Bild-Imports
+
+======================================================================
+6) LIEFERUNG
+======================================================================
+PHASE 4 wurde NICHT begonnen. Kein GraphEdit, keine Skilltree-Nodes.
+EOF
+wc -l REVISION4-TESTPROTOKOLL.txt

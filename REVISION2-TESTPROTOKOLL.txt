@@ -1,0 +1,62 @@
+WALD-REGENERATION | REVISION 2 | Godot 4.7.2.stable.official.ed1daf0bf | 2026-11-06
+==============================================================
+Hinweis: P0/P1/P2/REV1-Smokes laufen OHNE --seed, weil Phase1Smoke
+         bewusst prueft, dass der Seed pro Neustart zufaellig gewuerfelt
+         wird. Ein explizites --seed=... deaktiviert genau das (by design).
+
+[1] IMPORT
+    --headless --import              : exit=0 | Fehler=0
+    --headless --quit-after 180      : exit=0 | Fehler=0
+
+[2] SMOKE-SUITE (ohne --seed)
+    --phase0-smoke : exit=0 | [SMOKE] Ergebnis: OK
+    --phase1-smoke : exit=0 | [SMOKE] Ergebnis: OK
+    --phase2-smoke : exit=0 | [SMOKE] Ergebnis: OK
+    --rev1-smoke : exit=0 | [SMOKE] Ergebnis: OK
+    --rev2-smoke : exit=0 | [SMOKE] Ergebnis: OK
+
+[3] REV2 AUF 4 SEEDS (mit --seed)
+    seed=20261105 : exit=0 | [SMOKE] Ergebnis: OK | [SMOKE] Hoehlen ~50 % seltener (771 statt 1403, 55%)               OK
+    seed=1473149547 : exit=0 | [SMOKE] Ergebnis: OK | [SMOKE] Hoehlen ~50 % seltener (779 statt 1536, 51%)               OK
+    seed=1869078048 : exit=0 | [SMOKE] Ergebnis: OK | [SMOKE] Hoehlen ~50 % seltener (197 statt 370, 53%)                OK
+    seed=424242 : exit=0 | [SMOKE] Ergebnis: OK | [SMOKE] Hoehlen ~50 % seltener (846 statt 1577, 54%)               OK
+
+[4] REV2-SMOKE AUSFUEHRLICH (seed 20261105)
+[SMOKE] === REVISION 2 (vor PHASE 3) ===
+[SMOKE] Hoehlenflaeche auf 50 % gesetzt                            OK
+[SMOKE] Hoehlen ~50 % seltener (771 statt 1403, 55%)               OK
+[SMOKE] TerrainSurface + TerrainContours pro Chunk vorhanden       OK
+[SMOKE] Schichtgrenze fliessend: max. 4 px / 0 Ecken               OK
+[SMOKE] Blob-Kanten organisch verwackelt (28 verschiedene Werte)   OK
+[SMOKE] Vollbild-Skalierung aus REVISION 1 bleibt                  OK
+[SMOKE] Starter-Reservoir weiterhin garantiert                     OK
+[SMOKE] Reservoir wurde als zusammenhängendes Becken erkannt       OK
+[SMOKE] Becken hat 114 verbundene Tiles                            OK
+[SMOKE] Oberes und unteres Tile gehoeren zum SELBEN Becken         OK
+[SMOKE] Frisches Becken ist voll (100 %)                           OK
+[SMOKE] Wasserspiegel startet an der Oberkante des Beckens         OK
+[SMOKE] Halbes Volumen -> Pegel wandert nach unten                 OK
+[SMOKE] Trocken ausschliesslich OBEN (56 trocken / 58 nass)        OK
+[SMOKE] Alle Tiles teilen sich EIN Volumen (auch das unterste)     OK
+[SMOKE] Entnahme am unteren Tile laesst OBEN weitere Tiles trocknen OK
+[SMOKE] Langsame natuerliche Versickerung (2052.0 -> 2048.6)       OK
+[SMOKE] Regen fuellt das Becken wieder auf                         OK
+[SMOKE] Trocken = helles Tile 16, nass = blaues Tile 11            OK
+[SMOKE] Weiche Konturen werden nach Pegel-Wechsel neu gezeichnet   OK
+[SMOKE] Speichern (Format v3 mit Becken-Volumen)                   OK
+[SMOKE] Laden (Format v3)                                          OK
+[SMOKE] Pegel aus Savegame wiederhergestellt (35% -> 35%)          OK
+[SMOKE] Weiterhin 5 aktive Chunks                                  OK
+[SMOKE] Nearest + Forward+ weiterhin aktiv                         OK
+[SMOKE] DE/EN weiterhin aktiv                                      OK
+[SMOKE] Ergebnis: OK
+
+[5] XVFB-SCREENSHOTS (1920x1080, opengl3, --windowed, seed 20261105)
+    --rev2-shot-edges : exit=0 | Fehler=0
+    --rev2-shot-water : exit=0 | Fehler=0
+    --rev2-shot-water-low : exit=0 | Fehler=0
+    --phase2-shot-caves : exit=0 | Fehler=0
+    --rev1-shot-surface : exit=0 | Fehler=0
+    -- Vollbild Root-Capture 2560x1440 : exit=0 | Fehler=0
+
+[6] ERGEBNIS: 0 rote Fehler, alle 5 Smokes OK, keine Chunk-Naht, PHASE 3 nicht begonnen.

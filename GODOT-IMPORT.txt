@@ -1,0 +1,109 @@
+WALD-REGENERATION — PHASE 3 + REVISION 4 — Godot 4.7.2 stable
+======================================================================
+
+Dieses ZIP enthaelt das KOMPLETTE, lauffaehige Projekt. project.godot liegt
+direkt im ZIP-Root (kein zusaetzlicher Unterordner).
+
+In Godot importieren:
+  1. ZIP entpacken (z.B. nach ~/Godot/waldspiel).
+  2. Godot 4.7.2 stable starten → "Importieren" (Import).
+  3. Die entpackte project.godot auswaehlen → "Importieren & Bearbeiten".
+  4. F5 druecken. Hauptszene: res://src/Main.tscn.
+     Ein STARTMENUE fragt LEICHT / NORMAL / SCHWER ab (nicht blockierend).
+     Das Spiel startet im VOLLBILD und skaliert ohne graue Raender auf den
+     Monitor. F11 schaltet Vollbild/Fenster um.
+
+Voraussetzungen: Godot 4.7.2 stable, Forward+ / Vulkan, GDScript.
+Keine externen Addons, keine Internet-Assets, keine C#-Dateien.
+Der .godot-Cache ist absichtlich NICHT im ZIP; Godot erzeugt ihn beim Import.
+
+Steuerung:
+  Startmenue / HUD          Schwierigkeit LEICHT / NORMAL / SCHWER
+  Leertaste / HUD "Pause"  Simulation anhalten (auch bei x10)
+  HUD x1 / x3 / x10        Zeitspulen; 1 Spiel-Jahr = 15 Echtzeit-Minuten
+  Linksklick Boden-Eichel  Zwei Start-Eicheln liegen am Boden: einsammeln
+                           (+1 Inventar). Das Inventar startet bei 0.
+  Linksklick Eichel-Icon   NUR HIER: Inventar-Eichel AUFNEHMEN, sie schwebt
+    (HUD)                   dann an der Maus. Ein Klick irgendwo im Bild
+                           nimmt KEINE Eichel aus dem Inventar.
+  Linksklick beim Tragen   Eichel NUR AUF DEM BODEN platzieren (nicht im
+                           Himmel / nicht ueber dem HUD)
+  Linksklick Huegel        PHASE 3: flach vergrabene Eichel (nur mit Wurzel
+                           in Reichweite erreichbar)
+  Rechtsklick / Esc        getragene Eichel zuruecklegen / Info zu Huegel
+  MANUELL: Wurzel klicken  Wurzel waechst in Erd-Richtung, Kosten nach Boden
+                           (Ghost-Preview zeigt Ziel + Preis)
+  Rechtsklick (sonst)      Info (Baumwerte / Bodenmaterial + Kosten)
+  WASD / Maus am Rand      Kamera schwenken
+  Mausrad                  Zoom 0.5x … 2.0x
+  R                        Regen sofort (Dev-Hook) — fuellt Becken WIEDER AUF
+  F11                      Vollbild an/aus
+  HUD                      AUTO/MANUELL, DE/EN, Speichern, Laden
+
+NEU IN REVISION 3 (vor PHASE 4):
+  * Wasserpegel sinkt/steigt STUFENLOS (Interpolation innerhalb einer
+    Tile-Zeile + anteilig gefuellte 4px-Zelle) -> kein 16px-Ruckler.
+    Feines Kontur-Redraw, Tile-Slots nur noch beim Zeilenwechsel und
+    ueber eine gecachte Kachelliste (kein Full-Scan mehr).
+  * Im WINTER ziehen Baeume KEIN Wasser aus Reservoirs; auch die
+    Boden-Versickerung ruht. Regen fuellt weiter auf. HUD-Hinweis.
+  * Regen faellt in WELT-KOORDINATEN bis zur echten Gelaendelinie
+    (height_smooth_at) und erzeugt dort kleine Spritzer + Rippen.
+    Kein Tropfen faellt mehr durch den Boden hindurch.
+  * Neuer Test: --rev3-smoke (19 Checks).
+
+NEU IN PHASE 3:
+  * Jahreszeiten Fruehling / Sommer / Herbst / Winter (15 min/Jahr).
+    Winter: Wachstum stoppt, Laubbaeume kahl. Kein Tag/Nacht-Zyklus.
+  * Zeitspulen x1 / x3 / x10 + Pause (Leertaste). Alle Simulationen nutzen
+    delta * time_scale. HUD zeigt Jahr, Jahreszeit und Saison-Fortschritt.
+  * Herbst: Eicheln fallen unter den Kronen (ab ~3 Spiel-Jahren, Physik-Fall,
+    manche keimen bei Wasser + Licht). Wahrscheinlichkeit x Schwierigkeit.
+  * Samen liegen auf dem Boden oder sind flach vergraben (kleiner Huegel,
+    per Noise verteilt). Vergrabene erst mit einer Wurzel erreichbar.
+  * Schwierigkeitsgrade vor Spielstart waehlbar, jederzeit im HUD aenderbar.
+    LEICHT / NORMAL / SCHWER beeinflussen Fotosynthese, Wasser, Regen,
+    Wachstumskosten, Samendichte, Eichel-/Keimwahrscheinlichkeit.
+    Schalter + Faktoren fuer pH / N-P-K / Mykorrhiza / Katastrophen sind
+    vorbereitet; die Simulation selbst folgt in PHASE 5 (siehe DECISIONS.md).
+  * Savegame v4 speichert difficulty / time / seeds zusaetzlich zu allen
+    v3-Daten. Alte v3/v2/v1-Spielstaende bleiben lesbar.
+  * Zwei Korrekturen VOR PHASE 3:
+      - Regen fuellt Wasserreservoirs LANGSAM und SICHTBAR wieder auf
+        (0.9 Einheiten/Tile/s x Becken-Groesse, nach der Wurzelentnahme).
+      - Der Vogel fliegt bis HINTER den linken Bildrand, statt mitten in
+        der Luft zu verschwinden (kamera-/viewport-abhaengig).
+  * Zusatzfix: keine doppelte Vollbild-Skalierung mehr — HUD ist bei
+    2560x1440 und 3440x1440 vollstaendig sichtbar.
+  * Zusatzfix: Revision1Smoke.gd scannt jetzt denselben Hoehlenbereich wie
+    Phase2Smoke/Revision2Smoke (top+5..top+45) — kein sporadischer
+    Fehlalarm bei unguenstigen Zufalls-Seeds mehr.
+
+Tests (im Projektordner, OHNE --seed):
+  godot --headless --path . --import
+  godot --headless --path . --quit-after 180
+  godot --headless --path . -- --phase0-smoke    # Regression: OK
+  godot --headless --path . -- --phase1-smoke    # Regression: OK
+  godot --headless --path . -- --phase2-smoke    # Regression: OK
+  --rev1-smoke / --rev2-smoke                    # Regression: OK
+  --p3-smoke                                     # 55 Checks: Zeit, Samen,
+                                                 # Schwierigkeit, Save v4
+  --rev3-smoke                                   # 19 Checks: Pegel, Winter,
+                                                 # Regen-Spritzer
+
+Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed):
+  --p3-shot-difficulty / -spring / -autumn / -winter / -seeds
+  --p3-shot-rain-refill / -bird-mid / -bird-exit
+  --rev2-shot-edges          (Regression)
+  --rev3-shot-rain-splash / -water-a / -water-b
+  --p3-debug-sizes           (Viewport-/Skalierungs-Debug)
+
+Dokumente: README.md, DECISIONS.md (Abschnitte 34–53),
+REVISION3-ERGEBNIS.html/.md, REVISION3-TESTPROTOKOLL.txt,
+PHASE3-ERGEBNIS.html/.md, PHASE3-TESTPROTOKOLL.txt sowie die historischen
+REVISION2-/REVISION1-/PHASE0-/PHASE1-/PHASE2-Berichte.
+Die HTML-Berichte enthalten die Bilder als data-URIs und funktionieren offline.
+
+Hinweis: user://savegame.json liegt NICHT im ZIP, sondern im
+Godot-Benutzerdatenordner und wird beim ersten Speichern angelegt.
+PHASE 3 und REVISION 3 sind abgeschlossen; PHASE 4 wurde NICHT begonnen.

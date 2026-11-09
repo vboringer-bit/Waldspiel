@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TreeSpeciesData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/TreeSpeciesData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+species_name = "Eiche"
+photosynthesis_efficiency = 0.8
+water_consumption_rate = 0.35
+base_water_gain = 0.1
+growth_cost = 10.0
+starting_water = 100.0
+root_type = "Pfahlwurzel + Herzwurzelsystem"
+leaf_description = "Sommergrün, 2 Blätter beim Keimling"
+root_side_every = 4

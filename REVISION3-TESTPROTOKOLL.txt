@@ -1,0 +1,64 @@
+WALD-REGENERATION — REVISION 3 (vor PHASE 4) — TESTPROTOKOLL
+============================================================
+Datum:       2026-11-07 (Europe/Berlin)
+Engine:      Godot 4.7.2.stable.official.ed1daf0bf, GDScript, Forward+/Vulkan
+Auftrag:     1) Kein Ruckler beim Ab-/Zunehmen der Reservoirs (stufenlos)
+             2) Im Winter ziehen Bäume KEIN Wasser aus Reservoirs
+             3) Regen fällt bis zur Oberfläche und prasselt mit Spritzern auf
+Hinweis:     P0/P1/P2/REV1/REV2/P3-Smokes OHNE --seed (Phase1Smoke verlangt
+             einen zufälligen Welt-Seed). Screenshots: --seed=20261105.
+
+1) IMPORT + START + DAUERTEST
+   --headless --path . --import                       exit=0 / 0 Fehler
+   --headless --path . --quit-after 180              exit=0 / 0 Fehler
+   --headless --path . --quit-after 300
+       --seed=20261105 --rev3-shot-rain-splash       exit=0 / 0 Fehler / 11 s
+       (Dauerregen: kontinuierliches Refill + Spritzer + Kontur-Redraw)
+
+2) HEADLESS-SMOKES (alle ohne --seed)
+   --phase0-smoke    exit=0   [SMOKE] Ergebnis: OK   0 Errors
+   --phase1-smoke    exit=0   [SMOKE] Ergebnis: OK   0 Errors
+   --phase2-smoke    exit=0   [SMOKE] Ergebnis: OK   0 Errors
+   --rev1-smoke      exit=0   [SMOKE] Ergebnis: OK   0 Errors
+   --rev2-smoke      exit=0   [SMOKE] Ergebnis: OK   0 Errors
+   --p3-smoke        exit=0   [SMOKE] Ergebnis: OK   0 Errors
+   --rev3-smoke      exit=0   [SMOKE] Ergebnis: OK   19 Checks / 0 FEHLER
+
+   Auszug --rev3-smoke:
+     Voll: Pegel exakt an der Becken-Oberkante (REV2-Regression)    OK
+     Pegel wandert beim Entleeren gleichmaessig nach unten          OK
+     KEIN 16px-Sprung: groesster Schritt 2.42 px                    OK
+     Zwischenwerte INNERHALB einer Tile-Zeile (199/200 fraktional)  OK
+     Auffuellen ebenfalls stufenlos (max. 2.42 px/Schritt)          OK
+     Kleine Aenderung: Kontur-Redraw, KEIN Tile-Slot-Ruckler        OK
+     WINTER: Baum entnimmt KEIN Reservoir-Wasser (8712 -> 8712)     OK
+     FRUEHLING: Entnahme wieder aktiv (8712 -> 8622.9)              OK
+     Regen-Aufprallhoehe = echte Gelaendelinie (320.0 px)           OK
+     Aufprall erzeugt viele Spritzer (316)                          OK
+     Kein Tropfen faellt durch den Boden hindurch                   OK
+     Trocken weiterhin ausschliesslich OBEN (REV2-Regression)       OK
+
+3) MESSUNG DER PEGELBEWEGUNG (echte Xvfb-Renders, --seed=20261105)
+   --rev3-shot-water-a (50 %): blaue Oberkante bei y=554 px
+   --rev3-shot-water-b (53 %): blaue Oberkante bei y=551 px
+   => 3 % Volumen = 3 px statt früher 0 oder 16 px (Sprung).
+   Gemessen in 5 Spalten (x=900/940/960/980/1020), jeweils identisch.
+
+4) VISUELLE PRUEFUNG (Xvfb + opengl3 + --write-movie, je 25 Frames)
+   --rev3-shot-rain-splash       exit=0 / 0 Fehler  Regen + Spritzer
+   --rev3-shot-water-a / -b     exit=0 / 0 Fehler  stufenloser Pegel
+   --p3-shot-rain-refill        exit=0 / 0 Fehler  Regen + auffüllendes Becken
+   --p3-shot-winter             exit=0 / 0 Fehler  HUD "Winter: kein Wasser
+                                                    aus Reservoirs"
+   --p3-shot-spring             exit=0 / 0 Fehler  Höhlen/Wasser-Regression
+   Während der Tests gefunden und behoben: TerrainContours zeigte Höhlen
+   kurzzeitig nur als Umriss (CAVE_FILL-Zweig fehlte nach dem Umbau).
+   Nach Fix neu gerendert und geprüft.
+
+5) ZIP
+   python3 tools/build_zip.py REVISION3 -> /home/user/waldspiel-REVISION3.zip
+   CRC-Test, project.godot im Root, .godot ausgeschlossen; Extrakt-Import
+   und alle 7 Smokes aus der entpackten ZIP erneut OK.
+
+ERGEBNIS: 0 rote Fehler, 7/7 Smokes OK, 6 visuelle Prüfungen OK,
+          alle 3 Aufträge erfüllt. PHASE 4 wurde NICHT begonnen.

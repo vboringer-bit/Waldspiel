@@ -1,0 +1,83 @@
+WALD-REGENERATION — PHASE 3 — TESTPROTOKOLL
+============================================
+Datum:       2026-11-07 (Europe/Berlin)
+Engine:      Godot 4.7.2.stable.official.ed1daf0bf, GDScript, Forward+/Vulkan
+Aufrufe:     /tmp/godot/Godot_v4.7.2-stable_linux.x86_64
+Hinweis:     P0/P1/P2/REV1/REV2-Smokes OHNE --seed (Phase1Smoke.gd:47-48
+             verlangt ausdruecklich einen zufaelligen Welt-Seed).
+             Reproduzierbare Screenshots/Presets verwenden --seed=20261105.
+
+1) IMPORT + START
+   --headless --path . --import                       exit=0 / 0 Fehler
+   --headless --path . --quit-after 180              exit=0 / 0 Fehler
+
+2) HEADLESS-SMOKES (alle ohne --seed)
+   --phase0-smoke                                    exit=0   [SMOKE] Ergebnis: OK
+   --phase1-smoke                                    exit=0   [SMOKE] Ergebnis: OK
+   --phase2-smoke                                    exit=0   [SMOKE] Ergebnis: OK
+   --rev1-smoke                                      exit=0   [SMOKE] Ergebnis: OK
+   --rev2-smoke                                      exit=0   [SMOKE] Ergebnis: OK
+   --p3-smoke                                        exit=0   [SMOKE] Ergebnis: OK
+                                                     55Checks / 0 FEHLER / 0 Errors
+
+   Auszug --p3-smoke (die zwei Korrekturen VOR PHASE 3):
+     Regen fuellt Becken sichtbar auf (20% -> 40%)              OK
+     Wasserspiegel steigt wieder (Pegelzeile 34 -> 32)          OK
+     Auffuellung ueberwiegt Wurzelentnahme (38.1% -> 43.1%)     OK
+     Abflugziel liegt links ausserhalb (-1279 < -1039)          OK
+     Vogel am Ende tatsaechlich ausserhalb des Bildes           OK
+   Auszug Zeit / Reproduktion / Schwierigkeit / Save v4:
+     scaled_delta(1s) = 10s bei x10 / Pause stoppt Simulation  OK
+     1 Spiel-Jahr = 15 Echtzeit-Minuten                         OK
+     Winter: Laubbaum kahl / keine Fotosynthese / blockiert    OK
+     Natuerliche Vermehrung ab ~3 Spiel-Jahren                  OK
+     LEICHT/NORMAL/SCHWER: Kosten, Samen, Regen, Katastrophen  OK
+     Boden-Eichel +1 Inventar / Wurzel legt Huegel frei        OK
+     Herbst: 5 Eicheln fallen unter der Krone                  OK
+     Savegame v4: difficulty / time / seeds zurueckgesetzt      OK
+     Keine Doppelskalierung: HUD bei Vollbild vollstaendig      OK
+
+3) VISUELLE PRUEFUNG (Xvfb + --rendering-driver opengl3 + --write-movie)
+   --p3-shot-difficulty      exit=0 / 0 Fehler   Startmenue LEICHT/NORMAL/SCHWER
+   --p3-shot-spring          exit=0 / 0 Fehler   Jahr 1 · Fruehling · 55%
+   --p3-shot-autumn          exit=0 / 0 Fehler   Herbst, 7 Eicheln unter der Krone
+   --p3-shot-winter          exit=0 / 0 Fehler   kahler Baum, Jahreszeitenwechsel
+   --p3-shot-seeds           exit=0 / 0 Fehler   2 Eicheln + 1 vergrabener Huegel
+   --p3-shot-rain-refill     exit=0 / 0 Fehler   REGEN: Becken sichtbar voll werdend
+   --p3-shot-bird-mid        exit=0 / 0 Fehler   Vogel MITTEN im Flug, sichtbar
+   --p3-shot-bird-exit       exit=0 / 0 Fehler   Vogel am LINKEN BILDRAND, fliegt raus
+   --rev2-shot-edges         exit=0 / 0 Fehler   Regression: weiche Kanten
+   Root-Capture 2560x1440    exit=0 / 0 Fehler   Vollbild, HUD vollstaendig, kein Rand
+   Root-Capture 3440x1440    exit=0 / 0 Fehler   Ultrawide, grauer Rand 0.26% (Berge)
+   Alle 1920x1080-Presets: 1920x1080, 60 FPS, Movie-Maker, je 25 Frames.
+
+4) STABILISIERUNG EINES LEGACY-SMOKES (beim ZIP-Extrakt-Test gefunden)
+   --rev1-smoke fiel bei einem unguenstigen Zufalls-Seed mit 2 FEHLERN auf:
+   "Hoehlen (26) + Reservoirs (171) vorhanden" und
+   "Unregelmaessige Kammern (1 Komponenten / 1 Groessen)".
+   Ursache: Revision1Smoke.gd scannte nur ty = top+5..top+31 (26 Zeilen),
+   waehrend Phase2Smoke.gd und Revision2Smoke.gd bereits top+5..top+45
+   (40 Zeilen) nutzen. Nach REVISION 2 (Hoehlenflaeche ~50% kleiner) reichte
+   das bei manchen Seeds nicht fuer die Schwellwerte >40 Kacheln / >=3 Kammern.
+   Fix: Suchbereich auf top+5..top+45 vereinheitlicht. Danach:
+     8 deterministische Seeds (1, 7, 42, 20261105, 777, 99991, 314159,
+     271828): je Exit 0 / OK, 250-579 Hoehlenkacheln, 15-33 Komponenten.
+     5 weitere Laeufe OHNE --seed: je Exit 0 / OK, 241-366 Kacheln.
+   Es wurde KEIN Schwellwert aufgeweicht und KEIN Spielsound-Code geaendert.
+
+5) ZUSATZBEFUND / BEHOBEN: Vollbild-Skalierung
+   Bei 2560x1440 war der sichtbare Viewport nur 1440x810, weil
+   Main._fit_display() content_scale_factor=1.333 zusaetzlich zur
+   automatischen canvas_items/expand-Skalierung setzte -> HUD rechts
+   abgeschnitten ("F11 = Voll..." / "Pau..."). Fix: Faktor 1.0.
+   Danach: visible=(1920,1080), scale=1.0 bei window=(2560,1440).
+   Regressionstest in --p3-smoke enthalten.
+
+6) ZIP
+   python3 tools/build_zip.py PHASE3  -> /home/user/waldspiel-PHASE3.zip
+   CRC-Test, project.godot im Root, .godot ausgeschlossen; Extrakt-Import
+   und alle 6 Smokes aus der entpackten ZIP: je Exit 0 / Ergebnis: OK.
+   Der Extrakt-Import verwendet eine frisch entpackte, unveraenderte ZIP.
+
+ERGEBNIS: 0 rote Fehler, alle 6 Smokes OK, 11 visuelle Pruefungen OK,
+          PHASE 3 abgeschlossen (Skilltree-UI bleibt PHASE 4).
