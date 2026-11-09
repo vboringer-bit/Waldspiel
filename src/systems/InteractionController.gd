@@ -11,7 +11,7 @@ extends Node
 ## ganz normal per Linksklick eingesammelt.
 const STARTING_SEEDS := 0
 const MAX_TREES := 100
-const ACORN_PATH := "res://assets/placeholders/acorn.png"
+const ACORN_PATH := PixelArt.ACORN
 
 var seed_count: int = STARTING_SEEDS
 var first_seed_eaten: bool = false
@@ -67,6 +67,17 @@ func _process(_delta: float) -> void:
 		_update_carry_visuals()
 
 
+const DRAG_THRESHOLD := 12.0
+var _pending_active: bool = false
+var _pending_click: Vector2 = Vector2.ZERO
+var _drag_active: bool = false
+var _drag_tree: BaseTree = null
+var _drag_kind: String = ""
+var _drag_origin_segment: RootSegment = null
+var _drag_points: Array[Vector2] = []
+var _drag_hint_shown: bool = false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var key := event as InputEventKey
@@ -81,18 +92,44 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		if carrying:
 			_update_carry_visuals()
+			return
+		if _pending_active and camera != null:
+			var pos := camera.get_global_mouse_position()
+			if not _drag_active and pos.distance_to(_pending_click) >= DRAG_THRESHOLD:
+				_drag_active = true
+				if not _drag_hint_shown:
+					_drag_hint_shown = true
+					EventBus.toast.emit(tr("MSG_DRAG_HINT"))
+			if _drag_active:
+				_move_drag(pos)
+				get_viewport().set_input_as_handled()
+			return
 		elif not Global.auto_mode and camera != null:
 			update_ghost(camera.get_global_mouse_position())
 		return
 	if not (event is InputEventMouseButton):
 		return
 	var mb := event as InputEventMouseButton
-	if not mb.pressed or camera == null:
+	if camera == null:
 		return
 	var world_pos := camera.get_global_mouse_position()
 	if mb.button_index == MOUSE_BUTTON_LEFT:
-		_left_click(world_pos)
-	elif mb.button_index == MOUSE_BUTTON_RIGHT:
+		if mb.pressed:
+			if _pending_active:
+				_reset_drag()
+			var candidate := _drag_candidate(world_pos)
+			if not candidate.is_empty():
+				_begin_drag(candidate, world_pos)
+				get_viewport().set_input_as_handled()
+				return
+			_left_click(world_pos)
+		else:
+			if _pending_active:
+				_end_drag(world_pos)
+				_reset_drag()
+				get_viewport().set_input_as_handled()
+			return
+	elif mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
 		if carrying:
 			clear_carrying(true)
 			get_viewport().set_input_as_handled()
@@ -478,6 +515,131 @@ func manual_growth(tree: BaseTree, pos: Vector2) -> bool:
 
 
 # --------------------------------------------------------------------------- #
+# REVISION 6: Wurzeln / Stamm / Aeste gezielt ziehen
+# --------------------------------------------------------------------------- #
+func _drag_candidate(pos: Vector2) -> Dictionary:
+	if Global.auto_mode or carrying or camera == null or generator == null:
+		return {}
+	var hit := find_root_hit(pos)
+	if not hit.is_empty():
+		return {"tree": hit["tree"], "kind": "root", "segment": hit["segment"]}
+	var tree := find_tree_at(pos)
+	if tree == null:
+		return {}
+	if pos.y > tree.global_position.y + 4.0:
+		return {"tree": tree, "kind": "root", "segment": tree.deepest_tip()}
+	return {"tree": tree, "kind": "wood", "segment": null}
+
+
+func _begin_drag(candidate: Dictionary, start: Vector2) -> void:
+	_drag_tree = candidate["tree"] as BaseTree
+	_drag_kind = String(candidate["kind"])
+	_drag_origin_segment = null
+	if candidate["segment"] != null:
+		_drag_origin_segment = candidate["segment"] as RootSegment
+	_pending_click = start
+	_pending_active = true
+	_drag_active = false
+	_drag_points.clear()
+	_drag_points.append(start)
+
+
+func _move_drag(pos: Vector2) -> void:
+	if _drag_points.is_empty() \
+			or pos.distance_to(_drag_points[_drag_points.size() - 1]) >= 8.0:
+		_drag_points.append(pos)
+	var pts := PackedVector2Array()
+	for q in _drag_points:
+		pts.append(q)
+	if _drag_tree != null and is_instance_valid(_drag_tree):
+		_drag_tree.show_growth_preview(_drag_kind, pts)
+	if ghost != null:
+		ghost.hide_ghost()
+
+
+func _end_drag(pos: Vector2) -> bool:
+	if _drag_points.is_empty() \
+			or pos.distance_to(_drag_points[_drag_points.size() - 1]) >= 4.0:
+		_drag_points.append(pos)
+	var pts := PackedVector2Array()
+	for q in _drag_points:
+		pts.append(q)
+	if not _drag_active or _drag_tree == null or not is_instance_valid(_drag_tree):
+		# Kurzer Klick ohne Bewegung: exakt wie frueher behandeln.
+		_left_click(_pending_click)
+		return false
+	var ok := apply_drag_growth(_drag_tree, _drag_kind, pts, _drag_origin_segment)
+	_drag_tree.clear_growth_preview()
+	return ok
+
+
+func _reset_drag() -> void:
+	if _drag_tree != null and is_instance_valid(_drag_tree):
+		_drag_tree.clear_growth_preview()
+	_pending_active = false
+	_drag_active = false
+	_drag_tree = null
+	_drag_kind = ""
+	_drag_origin_segment = null
+	_drag_points.clear()
+	_hide_ghost()
+
+
+## Oeffentlicher Kern: ein Zugpfad kostet pro ~16 px einen Wachstumsschritt.
+## Das logische Tile-Raster fuer Wasser/Save bleibt dabei unveraendert.
+func apply_drag_growth(tree: BaseTree, kind: String,
+		world_points: PackedVector2Array,
+		from_segment: RootSegment = null) -> bool:
+	if tree == null or not is_instance_valid(tree) or world_points.size() < 2:
+		return false
+	if tree.growth_blocked:
+		EventBus.toast.emit(tr("MSG_WINTER_GROWTH"))
+		return false
+	var length := 0.0
+	for i in range(1, world_points.size()):
+		length += (world_points[i] - world_points[i - 1]).length()
+	if length < DRAG_THRESHOLD * 1.5:
+		return false
+	var steps := clampi(int(ceilf(length / BaseTree.DRAG_STEP)), 1, 12)
+	var skill_growth := (SkillTree.instance.modifier("growth_cost")) \
+		if SkillTree.instance != null else 1.0
+	var skill_root := (SkillTree.instance.modifier("root_cost")) \
+		if SkillTree.instance != null else 1.0
+	var unit := 0.0
+	var end: Vector2 = world_points[world_points.size() - 1]
+	var gx := int(floor(end.x / float(WorldGenerator.TILE_SIZE)))
+	var gy := int(floor(end.y / float(WorldGenerator.TILE_SIZE)))
+	if kind == "root":
+		if end.y < generator.height_smooth_at(end.x) + 4.0:
+			EventBus.toast.emit(tr("MSG_DRAG_BLOCKED"))
+			return false
+		unit = GrowthCost.for_tile(generator, gx, gy,
+			Global.difficulty_factor("growth_cost") * skill_root)
+	else:
+		unit = tree.species.growth_cost \
+			* Global.difficulty_factor("growth_cost") * skill_growth
+	if unit <= 0.0:
+		unit = 1.0
+	if tree.glucose < unit * float(steps):
+		EventBus.toast.emit(tr("MSG_NOT_ENOUGH_GLUCOSE"))
+		return false
+	var actual := 0
+	if kind == "root":
+		actual = tree.grow_root_along(world_points, steps, from_segment)
+	else:
+		actual = tree.grow_wood_along(world_points, steps)
+	if actual <= 0:
+		EventBus.toast.emit(tr("MSG_DRAG_BLOCKED"))
+		return false
+	tree.glucose -= unit * float(actual)
+	EventBus.tree_grew.emit(tree, "root" if kind == "root" else "trunk")
+	if kind == "root":
+		EventBus.root_grown.emit(tree, Vector2i(gx, gy), unit * float(actual))
+	EventBus.toast.emit(tr("MSG_DRAG_GROWN") % [actual, unit * float(actual)])
+	return true
+
+
+# --------------------------------------------------------------------------- #
 # Save/Load & Debug-Hooks
 # --------------------------------------------------------------------------- #
 func get_seed_count() -> int:
@@ -580,3 +742,34 @@ func debug_drain_reservoirs() -> void:
 		for ty in range(top, top + 40):
 			if generator.reservoir_at(gx, ty):
 				world_state.debug_drain(gx, ty)
+
+
+## REVISION 6 Debug-Hooks: dieselbe State-Machine wie ein echter Mauszug,
+## nur ohne Window-/Input-Event (Headless-Smoke + Screenshot-Presets).
+func debug_drag_sequence(points: Array, glucose: float = -1.0) -> bool:
+	if points.size() < 2:
+		return false
+	var first: Vector2 = points[0]
+	var candidate := _drag_candidate(first)
+	if candidate.is_empty():
+		return false
+	var tree := candidate["tree"] as BaseTree
+	if glucose >= 0.0:
+		tree.glucose = glucose
+	_begin_drag(candidate, first)
+	_drag_active = true
+	for i in range(1, points.size()):
+		var p: Vector2 = points[i]
+		_move_drag(p)
+	var last: Vector2 = points[points.size() - 1]
+	var ok := _end_drag(last)
+	_reset_drag()
+	return ok
+
+
+func debug_drag_active() -> bool:
+	return _pending_active or _drag_active
+
+
+func debug_drag_kind() -> String:
+	return _drag_kind

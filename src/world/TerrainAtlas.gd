@@ -7,7 +7,7 @@ extends RefCounted
 ## Pro Slot gibt es 3 Alternative Tiles (gespiegelt / leicht abgedunkelt), damit
 ## die gekachelte Erde nicht als sichtbares Rastermuster repetiert.
 
-const ATLAS_PATH := "res://assets/placeholders/soil_atlas.png"
+const ATLAS_PATH := PixelArt.SOIL_ATLAS
 const SLOT_COUNT := 17             # Slot 16 = ausgetrocknetes Reservoir (PHASE 2)
 const TILE_SIZE := 16
 const ALTERNATIVES := [1, 2, 3]

@@ -11,7 +11,7 @@ extends Node2D
 ## erst dann wird das Sprite freigegeben. Funktioniert bei jedem Zoom und
 ## auch wenn waehrend des Flugs die Kamera geschwenkt wird.
 
-const BIRD_PATH := "res://assets/placeholders/bird.png"
+const BIRD_PATH := PixelArt.BIRD
 const ENTER_MARGIN := 140.0        # Start rechts ausserhalb des Bildes
 const EXIT_MARGIN := 240.0         # Ziel links ausserhalb des Bildes
 const PECK_OFFSET := Vector2(-8.0, -22.0)

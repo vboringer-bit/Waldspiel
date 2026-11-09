@@ -1,7 +1,7 @@
 class_name SkillTreeUI
 extends CanvasLayer
 ## PHASE 4 (Master-Punkt 6 + 8): Zoom- & pannable Skilltree-UI auf Basis von
-## Godot `GraphEdit` / `GraphNode`. 15 Knoten aus `data/skilltrees/oak.tres`,
+## Godot `GraphEdit` / `GraphNode`. 18 Knoten aus `data/skilltrees/oak.tres`,
 ## Vorbedingungen als echte Verbindungslinien, Freischalten kostet Glucose.
 ##
 ## * Oben rechts im HUD: Button "Skilltree (T)". Taste T / Esc schliesst.

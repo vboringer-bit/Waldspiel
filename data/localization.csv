@@ -9,7 +9,7 @@ HUD_YEAR,Jahr,Year
 HUD_NO_TREE,Kein Baum ausgewählt,No tree selected
 HUD_SELECTED,Ausgewählt,Selected
 HUD_SKILLTREE,Skilltree (T),Skill tree (T)
-HUD_HINT,Boden-Eicheln anklicken = einsammeln   ·   Inventar-Eichel anklicken = aufnehmen   ·   Linksklick auf den Boden = platzieren   ·   Rechtsklick/Esc = zurücklegen   ·   MANUELL: Wurzel anklicken = wachsen   ·   R = Regen / Schnee   ·   T = Skilltree   ·   F11 = Vollbild,Click ground acorns to collect   ·   Click the inventory acorn to pick it up   ·   Left click on the ground = place   ·   Right click/Esc = put back   ·   MANUAL: click a root = grow   ·   R = rain / snow   ·   T = skill tree   ·   F11 = fullscreen
+HUD_HINT,Boden-Eicheln anklicken = einsammeln   ·   Inventar-Eichel anklicken = aufnehmen   ·   Linksklick auf den Boden = platzieren   ·   Rechtsklick/Esc = zurücklegen   ·   MANUELL: Wurzel anklicken = wachsen   ·   R = Regen / Schnee   ·   T = Skilltree   ·   F11 = Vollbild   ·   Ziehen = Wurzel/Stamm/Ast lenken,Click ground acorns to collect   ·   Click the inventory acorn to pick it up   ·   Left click on the ground = place   ·   Right click/Esc = put back   ·   MANUAL: click a root = grow   ·   R = rain / snow   ·   T = skill tree   ·   F11 = fullscreen   ·   Drag = direct roots/trunk/branches
 BTN_SKILLTREE,Skilltree,Skill tree
 MODE_AUTO,AUTO,AUTO
 MODE_MANUAL,MANUELL,MANUAL
@@ -92,6 +92,15 @@ SKILL_PHOTOSYN_TITLE,Photosynthese plus,Photosynthesis plus
 SKILL_PHOTOSYN_DESC,Noch +15 % Glucose.,Another +15 % glucose.
 SKILL_CROWN_TITLE,Kronenwuchs,Crown growth
 SKILL_CROWN_DESC,+2 Blaetter sofort und +2 Blatt-Obergrenze.,+2 leaves immediately and +2 leaf cap.
+SKILL_CANOPY1_TITLE,Dichte Krone I,Dense canopy I
+SKILL_CANOPY1_DESC,+12 Blattobergrenze und +12 Blaetter sofort.,+12 leaf cap and +12 leaves immediately.
+SKILL_CANOPY2_TITLE,Dichte Krone II,Dense canopy II
+SKILL_CANOPY2_DESC,+12 Blaetter und dichtere Astspitzen.,+12 leaves and fuller twig tips.
+SKILL_CANOPY3_TITLE,Dichte Krone III,Dense canopy III
+SKILL_CANOPY3_DESC,+12 Blaetter und maximale Kronendichte.,+12 leaves and maximum canopy density.
+MSG_DRAG_HINT,Ziehen: Wurzel Stamm oder Ast in die gewuenschte Richtung ziehen.,Drag: pull a root trunk or branch in the desired direction.
+MSG_DRAG_GROWN,Gezogenes Wachstum: %d Schritte (−%.0f Glucose).,Directed growth: %d steps (−%.0f glucose).
+MSG_DRAG_BLOCKED,Hier kann nichts mehr wachsen.,Nothing can grow here.
 SKILL_TRUNK_TITLE,Sparsame Staemme,Efficient trunks
 SKILL_TRUNK_DESC,-20 % Glucose-Kosten fuer Stamm und Blaetter.,-20 % glucose cost for trunk and leaves.
 SKILL_SPREAD_TITLE,Verbreitung,Dispersal

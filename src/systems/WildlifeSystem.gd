@@ -386,6 +386,27 @@ func debug_step(seconds: float) -> void:
 		forest_health.recompute()
 
 
+## REVISION 6 Debug-Hooks ---------------------------------------------------
+func debug_animal(species: String) -> Animal:
+	return _first_animal(species)
+
+
+func debug_animals(species: String) -> Array:
+	var out: Array = []
+	for a in animals:
+		if is_instance_valid(a) and a.species == species:
+			out.append(a)
+	return out
+
+
+func debug_force_vertical_worm() -> bool:
+	var w := _first_animal("worm")
+	if w == null:
+		return false
+	w.debug_hold_vertical(w.burrow_depth + 70.0)
+	return true
+
+
 func debug_total_animal_count() -> int:
 	var n := 0
 	for a in animals:

@@ -13,8 +13,8 @@ extends Node
 ##   Schwierigkeitsgrad und am reservierten Skill "Verbreitung" (PHASE 4).
 ## * Alles benutzt TimeManager.scaled_delta (x1/x3/x10 + Pause).
 
-const ACORN_PATH := "res://assets/placeholders/acorn.png"
-const MOUND_PATH := "res://assets/placeholders/seed_mound.png"
+const ACORN_PATH := PixelArt.ACORN
+const MOUND_PATH := PixelArt.SEED_MOUND
 const HIT_SIZE := Vector2(32.0, 32.0)
 const DROP_INTERVAL := 12.0            # simulierte Sekunden
 const DROP_CHANCE := 0.55              # pro Baum und Intervall (bei Reife)

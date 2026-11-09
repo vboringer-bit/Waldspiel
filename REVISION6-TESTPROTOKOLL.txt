@@ -1,0 +1,72 @@
+REVISION 6 — TESTPROTOKOLL (auf GitHub gepusht, Basis 5854ac5)
+================================================================
+Datum: 2026-11-05 (Europe/Berlin)
+Engine: Godot 4.7.2.stable.official.ed1daf0bf
+Befehl Basis-Import:
+  $G --headless --path . --import
+  -> exit 0, 0 SCRIPT ERROR / Parse Error / ERROR
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  phase0   3 OK   0 FEHLER
+  phase1  26 OK   0 FEHLER
+  phase2  25 OK   0 FEHLER
+  rev1    32 OK   0 FEHLER
+  rev2    27 OK   0 FEHLER
+  p3      56 OK   0 FEHLER
+  rev3    20 OK   0 FEHLER
+  rev4    32 OK   0 FEHLER
+  phase4  63 OK   0 FEHLER   (18 Knoten / 17 Linien)
+  phase5  58 OK   0 FEHLER
+  rev5    35 OK   0 FEHLER
+  rev6    34 OK   0 FEHLER   (NEU)
+  ------------------------------------------------
+  12/12 Smokes, TOTAL_OK = 411, BAD = 0, SCRIPT ERROR = 0
+
+REVISION-6-SMOKE ABDECKUNG (34 Checks)
+  - Gang-Mittellinie ortsfest (kein Wackeln), >=3 Stuetzpunkte
+  - Wurm senkrecht bei Vertikalgraben, waagerecht bei Horizontalgraben
+  - Wurm bleibt unter der Erde
+  - Ameisen: debug_ground_gap() in [-6, +0.5] px -> kein Schweben
+  - 21 zentrale Pixelart-Slots, keine Literalpfade in Tree.gd/Animal.gd
+  - Wurzel-Drag: 1 -> 8 Segmente, freier Zielpunkt gespeichert
+  - Alle zuvor verbundenen Wurzeln dicker (debug_draw_width)
+  - Stamm-Drag: 2 -> 9 Schritte, 10 Guide-Punkte
+  - Alle vorhandenen Stammsegmente dicker (debug_trunk_segment_widths)
+  - Freier Ast-Drag: 0 -> 1, 42 Blatt-Anker
+  - Skilltree-Kette freischaltbar, 18 Knoten / 17 Linien, UI 18/17
+  - +38 Blatt-Obergrenze, Kronendichte 2, 40 Sofort-Blaetter, Cap 50
+  - 50 Blaetter auf 42 verschiedene Anker verteilt
+  - Snapshot: trunk_guide / branch_paths / free_target erhalten
+  - save_game() / load_game() mit gezogenem Ast, AUTO aus, Format v6
+  - GLUCOSE_PACE 0.2 unveraendert, 6 neue DE/EN-Schluessel
+
+F5-LAUF
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/f.png --quit-after 25 \
+    -- --seed=20261105 --windowed --rev6-shot-<preset>
+  Presets: drag, canopy, worms
+  Ergebnis: screenshots/rev6_{drag,canopy,worms}.png (je 1920x1080)
+
+VISUELLE PRUEFUNG
+  - Wurm rosa/rot, rotiert entlang der Grabespitze, Gang ruhig
+  - Ameisen auf der Oberkante, keine Luftlaeufer
+  - Gezogene Wurzeln/Stamm/Aste sichtbar, Stamm mit Pixelart-Faser
+  - Dichte Krone: 50 Blaetter, keine kahlen Hauptzweige
+
+REGRESSION
+  Global.auto_mode = false (Standard)
+  SaveManager.FORMAT_VERSION = 6 (neue Felder optional)
+  RootSegment.hit_rect() = 16x16 (Wasser/Klick/Save)
+  BaseTree.GLUCOSE_PACE = 0.2
+  Alle P0-P5/R5-Smokes unveraendert gruen
+
+LIEFERUNG
+  Gesamter Arbeitsbaum als ein Commit auf main gepusht (Nachfolger von
+  5854ac5). Zusaetzlich: deliverables/waldspiel-REVISION6.zip (Komplett-Paket,
+  .godot ausgeschlossen, project.godot im ZIP-Root).
+  PAT nur temporaer prozess-lokal, nicht in Dateien oder Git-Historie.

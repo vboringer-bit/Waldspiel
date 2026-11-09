@@ -4,8 +4,8 @@ extends CanvasLayer
 ## Master-Prompt). Liegt hinter der Welt; der Bodenquerschnitt ueberdeckt ihn
 ## vollstaendig, sobald die Kamera nach unten faehrt.
 
-const SKY_PATH := "res://assets/placeholders/sky_gradient.png"
-const HAZE_PATH := "res://assets/placeholders/sun_haze.png"
+const SKY_PATH := PixelArt.SKY
+const HAZE_PATH := PixelArt.SUN_HAZE
 
 var _sky_rect: TextureRect
 var _haze: TextureRect

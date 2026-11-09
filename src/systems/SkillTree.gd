@@ -135,6 +135,8 @@ func apply_effect(_node_id: String, tree_instance: Node) -> void:
 	t.skill_water_consumption_mult = modifier("water_consumption")
 	t.skill_root_water_mult = modifier("root_water")
 	t.skill_max_leaves_bonus = int(roundf(bonus("max_leaves")))
+	# REVISION 6: "Dichte Krone" macht aus 2+38 Blaettern eine volle Krone.
+	t.skill_leaf_density = int(roundf(bonus("leaf_density")))
 	# PHASE 5: Pilz-Knoten gibt echte Naehrstoffe (+15 % Fotosynthese).
 	t.nutrient_mult = modifier("nutrients")
 	# PHASE-4-FIX: "Kronenwuchs" schenkt die +2 Blaetter sofort sichtbar.

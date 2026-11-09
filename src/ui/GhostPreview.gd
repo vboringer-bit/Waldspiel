@@ -4,7 +4,7 @@ extends Node2D
 ## Halbdurchsichtiges Wurzel-Sprite + Rahmen + Kosten-Label am Ziel-Tile.
 ## Wird von InteractionController bei Mausbewegung im MANUELL-Modus gefuettert.
 
-const ROOT_PATH := "res://assets/placeholders/root_tip.png"
+const ROOT_PATH := PixelArt.ROOT_TIP
 
 var _sprite: Sprite2D
 var _label: Label

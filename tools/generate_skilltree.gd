@@ -3,7 +3,7 @@ extends SceneTree
 ## SkillNodeData-Resources. Aufruf (nach --headless --import):
 ##   godot --headless --path . --script tools/generate_skilltree.gd --quit-after 5
 ## So ist die .tres garantiert im korrekten Godot-4.7-Format und enthaelt
-## alle 15 Knoten als eingebettete Sub-Resources.
+## alle 18 Knoten als eingebettete Sub-Resources.
 
 const OUT := "res://data/skilltrees/oak.tres"
 
@@ -79,6 +79,20 @@ func _initialize() -> void:
 	d.nodes.append(_node("winter_hardy", "WINTER", "WINTER", 28.0,
 		["mushroom_node"], {"winter_water": 0.30},
 		Vector2(990.0, 660.0), "symbiosis"))
+
+	# --- Ast DICHTE KRONE (REVISION 6) -------------------------------------
+	# Drei kaufbare Stufen: +12 Blaetter Obergrenze UND +12 sofort sichtbare
+	# Blaetter pro Stufe. Zusammen mit "Kronenwuchs" sind 50 Blaetter moeglich;
+	# Stufe 2/3 verdichten zusaetzlich die Deko-Blaetter pro Anker.
+	d.nodes.append(_node("canopy_i", "CANOPY1", "CANOPY1", 22.0,
+			["crown_growth"], {"max_leaves": 12.0, "grant_leaves": 12.0},
+			Vector2(660.0, 880.0), "leaf"))
+	d.nodes.append(_node("canopy_ii", "CANOPY2", "CANOPY2", 30.0,
+			["canopy_i"], {"max_leaves": 12.0, "grant_leaves": 12.0,
+			"leaf_density": 1.0}, Vector2(990.0, 880.0), "leaf"))
+	d.nodes.append(_node("canopy_iii", "CANOPY3", "CANOPY3", 38.0,
+			["canopy_ii"], {"max_leaves": 12.0, "grant_leaves": 12.0,
+			"leaf_density": 1.0}, Vector2(1320.0, 880.0), "leaf"))
 
 	var err := ResourceSaver.save(d, OUT)
 	print("[SKILLTREE] ", OUT, " | Knoten=", d.nodes.size(), " | err=", err)

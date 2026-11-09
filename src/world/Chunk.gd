@@ -6,7 +6,7 @@ extends Node2D
 ## ausgetrocknete Reservoirs werden ueber WorldState auf SLOT_DRY_WATER
 ## umgeschaltet und bleiben auch nach einem Chunk-Reload trocken.
 
-const SPRITE_DIR := "res://assets/placeholders/"
+const SPRITE_DIR := PixelArt.DIR
 
 var index: int = 0
 var generator: WorldGenerator

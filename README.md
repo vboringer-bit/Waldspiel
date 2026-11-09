@@ -1,11 +1,26 @@
-# Wald-Regeneration — REVISION 5
+# Wald-Regeneration — REVISION 6
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
-> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen, natürliche Vermehrung, ein **Skilltree mit 15 Mutationen**, **Winter-Schnee** sowie **Tiere, Parasiten und Pilz-Symbiose**.
+> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 18 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · **REVISION 5 ✅ (11/11 Smokes OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · **REVISION 6 ✅ auf GitHub (12/12 Smokes OK)**
 
-**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-REVISION5.zip` (aktueller Stand; alle älteren ZIPs bleiben historisch erhalten). Dazu `REVISION5-ERGEBNIS.md` / `.html` mit 6 Screenshots und Code-Snippets sowie `REVISION5-TESTPROTOKOLL.txt`. Die PHASE-5-Berichte sind als vorheriger Stand markiert.
+**Wichtig:** REVISION 6 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `5854ac5`, REVISION 5). `deliverables/waldspiel-REVISION6.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `REVISION6-ERGEBNIS.md` / `.html`, `REVISION6-TESTPROTOKOLL.txt`, `DECISIONS.md` §72.
+
+---
+
+## REVISION 6 — Ziehen, Verdickung, Pixelart-Slots
+
+**User-Auftrag:** Wurm-Gang darf nicht wackeln; Wurm rotiert mit der Grabrichtung (oben/unten senkrecht); Ameisen nicht in der Luft; Wurzel-/Stamm-/Astsystem wie in Mycelarium gezielt ziehbar; jede bereits verbundene Wurzel und alle Stämme werden dicker; alle Texturen später leicht durch Pixelart ersetzbar; Skilltree-Option für genug Blätter gegen kahle Äste.
+
+1. **Stabiler Gang + Rotation.** `Animal.gd` trennt stabile Mittellinie (Catmull-Rom, Eltern-Koordinaten) vom visuellen Koerper-Wackeln; `_body_angle` folgt `atan2(vel.y, vel.x)`, das 16x16-Wurm-`Sprite2D` rotiert mit. Ameisen folgen `height_smooth_at(position.x)` und stehen auf der Geländekante.
+2. **Gezielt ziehen.** Linksklick auf Wurzel/Baum halten → ziehen → loslassen. `free_target`, `trunk_guide`, `branch_paths` steuern die freie Geometrie; das 16px-Raster bleibt nur für Wasser/Reservoir/Hitbox/Save. Kurzer Klick = altes Verhalten. Kosten pro ~16 px Zugpfad.
+3. **Verdickung.** Alle verbundenen Wurzeln wachsen über `root_count` + Nachkommenzahl in der Breite mit; alle Stammsegmente über `trunk_tiles`. Messbar über `debug_draw_width()` / `debug_trunk_segment_widths()`.
+4. **Pixelart.** `src/render/PixelArt.gd` bündelt 21 Slots, Palette und `draw_fibre()`; `assets/placeholders/PIXELART.md` beschreibt den Austausch. Stamm, Äste und Wurzel-Hauptfasern sind gekachelte 16x16-Texturen, Wurm/Ameise sind `Sprite2D`s.
+5. **Dichte Krone.** `canopy_i/ii/iii` im Skilltree: +38 Blatt-Cap und Sofort-Blätter, Kronendichte 2, Verteilung per Goldener-Schnitt-Folge auf alle Ast-Anker ⇒ **50 Blätter**, keine kahlen Hauptäste mehr, wenn gewollt.
+6. **Abnahme.** `tests/Revision6Smoke.gd` (34 Checks), 3 Presets `--rev6-shot-drag|canopy|worms`, **12/12 Smokes · 411 OK · 0 Fehler**, 180 Frames, 3×25 gerenderte Frames. `AUTO` aus, Save v6, `GLUCOSE_PACE 0,2`, 16×16-Hitbox unverändert.
+
+Siehe `REVISION6-ERGEBNIS.html` / `.md`, `REVISION6-TESTPROTOKOLL.txt` und `DECISIONS.md` §72.
 
 ---
 

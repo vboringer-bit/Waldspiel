@@ -8,7 +8,7 @@ extends CanvasLayer
 ## Schwierigkeits-Umschalter. Skilltree-UI bleibt PHASE 4.
 
 const BAR_HEIGHT := 148.0
-const ICON_DIR := "res://assets/placeholders/"
+const ICON_DIR := PixelArt.DIR
 
 var interaction: InteractionController
 var growth_system: GrowthSystem

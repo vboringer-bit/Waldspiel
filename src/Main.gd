@@ -121,6 +121,11 @@ func _ready() -> void:
 		smoke_r5.setup(_interaction, _growth, _water, _time, _season,
 			_wildlife, _chunk_manager, _hud, _save)
 		add_child(smoke_r5)
+	elif args.has("--rev6-smoke"):
+		var smoke_r6 = preload("res://tests/Revision6Smoke.gd").new()
+		smoke_r6.setup(_interaction, _skill_tree, _skill_ui, _wildlife,
+			_chunk_manager, _hud, _save, _growth, _water, _time, _season)
+		add_child(smoke_r6)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -309,6 +314,54 @@ func _apply_presets(args: PackedStringArray) -> void:
 		_interaction.select_tree(weak)
 		_hud.refresh()
 		EventBus.toast.emit(tr("MSG_SLOW_GROWTH"))
+
+	# --- REVISION 6: ziehen, dichte Krone, rotierte Würmer --------------------
+	if args.has("--rev6-shot-drag"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(0.95)
+		_camera.teleport_to(Vector2(0.0, 430.0))
+		var dt := _rev5_grow_tree(0.0, 12, 4, 8)
+		dt.glucose = 900.0
+		var b := dt.global_position
+		_interaction.debug_drag_sequence([
+			b + Vector2(6.0, 6.0), b + Vector2(14.0, 28.0),
+			b + Vector2(34.0, 58.0), b + Vector2(58.0, 88.0),
+			b + Vector2(82.0, 120.0),
+		], 900.0)
+		var dtop := b + Vector2(0.0, -float(dt.trunk_tiles) * BaseTree.TRUNK_STEP)
+		_interaction.debug_drag_sequence([
+			dtop, dtop + Vector2(14.0, -34.0),
+			dtop + Vector2(36.0, -68.0), dtop + Vector2(62.0, -104.0),
+		], 900.0)
+		var dcrown := b + Vector2(10.0,
+			-float(dt.trunk_tiles) * BaseTree.TRUNK_STEP + 24.0)
+		_interaction.debug_drag_sequence([
+			dcrown, dcrown + Vector2(44.0, -10.0),
+			dcrown + Vector2(96.0, 4.0), dcrown + Vector2(148.0, 24.0),
+		], 900.0)
+		_interaction.select_tree(dt)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_DRAG_HINT"))
+	elif args.has("--rev6-shot-canopy"):
+		_p5_reset_world()
+		_unlock_canopy()
+		_camera.set_zoom_immediate(0.72)
+		_camera.teleport_to(Vector2(0.0, 430.0))
+		var ct := _rev5_grow_tree(0.0, 28, 30, 12)
+		while ct.leaves_count < 50 and ct.add_leaf():
+			pass
+		_interaction.select_tree(ct)
+		_hud.refresh()
+		EventBus.toast.emit(tr("SKILL_CANOPY3_TITLE"))
+	elif args.has("--rev6-shot-worms"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.85)
+		_camera.teleport_to(Vector2(-180.0, 400.0))
+		_rev5_grow_tree(0.0, 3, 2, 2)
+		_wildlife.debug_force_vertical_worm()
+		_wildlife.debug_step(9.0)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_BURROW"))
 
 	# --- PHASE 4: Skilltree + Winter-Schnee ----------------------------------
 	if args.has("--phase4-shot-skilltree"):
@@ -588,6 +641,12 @@ func _p5_grow_tree(p_x: float, leaves: int) -> BaseTree:
 # --------------------------------------------------------------------------- #
 # REVISION 5: deterministische Baumzustaende fuer die Screenshots
 # --------------------------------------------------------------------------- #
+func _unlock_canopy() -> void:
+	for id in ["leaf_efficiency", "photosynthesis_plus", "crown_growth",
+			"canopy_i", "canopy_ii", "canopy_iii"]:
+		_skill_tree.debug_unlock(id)
+
+
 func _rev5_grow_tree(p_x: float, trunk_steps: int, root_steps: int,
 		leaves: int) -> BaseTree:
 	var t := _interaction.spawn_tree_at(Vector2(p_x, 0.0), {})

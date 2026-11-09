@@ -8,6 +8,12 @@ extends Node2D
 ##   * Wuermer und Ameisen sind deutlich kleiner (~40 % der alten Groesse).
 ##   * Specht und Eichhoernchen bleiben unveraendert (sie gehoeren nicht zur
 ##     Bodenfauna und muessen weiter gut anklickbar sein).
+## REVISION 6:
+##   * Der Gang liegt auf einer STABILEN Mittellinie (kein Wackeln durch die
+##     Koerper-Animation) und wird geglaettet gezeichnet.
+##   * Der Wurm ist ein rotiertes 16x16-Pixelart-Sprite; bei senkrechtem
+##     Graben steht er senkrecht, bei waagerechtem Graben waagerecht.
+##   * Ameisen folgen der Geländeoberkante und laufen nicht mehr in der Luft.
 ## Alle Tiere sind per Linksklick anwaehlbar (Info-Toast + EventBus-Signal).
 
 enum State { IDLE, WANDER, EAT, HELP_TREE, CARRY }
@@ -54,6 +60,14 @@ var facing: int = 1
 var _idle_count: int = 0
 var _trail: Array[Vector2] = []
 var _trail_timer: float = 0.0
+## REVISION 6: stabile Grab-Mittellinie in Eltern-Koordinaten. Der Koerper
+## wackelt nur VISUELL um diese Linie; der Gang selbst bleibt ortsfest.
+var _burrow_center: Vector2 = Vector2.ZERO
+var _body_angle: float = 0.0
+## REVISION 6: echtes Sprite2D statt CanvasItem-Drawcall. Godot 4.7 ersetzt
+## bei draw_texture_* bei diesem Slot die RGB-Werte durch modulate (weisser
+## Block); ein Sprite2D rendert die Pixelart-Textur dagegen korrekt.
+var _body_sprite: Sprite2D = null
 
 
 func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
@@ -61,6 +75,7 @@ func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
 	species = p_species
 	generator = p_generator
 	wildlife = p_wildlife
+	_ensure_body_sprite()
 	home_x = p_x
 	surface_y = generator.height_smooth_at(p_x)
 	reseat(p_x, -1.0)
@@ -84,11 +99,42 @@ func reseat(p_x: float, p_depth: float = -1.0) -> void:
 	else:
 		burrow_depth = 0.0
 		burrow_target = 0.0
-		base_y = surface_y - 4.0
+		# REVISION 6: Ameisen stehen mit den Fuessen AUF der Oberkante.
+		base_y = surface_y - (1.0 if species == "ant" else 4.0)
 	position.y = base_y
 	target_x = p_x
+	_burrow_center = Vector2(p_x, base_y)
+	_body_angle = 0.0
 	_trail.clear()
+	if species == "worm":
+		_trail.append(_burrow_center)
 	queue_redraw()
+
+
+func _ensure_body_sprite() -> void:
+	if species != "worm" and species != "ant":
+		return
+	if _body_sprite == null or not is_instance_valid(_body_sprite):
+		_body_sprite = Sprite2D.new()
+		_body_sprite.name = "PixelBody"
+		_body_sprite.centered = true
+		_body_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		add_child(_body_sprite)
+	_body_sprite.texture = load(PixelArt.WORM if species == "worm" else PixelArt.ANT)
+	_body_sprite.position = Vector2(0.0, -3.0) if species == "ant" else Vector2.ZERO
+	_body_sprite.visible = true
+
+
+func _update_body_sprite() -> void:
+	if _body_sprite == null or not is_instance_valid(_body_sprite):
+		return
+	if species == "worm":
+		_body_sprite.rotation = _body_angle
+		_body_sprite.scale = Vector2(0.80, 0.75)
+	elif species == "ant":
+		_body_sprite.rotation = 0.0
+		var flip := 1.0 if facing >= 0 else -1.0
+		_body_sprite.scale = Vector2(0.56 * flip, 0.56)
 
 
 func _set_state(new_state: int) -> void:
@@ -135,6 +181,8 @@ func tick(dt: float) -> void:
 	timer -= dt
 	if species == "worm":
 		_tick_burrow(dt)
+	elif species == "ant":
+		_follow_ground()
 	else:
 		position.y = base_y + sin(phase * 6.0) * 1.2
 	match state:
@@ -159,24 +207,51 @@ func tick(dt: float) -> void:
 			_help(dt)
 		State.CARRY:
 			_carry(dt)
+	# REVISION 6: NACH der x-Bewegung die stabile Mittellinie fortschreiben.
+	if species == "worm":
+		_sync_worm_motion(dt)
+	elif species == "ant":
+		_follow_ground()
+	_update_body_sprite()
 	queue_redraw()
 
 
-## REVISION 5: langsames, leicht welliges Graben in lockerer Erde. Die Gang-
-## Spur wird in WELTKOORDINATEN gespeichert, damit sie beim Weiterkriechen
-## liegen bleibt statt mit dem Tier mitzuwandern.
+## REVISION 6: nur noch TIEFE aktualisieren. Die Gang-Spur wird aus der
+## stabilen Mittellinie gebildet, NICHT aus der animierten Koerperposition.
 func _tick_burrow(dt: float) -> void:
 	burrow_depth = move_toward(burrow_depth, burrow_target,
 		WORM_BURROW_SPEED * 0.5 * dt)
+
+
+func _sync_worm_motion(dt: float) -> void:
+	var prev := _burrow_center
 	surface_y = generator.height_smooth_at(position.x)
 	base_y = surface_y + burrow_depth
-	position.y = base_y + sin(phase * 2.2) * 1.0
+	_burrow_center = Vector2(position.x, base_y)
+	# Sichtbares, sehr kleines Koerper-Wackeln. Der GANG selber wackelt nicht.
+	position.y = base_y + sin(phase * 2.2) * 0.30
+	var vel := _burrow_center - prev
+	if vel.length() > 0.02:
+		# atan2: oben/unten -> ±PI/2 (senkrecht), links/rechts -> 0/PI.
+		var target_angle := atan2(vel.y, vel.x)
+		_body_angle = lerp_angle(_body_angle, target_angle,
+			clampf(dt * 10.0, 0.0, 1.0))
 	_trail_timer += dt
 	if _trail_timer >= 0.30:
 		_trail_timer = 0.0
-		_trail.append(global_position)
-		if _trail.size() > 30:
-			_trail.remove_at(0)
+		if _trail.is_empty() \
+				or _burrow_center.distance_to(_trail[_trail.size() - 1]) >= 1.0:
+			_trail.append(_burrow_center)
+			if _trail.size() > 30:
+				_trail.remove_at(0)
+
+
+## REVISION 6: Ameisen sind strikt bodengebunden. Nach jeder x-Bewegung wird
+## die lokale Geländehöhe neu abgefragt; kein Schweben über Senken mehr.
+func _follow_ground() -> void:
+	surface_y = generator.height_smooth_at(position.x)
+	base_y = surface_y - 1.0
+	position.y = base_y + sin(phase * 5.0) * 0.30
 
 
 func _move_toward(target: float, step: float) -> void:
@@ -319,6 +394,49 @@ func debug_trail_size() -> int:
 	return _trail.size()
 
 
+## REVISION 6 Debug-Hooks ----------------------------------------------------
+func debug_body_angle() -> float:
+	return _body_angle
+
+
+func debug_ground_gap() -> float:
+	return position.y - generator.height_smooth_at(position.x)
+
+
+func debug_trail_point(i: int) -> Vector2:
+	if i < 0 or i >= _trail.size():
+		return Vector2.ZERO
+	return _trail[i]
+
+
+## Direkter, kollisionsfreier Test-Schub (Smoke: waagerechte Rotation).
+func debug_nudge_horizontal(dx: float) -> void:
+	if species != "worm":
+		return
+	position.x += dx
+	_sync_worm_motion(0.1)
+
+
+## Erzwingt reine Vertikalbewegung (Smoke/Screenshot: senkrechter Wurm).
+func debug_hold_vertical(depth: float) -> void:
+	if species != "worm":
+		return
+	target_x = position.x
+	timer = 10.0
+	state = State.WANDER
+	burrow_target = clampf(depth, WORM_DEPTH_MIN, WORM_DEPTH_MAX)
+
+
+## Erzwingt reine Horizontalbewegung (Smoke: waagerechter Wurm).
+func debug_hold_horizontal() -> void:
+	if species != "worm":
+		return
+	burrow_target = burrow_depth
+	target_x = position.x + 30.0
+	timer = 10.0
+	state = State.WANDER
+
+
 func debug_is_underground() -> bool:
 	return species == "worm" \
 		and position.y > generator.height_smooth_at(position.x) + WORM_DEPTH_MIN * 0.5
@@ -327,53 +445,69 @@ func debug_is_underground() -> bool:
 # --------------------------------------------------------------------------- #
 # Zeichnung
 # --------------------------------------------------------------------------- #
-func _draw_worm(f: float, w: float) -> void:
-	# 1) Gang-Spur: dunkler Tunnel mit hellerer, aufgelockerter Erdmitte.
-	if _trail.size() >= 2:
-		var n := maxi(_trail.size() - 1, 1)
-		for i in range(_trail.size() - 1):
-			var a := to_local(_trail[i])
-			var b := to_local(_trail[i + 1])
-			var fade := 0.45 + 0.45 * float(i) / float(n)
-			# Aufgelockerte Erde: dunkler Gang + helle Krumen-Mitte.
-			draw_line(a, b, Color(0.15, 0.10, 0.06, fade), 5.4)
-			draw_line(a, b, Color(0.66, 0.48, 0.29, fade), 2.1)
-			if i % 3 == 0:
-				draw_circle(a, 1.3, Color(0.58, 0.42, 0.26, fade))
-	# 2) Koerper: ~12 px statt der alten 28 px.
-	var pts := PackedVector2Array([
-		Vector2(-6.0 * f, -2.0),
-		Vector2(-3.0 * f, -2.8 + w * 0.45),
-		Vector2(0.0, -2.0),
-		Vector2(3.0 * f, -2.8 - w * 0.45),
-		Vector2(6.0 * f, -2.0),
-	])
-	draw_polyline(pts, Color(0.42, 0.24, 0.21, 1.0), 4.0)
-	draw_polyline(pts, Color(0.88, 0.52, 0.47, 1.0), 2.6)
-	for p in pts:
-		draw_circle(p, 1.0, Color(0.96, 0.72, 0.67, 1.0))
-	# 3) Aufgewuehlte Krumen vor der Grabespitze.
+func _catmull(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2,
+		t: float) -> Vector2:
+	return 0.5 * ((2.0 * p1) + (-p0 + p2) * t \
+		+ (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * t * t \
+		+ (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * t * t * t)
+
+
+## REVISION 6: Catmull-Rom-Glaettung der STABILEN Mittellinie. Die Punkte
+## liegen in Eltern-Koordinaten; `position` (mit Koerper-Wackeln) wird hier
+## abgezogen, damit der Gang beim Redraw nicht mitwackelt.
+func _smooth_trail() -> PackedVector2Array:
+	var out := PackedVector2Array()
+	if _trail.size() < 2:
+		return out
+	for i in range(_trail.size() - 1):
+		var p0: Vector2 = _trail[maxi(i - 1, 0)] - position
+		var p1: Vector2 = _trail[i] - position
+		var p2: Vector2 = _trail[i + 1] - position
+		var p3: Vector2 = _trail[mini(i + 2, _trail.size() - 1)] - position
+		for q in range(3):
+			out.append(_catmull(p0, p1, p2, p3, float(q) / 3.0))
+	out.append(_trail[_trail.size() - 1] - position)
+	return out
+
+
+func _draw_worm(_f: float, _w: float) -> void:
+	# 1) Gang: stabile, geglaettete Mittellinie ohne Animations-Jitter.
+	var smooth := _smooth_trail()
+	if smooth.size() >= 2:
+		var tunnel := Color(PixelArt.SOIL_DARK.r, PixelArt.SOIL_DARK.g,
+			PixelArt.SOIL_DARK.b, 0.62)
+		var loose := Color(PixelArt.SOIL_LOOSE.r, PixelArt.SOIL_LOOSE.g,
+			PixelArt.SOIL_LOOSE.b, 0.68)
+		draw_polyline(smooth, tunnel, 5.4)
+		draw_polyline(smooth, loose, 2.1)
+		for i in range(2, smooth.size(), 6):
+			draw_circle(smooth[i], 1.3, loose)
+	# 2) Koerper: Sprite2D-Kind (oben), hier nur noch rotierte Details.
+	draw_set_transform(Vector2.ZERO, _body_angle, Vector2.ONE)
+	for x in [-4.0, 0.0, 4.0]:
+		draw_circle(Vector2(x, -1.0), 0.8, Color(0.96, 0.72, 0.67, 1.0))
+	draw_circle(Vector2(7.0, -1.0), 0.9, Color(0.98, 0.84, 0.78, 1.0))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# 3) Krumen vor der Grabespitze, ebenfalls mitrotiert, aber ortsfest.
+	var head := Vector2(9.0, 0.0).rotated(_body_angle)
+	var side := Vector2(0.0, 1.0).rotated(_body_angle)
 	for i in range(3):
-		var j := float(i)
-		draw_circle(Vector2((7.0 + j * 2.4) * f,
-			-1.0 - j * 1.2 + sin(phase * 3.0 + j) * 0.8),
-			0.9, Color(0.44, 0.31, 0.20, 0.85))
-	# 4) Erd-Schleier: der Wurm steckt IM Boden, liegt nicht obendrauf.
-	draw_rect(Rect2(-8.0, -6.0, 16.0, 9.0), Color(0.31, 0.21, 0.14, 0.12))
+		var off := float(i)
+		var crumb := head + side * (off * 1.4 - 1.4) \
+			+ Vector2(off * 1.2, 0.0).rotated(_body_angle)
+		draw_circle(crumb, 0.9, Color(0.44, 0.31, 0.20, 0.85))
+	# 4) Erd-Schleier: rotationsunabhaengig, der Wurm steckt IM Boden.
+	draw_circle(Vector2.ZERO, 7.0, Color(0.31, 0.21, 0.14, 0.10))
 
 
 func _draw_ant(w: float) -> void:
-	var c := Color(0.16, 0.12, 0.10, 1.0)
-	draw_circle(Vector2(-3.4, -3.0), 1.8, c)
-	draw_circle(Vector2(0.0, -3.0), 1.4, c)
-	draw_circle(Vector2(3.4, -3.0 + w * 0.4), 2.1, c)
+	# REVISION 6: Koerper ist ein Sprite2D-Kind, hier nur noch die Beine.
+	var leg := Color(PixelArt.ANT_BODY.r, PixelArt.ANT_BODY.g,
+		PixelArt.ANT_BODY.b, 0.85)
 	for i in range(3):
 		var x := -2.2 + float(i) * 2.2
-		draw_line(Vector2(x, -2.2), Vector2(x - 2.2, 0.0),
-			Color(0.20, 0.15, 0.12, 1.0), 0.7)
-		draw_line(Vector2(x, -2.2), Vector2(x + 2.2, 0.0),
-			Color(0.20, 0.15, 0.12, 1.0), 0.7)
-	draw_circle(Vector2(4.4, -3.6), 0.6, Color(0.35, 0.25, 0.18, 1.0))
+		draw_line(Vector2(x, -2.2), Vector2(x - 2.2, w * 0.08), leg, 0.7)
+		draw_line(Vector2(x, -2.2), Vector2(x + 2.2, -w * 0.08), leg, 0.7)
 
 
 func _draw() -> void:

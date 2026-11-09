@@ -4,8 +4,8 @@ extends Node2D
 ## Welt-Raum + X-Parallax ueber sich wiederholende, nahtlose Textur-Kopien.
 ## Hoeher aufgeloest als die Pixel-Art -> linearer Filter erlaubt.
 
-const FAR_PATH := "res://assets/placeholders/mountains_far.png"
-const NEAR_PATH := "res://assets/placeholders/mountains_near.png"
+const FAR_PATH := PixelArt.MOUNTAINS_FAR
+const NEAR_PATH := PixelArt.MOUNTAINS_NEAR
 const COPIES := 6
 
 @export var far_factor: float = 0.18

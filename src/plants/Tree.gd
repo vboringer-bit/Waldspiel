@@ -13,10 +13,14 @@ extends Node2D
 ##   aus Wasser, Sonne, Naehrstoffen und Wurzelmasse.
 ##   Das logische 16px-Raster bleibt NUR noch fuer Wasser/Reservoir, Klick-
 ##   Hitboxen und Savegames erhalten (siehe DECISIONS.md §71).
+## REVISION 6: Stamm, Aeste und Wurzeln sind GEZIELT ZIEHBAR (Drag), jede
+##   bereits verbundene Faser verdickt sich bei weiterem Wachstum, alle
+##   Hauptfasern laufen ueber PixelArt.draw_fibre() und der Skilltree kann
+##   genug Blaetter fuer eine wirklich dichte Krone liefern.
 
-const TRUNK_PATH := "res://assets/placeholders/trunk.png"
-const LEAF_PATH := "res://assets/placeholders/leaf.png"
-const ROOT_PATH := "res://assets/placeholders/root.png"
+const TRUNK_PATH := PixelArt.TRUNK
+const LEAF_PATH := PixelArt.LEAF
+const ROOT_PATH := PixelArt.ROOT
 const MAX_LEAVES := 12
 const MAX_ROOTS := 72          # REVISION 5: deutlich tieferes Myzel-Netz
 const MAX_TRUNK := 28          # REVISION 5: 28 Schritte statt 12
@@ -33,6 +37,13 @@ const GLUCOSE_PACE := 0.2
 ## REVISION 5: AUTO kauft nur, wenn genug "Wuchskraft" aus der Versorgung
 ## aufgelaufen ist. Ein Keimling mit 1 Wurzel braucht dadurch deutlich laenger.
 const AUTO_GROWTH_INTERVAL := 1.1
+
+## REVISION 6: freie Zug-Schritte. Das logische 16px-Raster bleibt fuer
+## Wasser/Save erhalten, die SICHTBARE Geometrie folgt dem Mauspfad.
+const DRAG_STEP := 16.0
+const MAX_CUSTOM_BRANCHES := 24
+const MAX_GUIDE_POINTS := 96
+const NO_FREE_TARGET := Vector2(1.0e9, 1.0e9)
 
 ## REVISION 4: Fuenf VISUELLE WACHSTUMSSTUFEN fuer Stamm und Wurzeln.
 const STAGE_WIDTHS := [0.30, 0.46, 0.62, 0.80, 1.0]
@@ -65,6 +76,8 @@ var skill_water_consumption_mult: float = 1.0
 var skill_root_water_mult: float = 1.0
 var skill_max_leaves_bonus: int = 0
 var skill_leaf_grants: int = 0
+## REVISION 6: "Dichte Krone" schaltet zusaetzliche Deko-Blaetter frei.
+var skill_leaf_density: int = 0
 ## PHASE 5: Pilz-Symbiose erhoeht die Naehrstoff-Versorgung (mushroom_node).
 var nutrient_mult: float = 1.0
 
@@ -83,6 +96,8 @@ var _trunk_sprites: Array[Sprite2D] = []
 var _leaf_sprites: Array[Sprite2D] = []
 var _leaf_decor_a: Array[Sprite2D] = []
 var _leaf_decor_b: Array[Sprite2D] = []
+var _leaf_decor_c: Array[Sprite2D] = []
+var _leaf_decor_d: Array[Sprite2D] = []
 var _occupied: Dictionary = {}
 var _built: bool = false
 
@@ -92,6 +107,14 @@ var _built: bool = false
 var _skel_trunk: Array[Vector2] = []
 var _skel_branches: Array[Dictionary] = []
 var _skel_anchors: Array[Vector2] = []
+
+## REVISION 6: vom Spieler gezogene Geometrie (lokal zum Baum).
+## trunk_guide = Form des Stammes; branch_paths = zusaetzliche freie Aeste.
+## Beide werden im Savegame mitgefuehrt (Format v6, optionale Felder).
+var trunk_guide: Array[Vector2] = []
+var branch_paths: Array = []
+var _growth_preview: PackedVector2Array = PackedVector2Array()
+var _growth_preview_kind: String = ""
 
 
 func _ready() -> void:
@@ -184,11 +207,19 @@ func add_leaf() -> bool:
 	var main := _sprite(LEAF_PATH, Vector2.ZERO, _leaves)
 	var a := _sprite(LEAF_PATH, Vector2.ZERO, _leaves)
 	var b := _sprite(LEAF_PATH, Vector2.ZERO, _leaves)
+	var c := _sprite(LEAF_PATH, Vector2.ZERO, _leaves)
+	var d := _sprite(LEAF_PATH, Vector2.ZERO, _leaves)
 	a.modulate = Color(0.86, 0.96, 0.80, 0.95)
 	b.modulate = Color(0.94, 1.00, 0.88, 0.95)
+	c.modulate = Color(0.80, 0.94, 0.74, 0.95)
+	d.modulate = Color(0.90, 0.98, 0.84, 0.95)
+	c.visible = false
+	d.visible = false
 	_leaf_sprites.append(main)
 	_leaf_decor_a.append(a)
 	_leaf_decor_b.append(b)
+	_leaf_decor_c.append(c)
+	_leaf_decor_d.append(d)
 	leaves_count += 1
 	_refresh_growth_visuals()
 	return true
@@ -258,10 +289,12 @@ func apply_skill_leaf_grants(total: int) -> void:
 # PHASE 2: logische Wurzel-Segmente (Wasser / Klick / Save)
 # --------------------------------------------------------------------------- #
 func _add_root_segment(p_grid: Vector2i, p_dir: Vector2i,
-		p_parent: RootSegment, p_keep_parent_tip: bool = false) -> RootSegment:
+		p_parent: RootSegment, p_keep_parent_tip: bool = false,
+		p_free_target: Vector2 = NO_FREE_TARGET) -> RootSegment:
 	var seg := RootSegment.new()
 	_roots.add_child(seg)
 	seg.setup(self, p_grid, p_dir, p_parent)
+	seg.set_free_target(p_free_target)
 	if p_parent != null:
 		p_parent.children.append(seg)
 		if not p_keep_parent_tip:
@@ -306,8 +339,9 @@ func _refresh_growth_visuals() -> void:
 		var sp: Sprite2D = _trunk_sprites[i]
 		if sp == null or not is_instance_valid(sp):
 			continue
-		var w := maxf(float(STAGE_WIDTHS[stage]) \
-			* (1.0 - 0.045 * float(i)), 0.16)
+		# REVISION 6: ALLE vorhandenen Stammsegmente werden dicker, sobald
+		# weiterer Stamm waechst (nicht nur das neueste Segment).
+		var w := minf(_trunk_width_at(i, stage), 1.0)
 		sp.scale = Vector2(w, 1.0)
 		sp.position.x = -8.0 * w
 		sp.modulate = STAGE_TINT[stage]
@@ -340,6 +374,66 @@ func _curve(a: Vector2, b: Vector2, c: Vector2, steps: int) -> PackedVector2Arra
 	return pts
 
 
+func _trunk_width_at(i: int, stage: int) -> float:
+	return maxf(float(STAGE_WIDTHS[stage]) \
+		* (1.0 + 0.012 * float(trunk_tiles)) \
+		* (1.0 - 0.045 * float(i)), 0.16)
+
+
+## REVISION 6: Bogenlaengen-normalisierter Punkt auf einer freien Polylinie.
+func _sample_polyline(points: Array, t: float) -> Vector2:
+	if points.is_empty():
+		return Vector2.ZERO
+	if points.size() == 1:
+		var only: Vector2 = points[0]
+		return only
+	var total := 0.0
+	for i in range(points.size() - 1):
+		var pa: Vector2 = points[i]
+		var pb: Vector2 = points[i + 1]
+		total += (pb - pa).length()
+	if total <= 0.001:
+		var first: Vector2 = points[0]
+		return first
+	var want := clampf(t, 0.0, 1.0) * total
+	var walked := 0.0
+	for i in range(points.size() - 1):
+		var a: Vector2 = points[i]
+		var b: Vector2 = points[i + 1]
+		var d := (b - a).length()
+		if walked + d >= want:
+			return a.lerp(b, (want - walked) / maxf(d, 0.001))
+		walked += d
+	var last: Vector2 = points[points.size() - 1]
+	return last
+
+
+## Pfad in gleichmaessige freie Schritte zerlegen (fuer Drag + Guides).
+func _resample_path(points: Array, step: float, limit: int) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	if points.is_empty():
+		return out
+	var start: Vector2 = points[0]
+	out.append(start)
+	var carry := 0.0
+	for i in range(1, points.size()):
+		var a: Vector2 = points[i - 1]
+		var b: Vector2 = points[i]
+		var remaining := (b - a).length()
+		while remaining >= maxf(step - carry, 0.001):
+			var need := maxf(step - carry, 0.001)
+			var f := clampf(need / maxf(remaining, 0.001), 0.0, 1.0)
+			var q := a.lerp(b, f)
+			out.append(q)
+			if out.size() >= limit:
+				return out
+			a = q
+			remaining = (b - a).length()
+			carry = 0.0
+		carry += remaining
+	return out
+
+
 func _rebuild_skeleton() -> void:
 	_skel_trunk.clear()
 	_skel_branches.clear()
@@ -349,11 +443,20 @@ func _rebuild_skeleton() -> void:
 	var n := maxi(trunk_tiles, 2)
 	var phase := _h(0, 0, 1) * TAU
 	var amp := 2.0 + 1.5 * float(stage)
-	for i in range(n + 1):
-		var t := float(i) / float(n)
-		# Basis bleibt exakt bei x=0, die Krone schwingt leicht aus.
-		var x := (sin(t * 5.0 + phase) - sin(phase)) * amp * (0.35 + 0.65 * t)
-		_skel_trunk.append(Vector2(x, -h * t))
+	if trunk_guide.size() >= 2:
+		# REVISION 6: der Spieler hat den Stamm gezogen. Die x-Form folgt
+		# dem Pfad, die Hoehe bleibt deterministisch aus trunk_tiles.
+		var guide := _resample_path(trunk_guide, TRUNK_STEP, MAX_GUIDE_POINTS)
+		for i in range(n + 1):
+			var t := float(i) / float(n)
+			var gp := _sample_polyline(guide, t)
+			_skel_trunk.append(Vector2(gp.x, -h * t))
+	else:
+		for i in range(n + 1):
+			var t := float(i) / float(n)
+			# Basis bleibt exakt bei x=0, die Krone schwingt leicht aus.
+			var x := (sin(t * 5.0 + phase) - sin(phase)) * amp * (0.35 + 0.65 * t)
+			_skel_trunk.append(Vector2(x, -h * t))
 	var count := clampi(int(trunk_tiles / BRANCH_EVERY), 0, 7)
 	for k in range(count):
 		var frac := minf(0.34 + 0.085 * float(k), 0.92)
@@ -378,23 +481,54 @@ func _rebuild_skeleton() -> void:
 		})
 		_skel_anchors.append(bend)
 		_skel_anchors.append(origin.lerp(bend, 0.7))
+		var curve_pts := _curve(origin, mid, bend, 7)
+		for ci in range(1, curve_pts.size()):
+			_skel_anchors.append(curve_pts[ci])
 		for tw in twigs:
 			_skel_anchors.append(tw)
+			_skel_anchors.append(bend.lerp(tw, 0.30))
+			_skel_anchors.append(bend.lerp(tw, 0.75))
+	# REVISION 6: auch die Stammspitze traegt Blaetter (kein kahler Gipfel).
+	if not _skel_trunk.is_empty():
+		var tip_top: Vector2 = _skel_trunk[_skel_trunk.size() - 1]
+		for q in range(6):
+			var ang2 := TAU * float(q) / 6.0
+			_skel_anchors.append(tip_top + Vector2(
+				cos(ang2) * 18.0, -6.0 + sin(ang2) * 12.0))
+	# REVISION 6: gezogene Aeste liefern zusaetzliche Blatt-Anker, damit
+	# geskillte Blaetter auch wirklich an den neuen Zweigen sitzen.
+	for bp in branch_paths:
+		var cp: PackedVector2Array = bp
+		if cp.size() < 2:
+			continue
+		for j in range(1, cp.size(), 2):
+			_skel_anchors.append(cp[j])
+		_skel_anchors.append(cp[cp.size() - 1])
 	if _skel_anchors.is_empty():
 		var top: Vector2 = _skel_trunk[n]
 		_skel_anchors.append(top + Vector2(-11.0, -8.0))
 		_skel_anchors.append(top + Vector2(11.0, -8.0))
 
 
+func _leaf_anchor_index(i: int) -> int:
+	var n := maxi(_skel_anchors.size(), 1)
+	# Goldener-Schnitt-Folge: auch WENIGE Blaetter verteilen sich ueber die
+	# ganze Krone statt nur die ersten Aeste zu belegen (kahl bleibende Aeste).
+	var f := fmod(float(i) * 0.61803398875, 1.0)
+	return clampi(int(f * float(n)), 0, n - 1)
+
+
 func _leaf_anchor(i: int) -> Vector2:
-	var base: Vector2 = _skel_anchors[i % maxi(_skel_anchors.size(), 1)]
-	var spread := 8.0 + 2.0 * float(growth_stage())
+	var base: Vector2 = _skel_anchors[_leaf_anchor_index(i)]
+	var spread := (8.0 + 2.0 * float(growth_stage())) \
+		* (1.0 + 0.30 * float(skill_leaf_density))
 	return base + Vector2((_h(i, 2, 8) - 0.5) * 2.0 * spread,
 		(_h(i, 3, 9) - 0.5) * 1.4 * spread)
 
 
 func _layout_leaves(stage: int) -> void:
-	var sc := 1.05 + 0.14 * float(stage)
+	var density := 1.0 + 0.30 * float(skill_leaf_density)
+	var sc := (1.05 + 0.14 * float(stage)) * (1.0 + 0.06 * float(skill_leaf_density))
 	for i in _leaf_sprites.size():
 		var anchor := _leaf_anchor(i)
 		var main := _leaf_sprites[i]
@@ -402,12 +536,22 @@ func _layout_leaves(stage: int) -> void:
 		main.position = anchor - Vector2(8.0 * sc, 8.0 * sc)
 		var a := _leaf_decor_a[i]
 		var b := _leaf_decor_b[i]
-		var off := 10.0 + 3.0 * float(stage)
+		var off := (10.0 + 3.0 * float(stage)) * density
 		var ds := sc * 0.55
 		a.scale = Vector2(ds, ds)
 		b.scale = Vector2(ds, ds)
 		a.position = anchor + Vector2(-off, 4.0) - Vector2(8.0 * ds, 8.0 * ds)
 		b.position = anchor + Vector2(off * 0.7, -off * 0.6) \
+			- Vector2(8.0 * ds, 8.0 * ds)
+		var c := _leaf_decor_c[i]
+		var d := _leaf_decor_d[i]
+		c.visible = skill_leaf_density >= 1
+		d.visible = skill_leaf_density >= 2
+		c.scale = Vector2(ds, ds)
+		d.scale = Vector2(ds, ds)
+		c.position = anchor + Vector2(-off * 0.45, -off * 0.85) \
+			- Vector2(8.0 * ds, 8.0 * ds)
+		d.position = anchor + Vector2(off * 0.95, off * 0.40) \
 			- Vector2(8.0 * ds, 8.0 * ds)
 
 
@@ -417,7 +561,7 @@ func _draw() -> void:
 	var stage := growth_stage()
 	var bark := Color(0.34, 0.23, 0.15).lerp(
 		Color(0.46, 0.31, 0.19), float(stage) / 4.0)
-	var dark := Color(0.19, 0.13, 0.09)
+	var dark := PixelArt.BARK_DARK
 	# Wurzelhals: kurze freie Strahlen vom Stamm in den Boden.
 	for r in range(5):
 		var j := _h(r, 30, 5)
@@ -426,12 +570,16 @@ func _draw() -> void:
 		draw_line(Vector2.ZERO, e, dark, 2.4)
 		draw_line(Vector2.ZERO, e, bark, 1.2)
 	# Stamm: leicht geschwungene, nach oben verjuengte Freiform-Kurve.
+	# REVISION 6: Hauptfaser ist eine gekachelte 16x16-Pixelart-Textur.
 	var segs := maxi(_skel_trunk.size() - 1, 1)
 	for i in range(_skel_trunk.size() - 1):
 		var t := float(i) / float(segs)
-		var w := lerpf(3.0 + 2.8 * float(stage), 1.0, t)
-		draw_line(_skel_trunk[i], _skel_trunk[i + 1], dark, w + 1.4)
-		draw_line(_skel_trunk[i], _skel_trunk[i + 1], bark, w)
+		var w := lerpf(3.0 + 2.8 * float(stage) + 0.10 * float(trunk_tiles), 1.2, t)
+		var a: Vector2 = _skel_trunk[i]
+		var b: Vector2 = _skel_trunk[i + 1]
+		draw_line(a, b, dark, w + 1.4)
+		PixelArt.draw_fibre(self, PixelArt.TRUNK, a, b, w,
+			Color(1.0, 1.0, 1.0, 0.96))
 	# Aeste mit zwei weiteren Verzweigungen pro Ast.
 	for k in _skel_branches.size():
 		var bd := _skel_branches[k]
@@ -443,13 +591,177 @@ func _draw() -> void:
 		for i in range(pts.size() - 1):
 			var w := bw * (1.0 - 0.60 * float(i) / float(maxi(pts.size() - 1, 1)))
 			draw_line(pts[i], pts[i + 1], dark, w + 1.0)
-			draw_line(pts[i], pts[i + 1], bark, w)
+			PixelArt.draw_fibre(self, PixelArt.BRANCH, pts[i], pts[i + 1], w,
+				Color(1.0, 1.0, 1.0, 0.94))
 		var twigs: Array = bd["twigs"]
 		for tw in twigs:
 			var tip: Vector2 = tw
 			var mid2 := e.lerp(tip, 0.55) + Vector2(0.0, -2.0)
-			draw_polyline(_curve(e, mid2, tip, 5), bark, maxf(0.8, bw * 0.45))
+			var twig_pts := _curve(e, mid2, tip, 5)
+			var twig_w := maxf(0.8, bw * 0.45)
+			draw_polyline(twig_pts, dark, twig_w + 0.9)
+			for q in range(twig_pts.size() - 1):
+				PixelArt.draw_fibre(self, PixelArt.BRANCH,
+					twig_pts[q], twig_pts[q + 1], twig_w,
+					Color(1.0, 1.0, 1.0, 0.92))
 		draw_circle(e, maxf(1.0, bw * 0.55), Color(0.52, 0.38, 0.22))
+	# REVISION 6: vom Spieler gezogene Aeste (frei, texture-basiert).
+	for bp in branch_paths:
+		var cp: PackedVector2Array = bp
+		if cp.size() < 2:
+			continue
+		for i in range(cp.size() - 1):
+			var cw := maxf(1.2, 2.8 - 0.06 * float(i))
+			draw_line(cp[i], cp[i + 1], dark, cw + 1.0)
+			PixelArt.draw_fibre(self, PixelArt.BRANCH, cp[i], cp[i + 1], cw,
+				Color(1.0, 1.0, 1.0, 0.94))
+		draw_circle(cp[cp.size() - 1], 2.0, Color(0.58, 0.42, 0.24))
+	# REVISION 6: halbtransparente Vorschau waehrend des Ziehens.
+	if _growth_preview.size() >= 2:
+		var hint := Color(0.72, 1.0, 0.68, 0.55)
+		for i in range(_growth_preview.size() - 1):
+			if i % 2 == 0:
+				draw_line(_growth_preview[i], _growth_preview[i + 1], hint, 2.2)
+		draw_circle(_growth_preview[_growth_preview.size() - 1], 4.0, hint)
+
+
+# --------------------------------------------------------------------------- #
+# REVISION 6: gezielt ziehen (Mycelarium-artig)
+# --------------------------------------------------------------------------- #
+func show_growth_preview(kind: String, world_points: PackedVector2Array) -> void:
+	_growth_preview_kind = kind
+	_growth_preview = PackedVector2Array()
+	for p in world_points:
+		_growth_preview.append(to_local(p))
+	queue_redraw()
+
+
+func clear_growth_preview() -> void:
+	_growth_preview = PackedVector2Array()
+	_growth_preview_kind = ""
+	queue_redraw()
+
+
+func _nearest_wood_anchor(local_pos: Vector2) -> Vector2:
+	var best := Vector2.ZERO
+	var best_d := 1.0e9
+	for p in _skel_trunk:
+		var d := local_pos.distance_to(p)
+		if d < best_d:
+			best_d = d
+			best = p
+	for a in _skel_anchors:
+		var d2 := local_pos.distance_to(a)
+		if d2 < best_d:
+			best_d = d2
+			best = a
+	return best
+
+
+## Zieht eine Wurzel entlang des Mauspfades. Das LOGISCHE 16px-Raster bleibt
+## fuer Wasser/Save/Klick erhalten; die gezeichnete Faser folgt `free_target`.
+func grow_root_along(world_points: PackedVector2Array, max_steps: int,
+		from_segment: RootSegment = null) -> int:
+	if world_points.size() < 2 or max_steps <= 0:
+		return 0
+	var locals: Array[Vector2] = []
+	for w in world_points:
+		locals.append(to_local(w))
+	var sampled := _resample_path(locals, DRAG_STEP, max_steps + 2)
+	var tip := tip_for(from_segment)
+	if tip == null:
+		tip = deepest_tip()
+	if tip == null:
+		return 0
+	var made := 0
+	for idx in range(1, sampled.size()):
+		if made >= max_steps or not can_grow("root"):
+			break
+		var p: Vector2 = sampled[idx]
+		p.y = maxf(p.y, 8.0)
+		var wanted := Vector2i(int(roundf(p.x / float(WorldGenerator.TILE_SIZE))),
+			int(roundf(p.y / float(WorldGenerator.TILE_SIZE))))
+		wanted.y = maxi(wanted.y, 0)
+		var delta := wanted - tip.grid
+		if delta == Vector2i.ZERO:
+			continue
+		var primary := Vector2i(clampi(delta.x, -1, 1), clampi(delta.y, -1, 1))
+		var options: Array[Vector2i] = [
+			primary,
+			Vector2i(primary.x, 0), Vector2i(0, primary.y),
+			Vector2i(primary.x, -primary.y), Vector2i(-primary.x, primary.y),
+			Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0),
+		]
+		var chosen := Vector2i.ZERO
+		var chosen_grid := Vector2i.ZERO
+		for opt in options:
+			if opt == Vector2i.ZERO:
+				continue
+			var g: Vector2i = tip.grid + opt
+			if g.y < 0 or not _is_free(g):
+				continue
+			chosen = opt
+			chosen_grid = g
+			break
+		if chosen == Vector2i.ZERO:
+			continue
+		var seg := _add_root_segment(chosen_grid, chosen, tip, false, p)
+		if seg == null:
+			continue
+		tip = seg
+		made += 1
+	_refresh_growth_visuals()
+	return made
+
+
+## Zieht den Stamm nach oben oder einen neuen Ast in eine freie Richtung.
+## Rueckgabe = Anzahl bezahlter Wachstumsschritte.
+func grow_wood_along(world_points: PackedVector2Array, max_steps: int) -> int:
+	if world_points.size() < 2 or max_steps <= 0:
+		return 0
+	var locals: Array[Vector2] = []
+	for w in world_points:
+		locals.append(to_local(w))
+	var length := 0.0
+	for i in range(1, locals.size()):
+		length += (locals[i] - locals[i - 1]).length()
+	var steps := clampi(int(ceilf(length / DRAG_STEP)), 1, max_steps)
+	var start: Vector2 = locals[0]
+	var finish: Vector2 = locals[locals.size() - 1]
+	var is_trunk := finish.y < start.y - 8.0 and absf(start.x) < 70.0
+	if is_trunk:
+		var guide: Array[Vector2] = []
+		for sp in _skel_trunk:
+			guide.append(sp)
+		for lp in locals:
+			if guide.is_empty() or (lp - guide[guide.size() - 1]).length() > 3.0:
+				guide.append(lp)
+		trunk_guide = _resample_path(guide, DRAG_STEP, MAX_GUIDE_POINTS)
+		var addable := mini(steps, MAX_TRUNK - trunk_tiles)
+		var added := 0
+		for _i in addable:
+			if add_trunk_tile():
+				added += 1
+		_refresh_growth_visuals()
+		return maxi(added, 1)
+	var origin := _nearest_wood_anchor(start)
+	var raw: Array[Vector2] = [origin]
+	for lp in locals:
+		raw.append(lp)
+	raw = _resample_path(raw, DRAG_STEP, 64)
+	var path := PackedVector2Array()
+	for rp in raw:
+		path.append(rp)
+	if path.size() < 2:
+		return 0
+	branch_paths.append(path)
+	while branch_paths.size() > MAX_CUSTOM_BRANCHES:
+		branch_paths.remove_at(0)
+	# Ein Astzug verdickt ebenfalls alle bereits vorhandenen Stammsegmente.
+	if trunk_tiles < MAX_TRUNK:
+		add_trunk_tile()
+	_refresh_growth_visuals()
+	return steps
 
 
 # --------------------------------------------------------------------------- #
@@ -500,6 +812,46 @@ func debug_growth_vigor() -> float:
 
 func debug_env_parts() -> Dictionary:
 	return environment_parts()
+
+
+## REVISION 6 Debug-Hooks ----------------------------------------------------
+func debug_custom_branch_count() -> int:
+	return branch_paths.size()
+
+
+func debug_anchor_count() -> int:
+	return _skel_anchors.size()
+
+
+func debug_leaf_anchor_indices() -> Array:
+	var out: Array = []
+	for i in _leaf_sprites.size():
+		out.append(_leaf_anchor_index(i))
+	return out
+
+
+func debug_trunk_segment_widths() -> Array:
+	var out: Array = []
+	var stage := growth_stage()
+	for i in _trunk_sprites.size():
+		out.append(_trunk_width_at(i, stage))
+	return out
+
+
+func debug_trunk_draw_width() -> float:
+	return lerpf(3.0 + 2.8 * float(growth_stage()) \
+		+ 0.10 * float(trunk_tiles), 1.2, 0.0)
+
+
+func debug_root_free_target(i: int) -> Vector2:
+	if i < 0 or i >= root_segments.size():
+		return Vector2.ZERO
+	var seg := root_segments[i]
+	return seg.free_target if seg.has_free_target else Vector2.ZERO
+
+
+func debug_preview_length() -> float:
+	return float(_growth_preview.size())
 
 
 ## Von Oak.gd ueberschrieben: Pfahlwurzel + Herzwurzelsystem.
@@ -695,6 +1047,23 @@ func get_info_text() -> String:
 	return tr("MSG_TREE_INFO") % [glucose, water, health, leaves_count, root_count]
 
 
+func _vecs_to_data(points: Array) -> Array:
+	var out: Array = []
+	for v in points:
+		var p: Vector2 = v
+		out.append([p.x, p.y])
+	return out
+
+
+func _vecs_from_data(data: Array) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for e in data:
+		var pair: Array = e
+		if pair.size() >= 2:
+			out.append(Vector2(float(pair[0]), float(pair[1])))
+	return out
+
+
 func to_dict() -> Dictionary:
 	var segments: Array[Dictionary] = []
 	for s in root_segments:
@@ -705,7 +1074,18 @@ func to_dict() -> Dictionary:
 			"dy": s.direction.y,
 			"parent": root_segments.find(s.parent_segment) if s.parent_segment != null else -1,
 			"tip": s.is_tip,
+			# REVISION 6: freier Zielpunkt der gezeichneten Faser.
+			"free": s.has_free_target,
+			"fx": s.free_target.x,
+			"fy": s.free_target.y,
 		})
+	var paths: Array = []
+	for bp in branch_paths:
+		var cp: PackedVector2Array = bp
+		var arr: Array = []
+		for q in cp:
+			arr.append([q.x, q.y])
+		paths.append(arr)
 	return {
 		"id": tree_id,
 		"x": global_position.x,
@@ -720,6 +1100,10 @@ func to_dict() -> Dictionary:
 		"skill_leaf_grants": skill_leaf_grants,
 		"nutrient_mult": nutrient_mult,
 		"root_segments": segments,
+		# REVISION 6: optionale Felder. Alte v6-Saves ohne sie bleiben lesbar.
+		"trunk_guide": _vecs_to_data(trunk_guide),
+		"branch_paths": paths,
+		"skill_leaf_density": skill_leaf_density,
 	}
 
 
@@ -735,6 +1119,21 @@ func from_dict(d: Dictionary) -> void:
 	else:
 		nutrient_mult = float(d.get("nutrient_mult", 1.0))
 	skill_leaf_grants = int(d.get("skill_leaf_grants", 0))
+	# REVISION 6: gezogene Geometrie + Blattdichte VOR den Blatt-Sprites laden.
+	var saved_guide: Array = d.get("trunk_guide", [])
+	trunk_guide = _vecs_from_data(saved_guide)
+	branch_paths.clear()
+	var saved_paths: Array = d.get("branch_paths", [])
+	for bp in saved_paths:
+		var path_data: Array = bp
+		var cp := PackedVector2Array()
+		for e in path_data:
+			var pair: Array = e
+			if pair.size() >= 2:
+				cp.append(Vector2(float(pair[0]), float(pair[1])))
+		if cp.size() >= 2:
+			branch_paths.append(cp)
+	skill_leaf_density = int(d.get("skill_leaf_density", 0))
 	glucose = float(d.get("glucose", 0.0))
 	water = float(d.get("water", species.starting_water))
 	health = float(d.get("health", 100.0))
@@ -757,10 +1156,13 @@ func from_dict(d: Dictionary) -> void:
 			var parent: RootSegment = null
 			if pi >= 0 and pi < root_segments.size():
 				parent = root_segments[pi]
+			var free := NO_FREE_TARGET
+			if bool(e.get("free", false)):
+				free = Vector2(float(e.get("fx", 0.0)), float(e.get("fy", 0.0)))
 			_add_root_segment(
 				Vector2i(int(e.get("x", 0)), int(e.get("y", 0))),
 				Vector2i(int(e.get("dx", 0)), int(e.get("dy", 1))),
-				parent, true)
+				parent, true, free)
 		for i in segments.size():
 			root_segments[i].is_tip = bool(segments[i].get("tip", false))
 	_refresh_growth_visuals()

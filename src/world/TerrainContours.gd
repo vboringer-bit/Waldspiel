@@ -82,7 +82,7 @@ func setup(p_index: int, p_generator: WorldGenerator, p_state: WorldState,
 	water_tiles = p_water
 	name = "Contours"
 	z_index = 1                       # ueber tile_layer (0), neben TerrainSurface
-	_atlas = load("res://assets/placeholders/soil_atlas.png") as Texture2D
+	_atlas = load(PixelArt.SOIL_ATLAS) as Texture2D
 	_layers = [
 		{"depth": 16.0, "salt": 1.0, "top": C_ASH, "bottom": C_HUMUS},
 		{"depth": 32.0, "salt": 2.0, "top": C_HUMUS, "bottom": C_TOPSOIL},
