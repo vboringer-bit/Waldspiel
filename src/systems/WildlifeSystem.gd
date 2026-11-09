@@ -8,6 +8,8 @@ extends Node2D
 ## Wurm/Ameise geben Futter, Ameisen vermehren sich langsam, der Specht
 ## reagiert auf parasite_spawned, das Eichhoernchen traegt Samen in Chunk 1.
 ## Alles nutzt TimeManager.scaled_delta (x1/x3/x10 + Pause).
+## REVISION 5: Würmer graben unter der Erde; ihre Tiefe wird im Savegame
+## mitgeschrieben (Format v6 bleibt abwärtslesbar).
 
 const BASE_WORMS := 2
 const BASE_ANTS := 2
@@ -335,7 +337,7 @@ func to_dict() -> Dictionary:
 	for a in animals:
 		if is_instance_valid(a):
 			aa.append({"species": a.species, "x": a.position.x,
-				"home_x": a.home_x})
+				"home_x": a.home_x, "depth": a.burrow_depth})
 	var hh: Array = []
 	for h in anthills:
 		if is_instance_valid(h):
@@ -356,7 +358,9 @@ func from_dict(d: Dictionary) -> void:
 		var sp := String(e.get("species", "worm"))
 		var x := float(e.get("x", 0.0))
 		var a := _spawn_animal(sp, x, true)
-		a.home_x = float(e.get("home_x", x))
+		var hx := float(e.get("home_x", x))
+		a.reseat(x, float(e.get("depth", -1.0)))
+		a.home_x = hx
 		a.position.x = x
 	for e in d.get("anthills", []):
 		_spawn_anthill(float(e.get("x", 180.0)), int(e.get("colony", 1)))
@@ -486,6 +490,37 @@ func debug_pose_carry() -> bool:
 	sq.position.y = sq.base_y
 	sq.queue_redraw()
 	return true
+
+
+func debug_worm_depths() -> Array:
+	var out: Array = []
+	for a in animals:
+		if is_instance_valid(a) and a.species == "worm":
+			out.append(a.burrow_depth)
+	return out
+
+
+func debug_trail_lengths() -> Array:
+	var out: Array = []
+	for a in animals:
+		if is_instance_valid(a) and a.species == "worm":
+			out.append(a.debug_trail_size())
+	return out
+
+
+func debug_body_span(species: String) -> float:
+	for a in animals:
+		if is_instance_valid(a) and a.species == species:
+			return a.debug_body_span()
+	return -1.0
+
+
+func debug_worm_positions() -> Array:
+	var out: Array = []
+	for a in animals:
+		if is_instance_valid(a) and a.species == "worm":
+			out.append(a.global_position)
+	return out
 
 
 func debug_remote_positions() -> Array:

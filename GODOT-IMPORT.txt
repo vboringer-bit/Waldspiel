@@ -1,4 +1,4 @@
-WALD-REGENERATION — PHASE 5 — Godot 4.7.2 stable
+WALD-REGENERATION — REVISION 5 — Godot 4.7.2 stable
 ======================================================================
 
 Dieses ZIP enthaelt das KOMPLETTE, lauffaehige Projekt. project.godot liegt
@@ -51,6 +51,29 @@ Steuerung:
   F11                      Vollbild an/aus
   HUD                      AUTO/MANUELL, DE/EN, Speichern, Laden
 
+NEU IN REVISION 5 — ORGANISCHES WACHSTUM & BODENLEBEN:
+  * WUERMER leben UNTER der Erde (20–120 px Tiefe), graben sich langsam
+    (8 px/s) durch lockere Schichten, weichen Fels/Stein/Wasser/Hohlraeumen
+    aus und hinterlassen sichtbare, aufgelockerte GANG-SPUREN.
+  * Wurm 12 px / Ameise 9 px statt 28/21 px; Specht und Eichhoernchen
+    bleiben unveraendert gross. Alle Tiere bleiben anklickbar.
+  * Baeume wachsen LANGSAMER und werden DEUTLICH GROESSER: 28 Schritte
+    x 17 px = 476 px Endhoehe (vorher 12 x 16 px = 192 px), bis zu 72
+    Wurzelsegmente. GLUCOSE_PACE = 0.2 (= ca. 5x langsamere Produktion).
+  * GLUCOSE haengt jetzt MULTIPLIKATIV an der VERSORGUNG:
+      Wasser (water-8)/72  x  Sonne (Jahreszeit)
+      x Naehrstoffe (echte Bodenguete aller Wurzeln x nutrient_mult)
+      x Wurzelmasse sqrt(root_count/18)
+    Ein Baum mit nur einer winzigen Wurzel erzeugt und waechst VIEL weniger.
+    HUD: "Versorgung ..% · <knappster Faktor>".
+  * STAMM und WURZELN sind FREIE, gekruemmte Kurven mit Verzweigung,
+    Jitter, Verjuengung und 3–5 feinen Hyphen pro Wurzelsegment
+    (Mycelarium-Anmutung) statt 16px-Kacheln. Das logische Raster bleibt
+    NUR fuer Wasser/Reservoir, Ghost-Preview, 16x16-Klickflaechen und
+    Save v6 erhalten.
+  * 9 neue DE/EN-Schluessel (180 CSV-Zeilen), Wurmtiefe im Savegame,
+    neuer Smoke --rev5-smoke, 6 Presets --rev5-shot-*.
+
 NEU IN PHASE 5 — TIERE & SYMBIOSE:
   * Oben links: Panel mit WALD-GESUNDHEIT (Balken), FUTTER, TIERE,
     PARASITEN und PILZEN.
@@ -70,8 +93,9 @@ NEU IN PHASE 5 — TIERE & SYMBIOSE:
     disaster_rate und Resistenz. Parasiten-Resistenz oder Specht entfernen.
     Frei lebende Würmer bleiben nuetzliche Futter-Tiere.
   * PILZ-SYMBIOSE: "Symbiose" schaltet "Pilz-Knoten" frei; dieser gibt
-    +15 % NAEHRSTOFFE (BaseTree.nutrient_mult) und zeichnet sichtbare
-    FungusPatch-Pilze an allen Eichen. Fotosynthese steigt echt.
+    +15 % NAEHRSTOFF-VERSORGUNG (BaseTree.nutrient_mult) und zeichnet
+    sichtbare FungusPatch-Pilze an allen Eichen. Seit REVISION 5 wirkt der
+    Wert in der Versorgungs-Bilanz statt direkt auf die Fotosynthese.
   * Alle Tiere/Pilze/Parasiten weichen Baum-Bounds aus bzw. sind anwaehlbar;
     einfache StateMachine: IDLE / WANDER / EAT / HELP_TREE / CARRY.
   * Savegame FORMAT v6 speichert Tiere, Futter, Kolonie, Huegel und Parasiten.
@@ -105,13 +129,20 @@ Tests (im Projektordner, OHNE --seed):
   godot --headless --path . -- --rev3-smoke      # 20 OK-Zeilen: OK
   godot --headless --path . -- --rev4-smoke      # 32 OK-Zeilen: OK
   godot --headless --path . -- --phase4-smoke    # 63 OK-Zeilen: OK
-  godot --headless --path . -- --phase5-smoke    # 57 OK-Zeilen: OK
+  godot --headless --path . -- --phase5-smoke    # 58 OK-Zeilen: OK
+  godot --headless --path . -- --rev5-smoke      # 35 OK-Zeilen: OK
   --------------------------------------------------------------------
-  10 / 10 Smokes OK · 341 OK-Zeilen · 0 FEHLER · 0 SCRIPT ERROR
+  11 / 11 Smokes OK · 377 OK-Zeilen · 0 FEHLER · 0 SCRIPT ERROR
 
 Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed,
 --fixed-fps 10):
   Ohne Preset                          -> screenshots/p5_f5.png
+  --rev5-shot-f5                       -> screenshots/rev5_f5.png
+  --rev5-shot-mature / -branches       -> screenshots/rev5_mature.png /
+                                          screenshots/rev5_branches.png
+  --rev5-shot-roots / -worms / -supply -> screenshots/rev5_roots.png /
+                                          screenshots/rev5_worms.png /
+                                          screenshots/rev5_supply.png
   --phase5-shot-wildlife               -> screenshots/p5_wildlife.png
   --phase5-shot-health                 -> screenshots/p5_health.png
   --phase5-shot-parasite               -> screenshots/p5_parasite.png
@@ -125,14 +156,17 @@ Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed,
   --rev4-shot-start / -carry / -stages / -water
   --p3-debug-sizes                      (Viewport-/Skalierungs-Debug)
 
-Dokumente: README.md, DECISIONS.md (Abschnitte 1–70),
-PHASE5-ERGEBNIS.html/.md, PHASE5-TESTPROTOKOLL.txt sowie die historischen
+Dokumente: README.md, DECISIONS.md (Abschnitte 1–71),
+REVISION5-ERGEBNIS.html/.md, REVISION5-TESTPROTOKOLL.txt,
+PHASE5-ERGEBNIS.html/.md (vorheriger Stand), PHASE5-TESTPROTOKOLL.txt
+sowie die historischen
 PHASE4-/REVISION4-/REVISION3-/PHASE3-/REVISION2-/REVISION1-/PHASE0-/PHASE1-/
 PHASE2-Berichte. Die HTML-Berichte enthalten die Bilder als data-URIs und
 funktionieren offline.
 
 Hinweis: user://savegame.json liegt NICHT im ZIP, sondern im
 Godot-Benutzerdatenordner und wird beim ersten Speichern angelegt.
-PHASE 5 ist abgeschlossen. Sturm-/Duerr-/Borkenkaefer-Ereignisse sowie
+REVISION 5 ist abgeschlossen; PHASE 5 bleibt als vorheriger Stand erhalten.
+Sturm-/Duerr-/Borkenkaefer-Ereignisse sowie
 pH-/N-P-K-/Mykorrhiza-Simulation bleiben der spaeteren "vollen Simulation"
 (Master-Punkt 4.2) vorbehalten; es wurde keine PHASE 6 begonnen.

@@ -66,6 +66,8 @@ var _p5_health_bar: ProgressBar
 var _p5_food: Label
 var _p5_wildlife: Label
 var _p5_parasites: Label
+## REVISION 5: Versorgungs-Bilanz des ausgewaehlten Baums.
+var _p5_supply: Label
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
@@ -224,6 +226,8 @@ func _build_widgets() -> void:
 	_p5_food = _label("", _small)
 	_p5_wildlife = _label("", _small)
 	_p5_parasites = _label("", _small)
+	_p5_supply = _label("", _small)
+	_p5_supply.modulate = Color(0.74, 0.88, 0.70, 1.0)
 
 	_hint = _label("", _small)
 	_toast_label = _label("", _settings)
@@ -415,7 +419,7 @@ func _layout() -> void:
 	_season_bar.size = Vector2(300.0, 16.0)
 
 	_p5_panel.position = Vector2(20.0, 24.0)
-	_p5_panel.size = Vector2(310.0, 142.0)
+	_p5_panel.size = Vector2(310.0, 176.0)
 	_p5_title.position = Vector2(36.0, 30.0)
 	_p5_health.position = Vector2(36.0, 58.0)
 	_p5_health_bar.position = Vector2(36.0, 82.0)
@@ -423,6 +427,7 @@ func _layout() -> void:
 	_p5_food.position = Vector2(36.0, 100.0)
 	_p5_wildlife.position = Vector2(170.0, 100.0)
 	_p5_parasites.position = Vector2(36.0, 122.0)
+	_p5_supply.position = Vector2(36.0, 146.0)
 
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
@@ -506,6 +511,37 @@ func _refresh_p5_panel() -> void:
 	_p5_wildlife.text = "%s: %d" % [tr("HUD_WILDLIFE"), animal_count]
 	_p5_parasites.text = "%s: %d · %s: %d" % [
 		tr("HUD_PARASITES"), parasite_count, tr("HUD_FUNGI"), fungus_count]
+
+
+	# REVISION 5: echte Versorgungs-Bilanz (Wasser/Sonne/Naehrstoffe/Wurzeln)
+	# plus der jeweils knappste Faktor. Kein erfundener Wert: alles kommt aus
+	# BaseTree.environment_parts().
+	var tree: BaseTree = null
+	if interaction != null:
+		tree = interaction.selected_tree
+	if tree == null:
+		_p5_supply.text = ""
+	else:
+		var parts := tree.environment_parts()
+		var total := int(roundf(clampf(float(parts["total"]), 0.0, 1.0) * 100.0))
+		var worst := 2.0
+		var limit := "SUPPLY_LIMIT_OK"
+		var pairs := [["water", "SUPPLY_LIMIT_WATER"],
+			["sun", "SUPPLY_LIMIT_SUN"],
+			["nutrients", "SUPPLY_LIMIT_NUTRIENTS"],
+			["roots", "SUPPLY_LIMIT_ROOTS"]]
+		for pair in pairs:
+			var v := float(parts[String(pair[0])])
+			if v < worst:
+				worst = v
+				limit = String(pair[1])
+		if worst >= 0.85:
+			limit = "SUPPLY_LIMIT_OK"
+		_p5_supply.text = tr("HUD_SUPPLY") % [total, tr(limit)]
+
+
+func debug_supply_text() -> String:
+	return _p5_supply.text if _p5_supply != null else ""
 
 
 func debug_health_text() -> String:

@@ -12,8 +12,9 @@ Vollständige, Godot-importierbare Projektstände (`project.godot` liegt jeweils
 | `waldspiel-REVISION4.zip` | REVISION 4 |
 | `waldspiel-PHASE4.zip` | PHASE 4 (vor der Fixrunde) |
 | `waldspiel-PHASE4-FIX.zip` | PHASE 4 + Fixrunde |
-| `waldspiel-PHASE5.zip` | **PHASE 5 — aktueller Stand** |
+| `waldspiel-PHASE5.zip` | PHASE 5 (vor REVISION 5) |
+| `waldspiel-REVISION5.zip` | **REVISION 5 — aktueller Stand** |
 
 Der **aktuelle, lauffähige Projektstand** liegt direkt im Repo-Root (`project.godot`, `src/`, `Main.tscn`). Die ZIPs sind nur eingefrorene Pakete früherer Stände; zum Arbeiten/Godot-Importieren immer den Repo-Root bzw. die neueste ZIP nehmen.
 
-`python3 tools/build_zip.py <PHASE>` erzeugt eine neue ZIP direkt in `deliverables/`; `.zip`-Dateien werden dabei bewusst nicht erneut eingepackt. Die P4-Fixrunde und PHASE 5 liegen als eigene Pakete vor, damit alle vorherigen Stände erhalten bleiben.
+`python3 tools/build_zip.py <PHASE>` erzeugt eine neue ZIP direkt in `deliverables/`; `.zip`-Dateien werden dabei bewusst nicht erneut eingepackt. Die P4-Fixrunde, PHASE 5 und REVISION 5 liegen als eigene Pakete vor, damit alle vorherigen Stände erhalten bleiben.

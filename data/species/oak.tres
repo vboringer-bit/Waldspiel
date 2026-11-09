@@ -12,4 +12,4 @@ growth_cost = 10.0
 starting_water = 100.0
 root_type = "Pfahlwurzel + Herzwurzelsystem"
 leaf_description = "Sommergrün, 2 Blätter beim Keimling"
-root_side_every = 4
+root_side_every = 3

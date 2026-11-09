@@ -167,5 +167,14 @@ MSG_PARASITE_REMOVED,Parasit entfernt (%s).,Parasite removed (%s).
 BY_WOODPECKER,vom Specht,by woodpecker
 BY_RESISTANCE,durch Resistenz,by resistance
 MSG_RESISTANCE_CLEAN,Parasiten-Resistenz befreit den Baum.,Parasite resistance clears the tree.
-MSG_FUNGUS_SPAWN,Pilz-Symbiose gibt Naehrstoffe (+15 % Glucose).,Fungus symbiosis provides nutrients (+15% glucose).
+MSG_FUNGUS_SPAWN,Pilz-Symbiose gibt Naehrstoffe (+15 % Versorgung).,Fungus symbiosis provides nutrients (+15% supply).
 MSG_FUNGUS_INFO,Pilz-Knoten aktiv: Naehrstoffe fuer den Baum.,Fungus node active: nutrients for the tree.
+HUD_SUPPLY,Versorgung %d%% · %s,Supply %d%% · %s
+SUPPLY_LIMIT_WATER,Wasser knapp,Low water
+SUPPLY_LIMIT_SUN,wenig Sonne,Low sun
+SUPPLY_LIMIT_NUTRIENTS,Nährstoffe knapp,Low nutrients
+SUPPLY_LIMIT_ROOTS,Wurzeln knapp,Few roots
+SUPPLY_LIMIT_OK,optimal versorgt,Well supplied
+MSG_BURROW,Der Wurm gräbt sich langsam durch den Boden.,The worm burrows slowly through the soil.
+MSG_SLOW_GROWTH,"Wenig Wurzeln, Wasser oder Licht: deutlich weniger Glucose und langsameres Wachstum.","Few roots, water or light: much less glucose and slower growth."
+MSG_ORGANIC_GROWTH,Stamm und Wurzeln verzweigen sich jetzt frei statt im Kachelraster.,Trunk and roots now branch freely instead of on the tile grid.

@@ -219,12 +219,20 @@ func run() -> void:
 	tree.glucose = 0.0
 	tree.water = 100.0
 	tree.photosynthesize(1.0, 1.0, 1.0)
+	# REVISION 5: nutrient_mult wirkt jetzt INNERHALB der Versorgungs-Bilanz.
 	var expected := float(tree.leaves_count) \
 		* tree.species.photosynthesis_efficiency \
 		* Global.difficulty_factor("photosynthesis") \
-		* tree.skill_glucose_mult * tree.nutrient_mult
+		* tree.skill_glucose_mult * BaseTree.GLUCOSE_PACE \
+		* tree.environment_factor(1.0)
 	_check(is_equal_approx(tree.glucose, expected),
-		"Fotosynthese nutzt Naehrstoff-Multiplikator (%.2f)" % expected)
+		"Fotosynthese nutzt Versorgungs-Bilanz (%.2f)" % expected)
+	var env_with := tree.environment_factor(1.0)
+	tree.nutrient_mult = 1.0
+	var env_without := tree.environment_factor(1.0)
+	tree.nutrient_mult = 1.15
+	_check(env_with > env_without,
+		"Pilz-Naehrstoffe erhoehen die Versorgungs-Bilanz")
 	hud.refresh()
 	_check(hud.debug_health_text().contains("%"),
 		"HUD zeigt Wald-Gesundheit in Prozent")

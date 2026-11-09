@@ -116,6 +116,12 @@ func _ready() -> void:
 			_chunk_manager, _camera, state, _hud)
 		add_child(smoke5)
 
+	elif args.has("--rev5-smoke"):
+		var smoke_r5 = preload("res://tests/Revision5Smoke.gd").new()
+		smoke_r5.setup(_interaction, _growth, _water, _time, _season,
+			_wildlife, _chunk_manager, _hud, _save)
+		add_child(smoke_r5)
+
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
 		_forest_health.value * 100.0])
@@ -251,6 +257,58 @@ func _apply_presets(args: PackedStringArray) -> void:
 		_forest_health.recompute()
 		_hud.refresh()
 		EventBus.toast.emit(tr("MSG_TREE_PLANTED_REMOTE"))
+
+	# --- REVISION 5: organisches Wachstum + Bodenleben ------------------------
+	if args.has("--rev5-shot-f5"):
+		_p5_freeze()
+		_camera.set_zoom_immediate(0.85)
+		_camera.teleport_to(Vector2(0.0, 430.0))
+		_hud.refresh()
+	elif args.has("--rev5-shot-mature"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(0.72)
+		_camera.teleport_to(Vector2(0.0, 430.0))
+		var mt := _rev5_grow_tree(0.0, 28, 30, 12)
+		_interaction.select_tree(mt)
+		_forest_health.recompute()
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_ORGANIC_GROWTH"))
+	elif args.has("--rev5-shot-branches"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.25)
+		_camera.teleport_to(Vector2(0.0, 40.0))
+		var bt := _rev5_grow_tree(0.0, 28, 20, 12)
+		_interaction.select_tree(bt)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_ORGANIC_GROWTH"))
+	elif args.has("--rev5-shot-roots"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 520.0))
+		var rt := _rev5_grow_tree(0.0, 10, 34, 8)
+		_interaction.select_tree(rt)
+		_wildlife.debug_step(9.0)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_BURROW"))
+	elif args.has("--rev5-shot-worms"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.85)
+		_camera.teleport_to(Vector2(-180.0, 400.0))
+		_rev5_grow_tree(0.0, 3, 2, 2)
+		_wildlife.debug_step(9.0)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_BURROW"))
+	elif args.has("--rev5-shot-supply"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(0.9)
+		_camera.teleport_to(Vector2(0.0, 400.0))
+		var weak := _rev5_grow_tree(-300.0, 4, 1, 3)
+		var strong := _rev5_grow_tree(300.0, 20, 20, 10)
+		weak.water = 40.0
+		strong.water = 100.0
+		_interaction.select_tree(weak)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_SLOW_GROWTH"))
 
 	# --- PHASE 4: Skilltree + Winter-Schnee ----------------------------------
 	if args.has("--phase4-shot-skilltree"):
@@ -524,4 +582,23 @@ func _p5_grow_tree(p_x: float, leaves: int) -> BaseTree:
 	while t.leaves_count < leaves and t.add_leaf():
 		pass
 	t.set_season(TimeManager.Season.SPRING)
+	return t
+
+
+# --------------------------------------------------------------------------- #
+# REVISION 5: deterministische Baumzustaende fuer die Screenshots
+# --------------------------------------------------------------------------- #
+func _rev5_grow_tree(p_x: float, trunk_steps: int, root_steps: int,
+		leaves: int) -> BaseTree:
+	var t := _interaction.spawn_tree_at(Vector2(p_x, 0.0), {})
+	for _i in range(trunk_steps):
+		if not t.add_trunk_tile():
+			break
+	for _i in range(root_steps):
+		if not t.add_root():
+			break
+	while t.leaves_count < leaves and t.add_leaf():
+		pass
+	t.set_season(TimeManager.Season.SPRING)
+	t.glucose = 40.0
 	return t

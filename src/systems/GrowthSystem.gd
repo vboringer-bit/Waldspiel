@@ -48,6 +48,15 @@ func tick(delta: float) -> void:
 		tree.photosynthesize(dt, sun, growth)
 		if not Global.auto_mode or not auto_growth_enabled or growth <= 0.0:
 			continue
+		# REVISION 5: Wuchskraft sammelt sich NUR so schnell an, wie der Baum
+		# versorgt ist. Bei einer winzigen Wurzel / wenig Wasser / wenig Licht
+		# dauert jeder naechste Kauf deutlich laenger als frueher. Der Startwert
+		# ist bereits voll, damit ein Kauf mit ausreichend Glucose sofort
+		# moeglich bleibt (P0/P1-Smoke-Kompatibilitaet).
+		var env := clampf(tree.environment_factor(sun), 0.0, 1.0)
+		tree.growth_vigor += dt * maxf(env, 0.05)
+		if tree.growth_vigor < BaseTree.AUTO_GROWTH_INTERVAL:
+			continue
 		# Prioritaet: Wurzeln bei Durst, sonst Blaetter (Stamm als Fallback).
 		var part := "root" if tree.water < DURST_SCHWELLE else "leaf"
 		if not tree.can_grow(part):
@@ -62,6 +71,7 @@ func tick(delta: float) -> void:
 			continue
 		if tree.grow_part(part):
 			tree.glucose -= cost
+			tree.growth_vigor = 0.0
 			EventBus.tree_grew.emit(tree, part)
 
 

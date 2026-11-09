@@ -1,0 +1,112 @@
+WALD-REGENERATION — REVISION 5 — TESTPROTOKOLL
+======================================================================
+Godot 4.7.2.stable.official.ed1daf0bf · Headless + Xvfb · 2026-11-05
+Arbeitsstand: /home/user/waldspiel (Basis: GitHub fba40c4 / PHASE 5)
+
+0) AUSGANGSLAGE
+----------------------------------------------------------------------
+Nach einem erneuten Snapshot-Verlust fehlten .git, P4/P5-Quelldateien,
+die Godot-Binary und die Liefer-ZIPs. Der vollstaendige PHASE-5-Stand
+wurde aus dem Remote-Klon (Commit fba40c4) wiederhergestellt; die ZIP
+hatte danach wieder SHA-256 762a5a2e...b1f6c6aeac6618d3a6ef7b0a.
+Godot 4.7.2 stable und Xvfb wurden frisch installiert.
+
+1) IMPORT
+----------------------------------------------------------------------
+$ Godot_v4.7.2-stable_linux.x86_64 --headless --path . --import
+  Exit 0 · 0 SCRIPT ERROR · 0 Parse Error
+  data/localization.csv -> .de/.en.translation neu erzeugt
+  tests/Revision5Smoke.gd.uid erzeugt
+  screenshots/rev5_*.png.import erzeugt
+
+2) HEADLESS-SMOKES (11/11)
+----------------------------------------------------------------------
+$ timeout 240 $G --headless --path . -- --<task>-smoke
+
+  phase0-smoke   3 OK-Zeilen   Exit 0   Ergebnis: OK
+  phase1-smoke  26 OK-Zeilen   Exit 0   Ergebnis: OK
+  phase2-smoke  25 OK-Zeilen   Exit 0   Ergebnis: OK
+  rev1-smoke    32 OK-Zeilen   Exit 0   Ergebnis: OK
+  rev2-smoke    27 OK-Zeilen   Exit 0   Ergebnis: OK
+  p3-smoke      56 OK-Zeilen   Exit 0   Ergebnis: OK
+  rev3-smoke    20 OK-Zeilen   Exit 0   Ergebnis: OK
+  rev4-smoke    32 OK-Zeilen   Exit 0   Ergebnis: OK
+  phase4-smoke  63 OK-Zeilen   Exit 0   Ergebnis: OK
+  phase5-smoke  58 OK-Zeilen   Exit 0   Ergebnis: OK
+  rev5-smoke    35 OK-Zeilen   Exit 0   Ergebnis: OK
+  ----------------------------------------------------------
+  GESAMT        377 OK-Zeilen · 0 FEHLER · 0 SCRIPT ERROR
+
+  rev5-smoke prueft u.a.:
+    - 2 Wuermer unter der Erdoberflaeche, Grabtiefe 20..120 px
+    - langsame Tiefenaenderung + >=3 Gang-Spur-Punkte
+    - Wurm 12 px / Ameise 9 px, kleine Klickflaechen
+    - 28 Wuchsschritte, Stamm >=470 px, >=5 Aeste, Kronen-Spread >=60 px
+    - Freiform-Faser statt Kachelsprite, Jitter >0.5 px, Hitbox 16x16
+    - GLUCOSE_PACE 0.2, Wurzel-Faktor <0.30 bei einer Wurzel
+    - gut versorgter Baum >3x mehr Glucose, Trockenheit -50 %,
+      Sonne 0 = 0 Versorgung, mehr Naehrstoffe = mehr Versorgung
+    - AUTO-Wuchskraft, HUD "Versorgung", 9 neue DE/EN-Schluessel
+    - Save v6 mit Wurmtiefe, AUTO standardmaessig aus
+
+3) F5 / DAUERLAUF
+----------------------------------------------------------------------
+$ timeout 240 $G --headless --path . --quit-after 180 -- \
+      --seed=20261105 --windowed
+  Exit 0 · 0 Fehler
+  "[Main] PHASE 5 bereit: 0 Eicheln, 4 Tiere, Gesundheit 16%, AUTO aus
+   (MANUELL)."
+
+4) XVFB-RENDERS (6 x 1920x1080)
+----------------------------------------------------------------------
+$ xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+      --rendering-driver opengl3 --resolution 1920x1080 \
+      --fixed-fps 10 --write-movie <frames>/f.png --quit-after 25 \
+      -- --seed=20261105 --windowed --rev5-shot-<preset>
+
+  rev5-shot-f5        25 Frames   Exit 0   0 Fehler
+  rev5-shot-mature    25 Frames   Exit 0   0 Fehler
+  rev5-shot-branches  25 Frames   Exit 0   0 Fehler
+  rev5-shot-roots     25 Frames   Exit 0   0 Fehler
+  rev5-shot-worms     25 Frames   Exit 0   0 Fehler
+  rev5-shot-supply    25 Frames   Exit 0   0 Fehler
+
+  Jeweils das letzte Frame (f00000024.png) als screenshots/rev5_*.png
+  uebernommen und visuell geprueft: grosse verzweigte Eiche, goldenes
+  Mycelium-Wurzelnetz, kleine Würmer mit Gang-Spuren unter der Erde,
+  kleine Ameisen, HUD-Versorgungszeile.
+
+5) REGRESSION / BEWUSSTE ERHALTUNG
+----------------------------------------------------------------------
+  - AUTO standardmaessig aus (P4-Fix), voller Baum verbraucht 0 Glucose
+  - Winter: keine Fotosynthese, kein Wachstum (P3/R3)
+  - 5 Chunks, Nearest, Forward+, content_scale_factor 1.0
+  - 15 Skilltree-Knoten, Save v6 (v5..v1 lesbar), 180 CSV-Zeilen
+  - P0-P5/REV-Berichte, Screenshots und alle alten ZIPs unverändert
+    im Projekt erhalten; PHASE-5-Berichte als vorheriger Stand markiert
+
+6) LIEFERDATEI / FRISCHER EXTRAKT
+----------------------------------------------------------------------
+$ python3 tools/build_zip.py REVISION5
+  deliverables/waldspiel-REVISION5.zip · 331 Dateien · 41,40 MiB
+  project.godot im ZIP-Root: OK · CRC-Test: OK
+  .godot/ ausgeschlossen · .git/ ausgeschlossen · keine Nested-ZIPs
+
+$ unzip -q deliverables/waldspiel-REVISION5.zip -d /tmp/r5zip
+  331 Dateien · 51 MiB entpackt · project.godot liegt im Root
+
+$ $G --headless --path /tmp/r5zip --import
+  Exit 0 · 0 Fehler (UEbersetzungen und .uid neu erzeugt)
+
+  11/11 Smokes aus dem FRISCHEN EXTRAKT:
+    phase0 3 / phase1 26 / phase2 25 / rev1 32 / rev2 27 / p3 56
+    rev3 20 / rev4 32 / phase4 63 / phase5 58 / rev5 35
+    => je Exit 0 · Ergebnis: OK · 377 OK-Zeilen · 0 Fehler
+  Identisch zum Arbeitsbaum (keine versteckte .godot-Abhaengigkeit).
+
+$ $G --headless --path /tmp/r5zip --quit-after 180 -- \
+      --seed=20261105 --windowed
+  Exit 0 · 0 Fehler
+
+  REVISION5-ERGEBNIS.html: 6 data-URI-PNGs · 16 echte Snippets ·
+  0 externe Referenzen · offline im Arena-Preview lesbar.

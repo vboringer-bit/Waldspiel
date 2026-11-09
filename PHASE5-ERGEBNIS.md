@@ -1,5 +1,7 @@
 # PHASE 5 — Tiere & Symbiose
 
+> **Hinweis (historischer Stand):** Dieser Bericht beschreibt PHASE 5 vor REVISION 5. Wachstum, Glucose-Bilanz, Tiergrößen sowie Stamm-/Wurzelgeometrie wurden inzwischen weiterentwickelt — siehe `REVISION5-ERGEBNIS.html` / `.md` und `DECISIONS.md` §71.
+
 **Godot 4.7.2 stable · GDScript · Forward+/Vulkan · 2026-11-05**
 
 Wurm/Ameise als immer vorhandene Basis, Specht/Eichhörnchen ab Wald-Gesundheit > 50 %, Mistel/Wurm-Befall, echte Pilz-Symbiose, StateMachine, Kollision, Interaktion, Save v6. **10/10 Smokes · 341 OK-Zeilen · 0 Fehler.**

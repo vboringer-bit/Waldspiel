@@ -131,8 +131,10 @@ func run() -> void:
 	tree.glucose = 0.0
 	tree.water = 100.0
 	tree.photosynthesize(1.0, 1.0, 1.0)
+	# REVISION 5: Grundtempo und Versorgungs-Bilanz gehoeren jetzt zur Formel.
 	var expected := float(tree.leaves_count) * tree.species.photosynthesis_efficiency \
-		* Global.difficulty_factor("photosynthesis") * 1.20
+		* Global.difficulty_factor("photosynthesis") * 1.20 \
+		* BaseTree.GLUCOSE_PACE * tree.environment_factor(1.0)
 	_check(tree.glucose > 0.0 and is_equal_approx(tree.glucose, expected),
 		"Echter Wert: Fotosynthese erzeugt %.2f Glucose" % expected)
 

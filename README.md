@@ -1,11 +1,25 @@
-# Wald-Regeneration — PHASE 5
+# Wald-Regeneration — REVISION 5
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — und jetzt Jahreszeiten, Zeitspulen, natürliche Vermehrung, ein **Skilltree mit 15 Mutationen**, **Winter-Schnee** sowie **Tiere, Parasiten und Pilz-Symbiose**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · **PHASE 5 ✅ (10/10 Smokes OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · **REVISION 5 ✅ (11/11 Smokes OK)**
 
-**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-PHASE5.zip` (aktueller Stand; alle älteren ZIPs bleiben historisch erhalten). Dazu `PHASE5-ERGEBNIS.md` / `.html` mit 6 Screenshots und Code-Snippets.
+**Am Ende dieser Runde gibt es wieder eine komplette ZIP** → `deliverables/waldspiel-REVISION5.zip` (aktueller Stand; alle älteren ZIPs bleiben historisch erhalten). Dazu `REVISION5-ERGEBNIS.md` / `.html` mit 6 Screenshots und Code-Snippets sowie `REVISION5-TESTPROTOKOLL.txt`. Die PHASE-5-Berichte sind als vorheriger Stand markiert.
+
+---
+
+## REVISION 5 — Organisches Wachstum & Bodenleben
+
+**User-Auftrag:** Würmer unter die Erde und langsam grabend, Würmer/Ameisen deutlich kleiner, Bäume insgesamt langsamer und am Ende deutlich größer, Glucose-Produktion verlangsamt und abhängig von Wasser/Sonne/Nährstoffen (winzige Wurzel ⇒ viel weniger Glucose und Wuchs), Wurzeln und Stämme verzweigt und vom Kachelraster entkoppelt „wie in Mycelarium". Per Rückfrage gewählt: **~5× langsamer, ~3× größer** und **freie organische Geometrie bei erhaltener Tile-Logik**.
+
+1. **Bodenleben.** `Animal.gd`: Würmer leben 20–120 px unter der Geländelinie, graben mit 8 px/s, weichen Fels/Stein/Wasser/Hohlräumen aus und hinterlassen sichtbare, aufgelockerte Gang-Spuren. Wurm **12 px**, Ameise **9 px** (vorher 28/21 px); Specht/Eichhörnchen bleiben groß. Futter-Zyklus, Kolonie und Ferntransport funktionieren weiter.
+2. **Langsamer, größer.** `BaseTree`: `MAX_TRUNK 12 → 28`, `TRUNK_STEP 16 → 17 px` ⇒ **476 px** Endhöhe statt 192 px; `MAX_ROOTS 32 → 72`; `GLUCOSE_PACE = 0,2` (≈5× langsamer). AUTO kauft nur noch, wenn sich `growth_vigor` entsprechend der Versorgung angesammelt hat.
+3. **Versorgungs-Bilanz.** `environment_parts()` multipliziert **Wasser** `(water−8)/72`, **Sonne** (Jahreszeit), **Nährstoffe** (echte Bodengüte aus allen Wurzelsegmenten × `nutrient_mult`) und **Wurzelmasse** `√(roots/18)`. Ein Keimling mit 1 Wurzel liegt beim Wurzel-Faktor **0,24**; gut versorgte Bäume erzeugen >3× mehr Glucose. Das HUD zeigt `Versorgung …%` mit dem knappsten Faktor.
+4. **Freie Verzweigung.** Stamm, Äste und Wurzeln sind deterministisch gehashte Kurven mit Jitter, Verjüngung, Zwigen und 3–5 feinen Hyphen pro Wurzelsegment — kein 16px-Kachelbild mehr. Das logische Raster bleibt **nur** für Wasser/Reservoir, Ghost-Preview, 16×16-Klickflächen und Save v6 erhalten. `data/species/oak.tres`: Seitenwurzeln alle 3 statt 4 Tiles.
+5. **Neue Abnahme.** `tests/Revision5Smoke.gd` (`--rev5-smoke`), 6 neue Presets `--rev5-shot-*`, 9 neue DE/EN-Schlüssel (180 CSV-Zeilen), Wurmtiefe im Save. **11/11 Smokes · 377 OK-Zeilen · 0 Fehler.**
+
+Siehe `REVISION5-ERGEBNIS.html` / `.md`, `REVISION5-TESTPROTOKOLL.txt` und `DECISIONS.md` §71.
 
 ---
 
@@ -23,8 +37,8 @@
 2. **Basis-Tiere sind immer da.** Zwei Regenwürmer, zwei Ameisen und ein Ameisenhügel starten unabhängig von der Gesundheit (User-Entscheidung). `Animal.gd` enthält eine echte StateMachine `Idle → Wander → Eat → HelpTree → Carry`; Wurm/Ameise geben **Futter**, die Ameisenkolonie vermehrt sich langsam, Tiere weichen Baum-Bounds aus und sind anklickbar.
 3. **Specht & Eichhörnchen ab > 50 %.** Der Specht reagiert auf `parasite_spawned`, fliegt zum Baum und pickt Parasiten weg. Das Eichhörnchen trägt eine Eichel in **Chunk 1** und pflanzt dort einen neuen Baum. Unter 50 % verschwinden beide wieder.
 4. **Mistel + Wurmbefall.** `Parasite.gd` zieht pro simulierter Sekunde echte Glucose ab. Die Spawn-Chance hängt an Schwierigkeit und `parasite_risk`; der Wurm-Entzug nutzt `disease_risk`. LEICHT bleibt befallfrei. Der Skill **Parasiten-Resistenz** und der Specht entfernen den Befall. Frei lebende Würmer sind weiterhin nützlich; „Wurmbefall" ist bewusst als Borkenlarve interpretiert (siehe `DECISIONS.md` §70).
-5. **Pilz-Symbiose gibt Nährstoffe.** `mushroom_node` liefert jetzt `nutrients = 0.15`; `BaseTree.nutrient_mult` erhöht die Fotosynthese um **+15 %**, sichtbare `FungusPatch`-Pilze erscheinen an allen Eichen und zählen zur Biodiversität.
-6. **HUD, Save, Tests.** Neues Ökologie-Panel (Gesundheit / Futter / Tiere / Parasiten / Pilze), **Save v6** mit Tieren, Futter, Hügeln und Parasiten, 35 neue DE/EN-Schlüssel. **10/10 Smokes · 341 OK-Zeilen · 0 Fehler**, sechs neue 1920×1080-Renders.
+5. **Pilz-Symbiose gibt Nährstoffe.** `mushroom_node` liefert jetzt `nutrients = 0.15`; `BaseTree.nutrient_mult` erhöht seit REVISION 5 die **Nährstoff-Versorgung** um **+15 %** (vorher direkt die Fotosynthese), sichtbare `FungusPatch`-Pilze erscheinen an allen Eichen und zählen zur Biodiversität.
+6. **HUD, Save, Tests.** Neues Ökologie-Panel (Gesundheit / Futter / Tiere / Parasiten / Pilze), **Save v6** mit Tieren, Futter, Hügeln und Parasiten, 35 neue DE/EN-Schlüssel. **10/10 Smokes · 341 OK-Zeilen · 0 Fehler**, sechs neue 1920×1080-Renders (Stand PHASE 5; REVISION 5 erweitert auf **11/11 Smokes · 377 OK-Zeilen**).
 
 **Bewusste Grenze:** Sturm-/Dürre-/Borkenkäfer-Ereignisse sowie pH-, N-P-K- und Mykorrhiza-Simulation gehören zur späteren *vollen Simulation* (Master 4.2), nicht zum PHASE-5-Milestone. Die Schalter/Faktoren bleiben vorbereitet.
 

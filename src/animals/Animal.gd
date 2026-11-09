@@ -1,30 +1,40 @@
 class_name Animal
 extends Node2D
 ## PHASE 5: EIN Tier mit einer einfachen, echten StateMachine
-## (Idle / Wander / Eat / HelpTree / Carry). Kein externes Asset: Wurm,
-## Ameise, Specht und Eichhoernchen werden mit CanvasItem.draw_* gezeichnet.
-##
-## * WANDER: bewegt sich in einem Heimatbereich und weicht Baum-Bounds aus.
-## * EAT: Wurm/Ameise geben Futter (WildlifeSystem.food).
-## * HELP_TREE: Specht fliegt zu einem befallenen Baum und pickt Parasiten.
-## * CARRY: Eichhoernchen traegt eine Eichel in einen entfernten Chunk.
+## (Idle / Wander / Eat / HelpTree / Carry).
+## REVISION 5:
+##   * Regenwuermer leben UNTER der Erde, graben sich langsam durch lockere
+##     Schichten und hinterlassen sichtbare Gang-Spuren (Mycelarium-Anmutung).
+##   * Wuermer und Ameisen sind deutlich kleiner (~40 % der alten Groesse).
+##   * Specht und Eichhoernchen bleiben unveraendert (sie gehoeren nicht zur
+##     Bodenfauna und muessen weiter gut anklickbar sein).
 ## Alle Tiere sind per Linksklick anwaehlbar (Info-Toast + EventBus-Signal).
 
 enum State { IDLE, WANDER, EAT, HELP_TREE, CARRY }
 
 const SPEED := {
-	"worm": 18.0,
-	"ant": 34.0,
+	"worm": 8.0,
+	"ant": 26.0,
 	"woodpecker": 240.0,
 	"squirrel": 210.0,
 }
 const RANGE := {
-	"worm": 70.0,
-	"ant": 150.0,
+	"worm": 34.0,
+	"ant": 110.0,
 	"woodpecker": 360.0,
 	"squirrel": 420.0,
 }
 const FOOD_TIME := 2.4
+
+const WORM_DEPTH_MIN := 20.0
+const WORM_DEPTH_MAX := 120.0
+const WORM_BURROW_SPEED := 7.0
+const BODY_SPAN := {
+	"worm": 12.0,
+	"ant": 9.0,
+	"woodpecker": 40.0,
+	"squirrel": 40.0,
+}
 
 var species: String = "worm"
 var state: int = State.IDLE
@@ -32,6 +42,9 @@ var generator: WorldGenerator
 var wildlife = null
 var home_x: float = 0.0
 var base_y: float = 0.0
+var surface_y: float = 0.0
+var burrow_depth: float = 0.0
+var burrow_target: float = 0.0
 var target_x: float = 0.0
 var host_tree: BaseTree = null
 var carrying_seed: bool = false
@@ -39,6 +52,8 @@ var timer: float = 0.0
 var phase: float = 0.0
 var facing: int = 1
 var _idle_count: int = 0
+var _trail: Array[Vector2] = []
+var _trail_timer: float = 0.0
 
 
 func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
@@ -47,11 +62,33 @@ func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
 	generator = p_generator
 	wildlife = p_wildlife
 	home_x = p_x
-	base_y = generator.height_smooth_at(p_x) - 4.0
-	position = Vector2(p_x, base_y)
-	target_x = p_x
+	surface_y = generator.height_smooth_at(p_x)
+	reseat(p_x, -1.0)
 	timer = 0.4
 	_set_state(State.WANDER)
+
+
+## REVISION 5: Tiefe und Oberflaeche nach Setzen von x neu bestimmen. Wird
+## auch von WildlifeSystem.from_dict() benutzt (Savegame kennt die Tiefe).
+func reseat(p_x: float, p_depth: float = -1.0) -> void:
+	position.x = p_x
+	surface_y = generator.height_smooth_at(p_x)
+	if species == "worm":
+		if p_depth > 0.0:
+			burrow_depth = clampf(p_depth, WORM_DEPTH_MIN, WORM_DEPTH_MAX)
+		else:
+			# Deterministische Starttiefe, leicht unterschiedlich pro Tier.
+			burrow_depth = 26.0 + float(absi(int(p_x)) % 42)
+		burrow_target = burrow_depth
+		base_y = surface_y + burrow_depth
+	else:
+		burrow_depth = 0.0
+		burrow_target = 0.0
+		base_y = surface_y - 4.0
+	position.y = base_y
+	target_x = p_x
+	_trail.clear()
+	queue_redraw()
 
 
 func _set_state(new_state: int) -> void:
@@ -84,6 +121,9 @@ func _pick_target() -> void:
 	timer = 1.4
 	if wildlife != null and wildlife.has_method("rand_range"):
 		timer += wildlife.rand_range(0.0, 1.2)
+	if species == "worm" and wildlife != null and wildlife.has_method("rand_range"):
+		burrow_target = clampf(burrow_depth
+			+ wildlife.rand_range(-24.0, 24.0), WORM_DEPTH_MIN, WORM_DEPTH_MAX)
 
 
 func speed() -> float:
@@ -93,7 +133,10 @@ func speed() -> float:
 func tick(dt: float) -> void:
 	phase += dt
 	timer -= dt
-	position.y = base_y + sin(phase * 6.0) * 1.2
+	if species == "worm":
+		_tick_burrow(dt)
+	else:
+		position.y = base_y + sin(phase * 6.0) * 1.2
 	match state:
 		State.IDLE:
 			if timer <= 0.0:
@@ -119,6 +162,23 @@ func tick(dt: float) -> void:
 	queue_redraw()
 
 
+## REVISION 5: langsames, leicht welliges Graben in lockerer Erde. Die Gang-
+## Spur wird in WELTKOORDINATEN gespeichert, damit sie beim Weiterkriechen
+## liegen bleibt statt mit dem Tier mitzuwandern.
+func _tick_burrow(dt: float) -> void:
+	burrow_depth = move_toward(burrow_depth, burrow_target,
+		WORM_BURROW_SPEED * 0.5 * dt)
+	surface_y = generator.height_smooth_at(position.x)
+	base_y = surface_y + burrow_depth
+	position.y = base_y + sin(phase * 2.2) * 1.0
+	_trail_timer += dt
+	if _trail_timer >= 0.30:
+		_trail_timer = 0.0
+		_trail.append(global_position)
+		if _trail.size() > 30:
+			_trail.remove_at(0)
+
+
 func _move_toward(target: float, step: float) -> void:
 	var dist := absf(target - position.x)
 	if dist <= 0.01:
@@ -140,11 +200,34 @@ func _blocked(next_x: float) -> bool:
 	# Specht und Eichhoernchen duerfen fuer ihre Aufgabe direkt an den Baum.
 	if state == State.HELP_TREE or state == State.CARRY:
 		return false
+	if species == "worm":
+		return _worm_blocked(next_x)
 	var p := Vector2(next_x, base_y - 8.0)
 	for t in get_tree().get_nodes_in_group("trees"):
-		if t is BaseTree and (t as BaseTree).get_bounds_rect().has_point(p):
-			return true
+		if t is BaseTree:
+			var bt := t as BaseTree
+			var r := bt.get_bounds_rect()
+			# REVISION 5: nur der oberflaechennahe Streifen ist Sperrflaeche;
+			# der deutlich groesser gewordene Baum soll die Ameisen nicht
+			# meterweit unter der Erde blockieren.
+			var band := Rect2(Vector2(r.position.x,
+				bt.global_position.y - 46.0), Vector2(r.size.x, 92.0))
+			if band.has_point(p):
+				return true
 	return false
+
+
+## Fels, Stein, Wasser und Hohlraeume sind fuer den Wurm undurchlaessig.
+func _worm_blocked(next_x: float) -> bool:
+	var tile_depth := int(clampf(burrow_depth / 16.0, 1.0, 7.0))
+	var gx := int(floor(next_x / float(WorldGenerator.TILE_SIZE)))
+	var gy := generator.surface_tile_y_at(next_x) + tile_depth
+	var k := generator.material_at(gx, gy)
+	return k == WorldGenerator.SoilKind.AIR \
+		or k == WorldGenerator.SoilKind.WATER \
+		or k == WorldGenerator.SoilKind.CAVE \
+		or k == WorldGenerator.SoilKind.ROCK \
+		or k == WorldGenerator.SoilKind.STONE
 
 
 func _eat() -> void:
@@ -208,6 +291,10 @@ func get_info_text() -> String:
 
 
 func hit_rect() -> Rect2:
+	if species == "worm":
+		return Rect2(global_position + Vector2(-7.0, -6.0), Vector2(14.0, 12.0))
+	if species == "ant":
+		return Rect2(global_position + Vector2(-6.0, -8.0), Vector2(12.0, 10.0))
 	return Rect2(global_position + Vector2(-18.0, -30.0), Vector2(36.0, 34.0))
 
 
@@ -220,30 +307,83 @@ func debug_set_state(s: int) -> void:
 	_set_state(s)
 
 
+func debug_body_span() -> float:
+	return float(BODY_SPAN.get(species, 36.0))
+
+
+func debug_depth() -> float:
+	return burrow_depth
+
+
+func debug_trail_size() -> int:
+	return _trail.size()
+
+
+func debug_is_underground() -> bool:
+	return species == "worm" \
+		and position.y > generator.height_smooth_at(position.x) + WORM_DEPTH_MIN * 0.5
+
+
+# --------------------------------------------------------------------------- #
+# Zeichnung
+# --------------------------------------------------------------------------- #
+func _draw_worm(f: float, w: float) -> void:
+	# 1) Gang-Spur: dunkler Tunnel mit hellerer, aufgelockerter Erdmitte.
+	if _trail.size() >= 2:
+		var n := maxi(_trail.size() - 1, 1)
+		for i in range(_trail.size() - 1):
+			var a := to_local(_trail[i])
+			var b := to_local(_trail[i + 1])
+			var fade := 0.45 + 0.45 * float(i) / float(n)
+			# Aufgelockerte Erde: dunkler Gang + helle Krumen-Mitte.
+			draw_line(a, b, Color(0.15, 0.10, 0.06, fade), 5.4)
+			draw_line(a, b, Color(0.66, 0.48, 0.29, fade), 2.1)
+			if i % 3 == 0:
+				draw_circle(a, 1.3, Color(0.58, 0.42, 0.26, fade))
+	# 2) Koerper: ~12 px statt der alten 28 px.
+	var pts := PackedVector2Array([
+		Vector2(-6.0 * f, -2.0),
+		Vector2(-3.0 * f, -2.8 + w * 0.45),
+		Vector2(0.0, -2.0),
+		Vector2(3.0 * f, -2.8 - w * 0.45),
+		Vector2(6.0 * f, -2.0),
+	])
+	draw_polyline(pts, Color(0.42, 0.24, 0.21, 1.0), 4.0)
+	draw_polyline(pts, Color(0.88, 0.52, 0.47, 1.0), 2.6)
+	for p in pts:
+		draw_circle(p, 1.0, Color(0.96, 0.72, 0.67, 1.0))
+	# 3) Aufgewuehlte Krumen vor der Grabespitze.
+	for i in range(3):
+		var j := float(i)
+		draw_circle(Vector2((7.0 + j * 2.4) * f,
+			-1.0 - j * 1.2 + sin(phase * 3.0 + j) * 0.8),
+			0.9, Color(0.44, 0.31, 0.20, 0.85))
+	# 4) Erd-Schleier: der Wurm steckt IM Boden, liegt nicht obendrauf.
+	draw_rect(Rect2(-8.0, -6.0, 16.0, 9.0), Color(0.31, 0.21, 0.14, 0.12))
+
+
+func _draw_ant(w: float) -> void:
+	var c := Color(0.16, 0.12, 0.10, 1.0)
+	draw_circle(Vector2(-3.4, -3.0), 1.8, c)
+	draw_circle(Vector2(0.0, -3.0), 1.4, c)
+	draw_circle(Vector2(3.4, -3.0 + w * 0.4), 2.1, c)
+	for i in range(3):
+		var x := -2.2 + float(i) * 2.2
+		draw_line(Vector2(x, -2.2), Vector2(x - 2.2, 0.0),
+			Color(0.20, 0.15, 0.12, 1.0), 0.7)
+		draw_line(Vector2(x, -2.2), Vector2(x + 2.2, 0.0),
+			Color(0.20, 0.15, 0.12, 1.0), 0.7)
+	draw_circle(Vector2(4.4, -3.6), 0.6, Color(0.35, 0.25, 0.18, 1.0))
+
+
 func _draw() -> void:
 	var f := float(facing)
 	var w := sin(phase * 4.0) * 1.4
 	match species:
 		"worm":
-			var pts := PackedVector2Array([
-				Vector2(-14.0, -5.0), Vector2(-7.0, -7.0 + w),
-				Vector2(0.0, -5.0), Vector2(7.0, -7.0 - w),
-				Vector2(14.0, -5.0),
-			])
-			draw_polyline(pts, Color(0.76, 0.45, 0.42, 1.0), 6.0)
-			for p in pts:
-				draw_circle(p, 2.2, Color(0.92, 0.66, 0.62, 1.0))
+			_draw_worm(f, w)
 		"ant":
-			var c := Color(0.16, 0.12, 0.10, 1.0)
-			draw_circle(Vector2(-7.0, -7.0), 4.0, c)
-			draw_circle(Vector2(0.0, -7.0), 3.2, c)
-			draw_circle(Vector2(7.0, -7.0 + w), 4.6, c)
-			for i in range(3):
-				var x := -5.0 + float(i) * 5.0
-				draw_line(Vector2(x, -5.0), Vector2(x - 5.0, 0.0),
-					Color(0.20, 0.15, 0.12, 1.0), 1.5)
-				draw_line(Vector2(x, -5.0), Vector2(x + 5.0, 0.0),
-					Color(0.20, 0.15, 0.12, 1.0), 1.5)
+			_draw_ant(w)
 		"woodpecker":
 			var body := Color(0.18, 0.20, 0.20, 1.0)
 			draw_circle(Vector2(0.0, -16.0), 9.0, body)

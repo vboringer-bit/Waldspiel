@@ -190,6 +190,7 @@ def build_html() -> str:
 <body><div class="wrap">
 <header>
   <h1>PHASE 5 — Tiere &amp; Symbiose</h1>
+  <p class="sub"><b>Hinweis (historischer Stand):</b> Dieser Bericht beschreibt PHASE 5 vor REVISION 5. Siehe <code>REVISION5-ERGEBNIS.html</code> und <code>DECISIONS.md</code> §71.</p>
   <p class="sub">Wald-Regeneration · Godot 4.7.2 stable · GDScript · Forward+/Vulkan · 2026-11-05<br>
   Wurm/Ameise · Specht · Eichhörnchen · Mistel/Wurm-Befall · Pilz-Symbiose · StateMachine · Save v6</p>
   <div class="badges">
