@@ -52,17 +52,35 @@ var _acc: float = 0.0
 var _ghost_cost: float = -1.0
 var _ghost_material: String = ""
 var _ghost_affordable: bool = true
+## PHASE-4-FIX: 0 = Regen, 1 = Schnee, dazwischen sanfter Uebergang.
+var _precipitation_blend: float = -1.0
+
+## PHASE 5: eigenes, kollisionsfreies Oekologie-Panel oben links.
+var wildlife = null
+var forest_health = null
+var parasite_system = null
+var _p5_panel: ColorRect
+var _p5_title: Label
+var _p5_health: Label
+var _p5_health_bar: ProgressBar
+var _p5_food: Label
+var _p5_wildlife: Label
+var _p5_parasites: Label
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
 		p_water: WaterSystem, p_time: TimeManager, p_save: SaveManager,
-		p_world_state: WorldState = null) -> void:
+		p_world_state: WorldState = null, p_wildlife = null,
+		p_health = null, p_parasites = null) -> void:
 	interaction = p_interaction
 	growth_system = p_growth
 	water_system = p_water
 	time_manager = p_time
 	save_manager = p_save
 	world_state = p_world_state
+	wildlife = p_wildlife
+	forest_health = p_health
+	parasite_system = p_parasites
 	refresh_texts()
 	refresh()
 
@@ -151,8 +169,8 @@ func _build_widgets() -> void:
 	_growth_label = _label("", _cost_settings)
 	_reservoir_label = _label("", _cost_settings)
 
-	_skill_button = _button("Skilltree (ab PHASE 4)")
-	_skill_button.disabled = true
+	_skill_button = _button("Skilltree (T)")
+	_skill_button.disabled = false          # PHASE 4: UI ist da
 
 	# --- PHASE 3: Schwierigkeit + Zeitspulen + Pause + Jahreszeitenbalken ---
 	_difficulty_button = _button("Schwierigkeit: Normal")
@@ -179,6 +197,33 @@ func _build_widgets() -> void:
 	_season_bar.add_theme_stylebox_override("background", sbg)
 	_season_bar.add_theme_stylebox_override("fill", sfill)
 	add_child(_season_bar)
+
+	# --- PHASE 5: Wald-Gesundheit, Futter, Tiere, Parasiten, Pilze -----------
+	_p5_panel = ColorRect.new()
+	_p5_panel.name = "Phase5Panel"
+	_p5_panel.color = Color(0.07, 0.10, 0.09, 0.82)
+	_p5_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_p5_panel)
+	_p5_title = _label("PHASE 5", _settings)
+	_p5_health = _label("", _small)
+	_p5_health_bar = ProgressBar.new()
+	_p5_health_bar.min_value = 0.0
+	_p5_health_bar.max_value = 100.0
+	_p5_health_bar.value = 0.0
+	_p5_health_bar.show_percentage = false
+	_p5_health_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var p5bg := StyleBoxFlat.new()
+	p5bg.bg_color = Color(0.10, 0.13, 0.13, 0.95)
+	p5bg.set_corner_radius_all(3)
+	var p5fill := StyleBoxFlat.new()
+	p5fill.bg_color = Color(0.55, 0.80, 0.48, 1.0)
+	p5fill.set_corner_radius_all(3)
+	_p5_health_bar.add_theme_stylebox_override("background", p5bg)
+	_p5_health_bar.add_theme_stylebox_override("fill", p5fill)
+	add_child(_p5_health_bar)
+	_p5_food = _label("", _small)
+	_p5_wildlife = _label("", _small)
+	_p5_parasites = _label("", _small)
 
 	_hint = _label("", _small)
 	_toast_label = _label("", _settings)
@@ -250,7 +295,35 @@ func debug_click_seed_icon() -> void:
 	_on_seed_icon_input(ev)
 
 
+## PHASE 4: Skilltree-Button oben rechts oeffnet die GraphEdit-UI.
+func _on_skill_pressed() -> void:
+	EventBus.skilltree_open_requested.emit()
+
+
+func _is_winter() -> bool:
+	return time_manager != null and time_manager.is_winter()
+
+
+func _on_precipitation_blend_changed(blend: float) -> void:
+	_precipitation_blend = clampf(blend, 0.0, 1.0)
+	refresh()
+
+
+func _precipitation_text() -> String:
+	var blend := _precipitation_blend
+	if blend < 0.0:
+		blend = 1.0 if _is_winter() else 0.0
+	if blend > 0.05 and blend < 0.95:
+		return tr("MSG_SNOW_MELT")
+	return tr("MSG_SNOW") if blend >= 0.5 else tr("MSG_RAIN")
+
+
+func debug_rain_label_text() -> String:
+	return _rain_label.text
+
+
 func _connect() -> void:
+	_skill_button.pressed.connect(_on_skill_pressed)
 	_mode_button.pressed.connect(_on_mode_pressed)
 	_lang_button.pressed.connect(_on_lang_pressed)
 	_save_button.pressed.connect(_on_save_pressed)
@@ -272,8 +345,22 @@ func _connect() -> void:
 		_scale_buttons[i].pressed.connect(_on_scale_pressed.bind(TimeManager.SCALES[i]))
 	_pause_button.pressed.connect(_on_pause_pressed)
 	EventBus.season_changed.connect(func(_y, _s): refresh())
+	EventBus.precipitation_mode_changed.connect(func(_snow): refresh())
+	EventBus.precipitation_blend_changed.connect(_on_precipitation_blend_changed)
 	EventBus.time_scale_changed.connect(func(_s, _p): refresh())
 	EventBus.difficulty_changed.connect(func(_d): refresh_texts())
+	# PHASE 5: Oekologie-Panel reagiert auf alle neuen Signale.
+	EventBus.forest_health_changed.connect(func(_v): refresh())
+	EventBus.food_changed.connect(func(_v): refresh())
+	EventBus.wildlife_changed.connect(func(): refresh())
+	EventBus.animal_spawned.connect(func(_v): refresh())
+	EventBus.animal_state_changed.connect(func(_a, _b): refresh())
+	EventBus.colony_grown.connect(func(_v): refresh())
+	EventBus.parasite_spawned.connect(func(_a, _b): refresh())
+	EventBus.parasite_removed.connect(func(_a, _b, _c): refresh())
+	EventBus.fungus_patch_spawned.connect(func(_v): refresh())
+	EventBus.seed_planted_remote.connect(func(_v): refresh())
+	EventBus.game_loaded.connect(func(): refresh())
 
 
 # --------------------------------------------------------------------------- #
@@ -327,10 +414,21 @@ func _layout() -> void:
 	_season_bar.position = Vector2(1500.0, y + 104.0)
 	_season_bar.size = Vector2(300.0, 16.0)
 
+	_p5_panel.position = Vector2(20.0, 24.0)
+	_p5_panel.size = Vector2(310.0, 142.0)
+	_p5_title.position = Vector2(36.0, 30.0)
+	_p5_health.position = Vector2(36.0, 58.0)
+	_p5_health_bar.position = Vector2(36.0, 82.0)
+	_p5_health_bar.size = Vector2(278.0, 10.0)
+	_p5_food.position = Vector2(36.0, 100.0)
+	_p5_wildlife.position = Vector2(170.0, 100.0)
+	_p5_parasites.position = Vector2(36.0, 122.0)
+
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
 	_hint.position = Vector2(24.0, y - 30.0)
-	_toast_label.position = Vector2(0.0, 128.0)
+	# PHASE 5: Toast unter das neue Oekologie-Panel legen.
+	_toast_label.position = Vector2(0.0, 190.0)
 	_toast_label.size = Vector2(vp.x, 44.0)
 
 
@@ -344,10 +442,12 @@ func refresh_texts() -> void:
 	if _seed_icon != null:
 		_seed_icon.tooltip_text = tr("HUD_ACORN_TIP")
 	_skill_button.text = tr("HUD_SKILLTREE")
+	if _p5_title != null:
+		_p5_title.text = tr("HUD_PHASE5")
 	_save_button.text = tr("UI_SAVE")
 	_load_button.text = tr("UI_LOAD")
 	_water_caption.text = tr("HUD_WATER")
-	_rain_label.text = tr("MSG_RAIN")
+	_rain_label.text = _precipitation_text()
 	_mode_button.text = tr("MODE_AUTO") if Global.auto_mode else tr("MODE_MANUAL")
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_difficulty()
@@ -377,9 +477,47 @@ func refresh() -> void:
 	_refresh_difficulty()
 	_refresh_time_controls()
 	_rain_label.visible = water_system != null and water_system.raining
+	_rain_label.text = _precipitation_text()
 	_mode_button.text = tr("MODE_AUTO") if Global.auto_mode else tr("MODE_MANUAL")
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_reservoir_label(tree)
+	_refresh_p5_panel()
+
+
+func _refresh_p5_panel() -> void:
+	if _p5_health == null:
+		return
+	var health_pct := 0.0
+	var food_count := 0
+	var animal_count := 0
+	var parasite_count := 0
+	var fungus_count := 0
+	if forest_health != null:
+		health_pct = forest_health.value * 100.0
+	if wildlife != null:
+		food_count = wildlife.debug_food()
+		animal_count = wildlife.debug_total_animal_count()
+	if parasite_system != null:
+		parasite_count = parasite_system.debug_parasite_count()
+		fungus_count = parasite_system.debug_fungus_count()
+	_p5_health.text = "%s: %d%%" % [tr("HUD_FOREST_HEALTH"), int(roundf(health_pct))]
+	_p5_health_bar.value = health_pct
+	_p5_food.text = "%s: %d" % [tr("HUD_FOOD"), food_count]
+	_p5_wildlife.text = "%s: %d" % [tr("HUD_WILDLIFE"), animal_count]
+	_p5_parasites.text = "%s: %d · %s: %d" % [
+		tr("HUD_PARASITES"), parasite_count, tr("HUD_FUNGI"), fungus_count]
+
+
+func debug_health_text() -> String:
+	return _p5_health.text if _p5_health != null else ""
+
+
+func debug_food_text() -> String:
+	return _p5_food.text if _p5_food != null else ""
+
+
+func debug_parasites_text() -> String:
+	return _p5_parasites.text if _p5_parasites != null else ""
 
 
 func _refresh_growth_label() -> void:

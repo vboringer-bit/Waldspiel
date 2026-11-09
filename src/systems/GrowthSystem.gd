@@ -40,7 +40,10 @@ func tick(delta: float) -> void:
 		return                          # Pause
 	var sun := time_manager.sunlight_factor() if time_manager != null else 1.0
 	var growth := time_manager.growth_factor() if time_manager != null else 1.0
-	var cost_scale := Global.difficulty_factor("growth_cost")
+	var st := SkillTree.instance
+	var cost_scale := Global.difficulty_factor("growth_cost") \
+		* (st.modifier("growth_cost") if st != null else 1.0)
+	var root_scale := cost_scale * (st.modifier("root_cost") if st != null else 1.0)
 	for tree in get_tree().get_nodes_in_group("trees"):
 		tree.photosynthesize(dt, sun, growth)
 		if not Global.auto_mode or not auto_growth_enabled or growth <= 0.0:
@@ -51,7 +54,7 @@ func tick(delta: float) -> void:
 			part = "trunk"
 		var cost: float = tree.species.growth_cost * cost_scale
 		if part == "root":
-			cost = GrowthCost.for_root(tree, generator, cost_scale)
+			cost = GrowthCost.for_root(tree, generator, root_scale)
 			if cost < 0.0:
 				part = "leaf"
 				cost = tree.species.growth_cost * cost_scale

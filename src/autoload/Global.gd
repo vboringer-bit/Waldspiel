@@ -17,7 +17,10 @@ var difficulty: Difficulty = Difficulty.NORMAL
 ## PHASE 3: Schwierigkeit ist VOR Spielstart waehlbar (StartMenu) und danach
 ## jederzeit im HUD. --difficulty=... setzt sie fuer Tests/Screenshots.
 var difficulty_chosen: bool = false
-var auto_mode: bool = true
+## PHASE-4-FIX: Standard = MANUELL. Der Spieler schaltet AUTO bewusst im HUD ein.
+## Grund: sonst kauft AUTO bei ~10 Glucose sofort Wachstum und setzt den Zaehler
+## fuer den Spieler ueberraschend auf 0 zurueck.
+var auto_mode: bool = false
 var locale: String = "de":
 	set(value):
 		locale = value
@@ -59,7 +62,9 @@ func _resolve_seed() -> void:
 ## PHASE 3: alle Schwierigkeits-Modifikatoren an EINEM Ort. NORMAL ist
 ## bewusst die Referenz (1.0), damit P0/P1/P2-Smokes unveraendert bleiben.
 ## pH-Wert / N-P-K / Mykorrhiza / Katastrophen gehoeren laut Master-Punkt 4.2
-## zur "vollen Simulation", sind aber PHASE 5 vorbehalten (siehe DECISIONS).
+## zur "vollen Simulation" und bleiben einer spaeteren Ausbaustufe vorbehalten.
+## PHASE 5 nutzt hiervon bereits `parasites` / `disaster_rate` fuer echte
+## Parasiten-Spawns (siehe DECISIONS §70).
 func difficulty_factor(key: String) -> float:
 	match difficulty:
 		Difficulty.LEICHT:
@@ -95,10 +100,11 @@ func difficulty_factor(key: String) -> float:
 	return 1.0
 
 
-## PHASE 3 legt die Schalter bereits fest; die eigentliche Simulation von
-## pH-Wert / N-P-K / Mykorrhiza / Duerrre-Sturm-Borkenkaefer folgt in PHASE 5.
-## LEICHT: keine Katastrophen, kein pH. NORMAL: seltene Stuerme/Parasiten.
-## SCHWER: volle Simulation (alle Schalter an).
+## PHASE 3 legt die Schalter fest. PHASE 5 nutzt `parasites` und
+## `disaster_rate` fuer echte Parasiten-Spawns; pH-Wert / N-P-K / Mykorrhiza /
+## Duerrre-Sturm-Borkenkaefer bleiben der spaeteren vollen Simulation
+## vorbehalten. LEICHT: keine Katastrophen, kein pH. NORMAL: Parasiten.
+## SCHWER: alle Schalter an (Ereignis-Simulation spaeter).
 func difficulty_toggle(key: String) -> bool:
 	match difficulty:
 		Difficulty.LEICHT:

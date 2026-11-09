@@ -1,0 +1,199 @@
+[gd_resource type="Resource" script_class="SkillTreeData" format=3]
+
+[ext_resource type="Script" path="res://src/systems/SkillNodeData.gd" id="1_qhgpv"]
+[ext_resource type="Script" path="res://src/systems/SkillTreeData.gd" id="2_75tt0"]
+
+[sub_resource type="Resource" id="Resource_n84mm"]
+script = ExtResource("1_qhgpv")
+id = "root_efficiency"
+title_key = "SKILL_ROOT_TITLE"
+desc_key = "SKILL_ROOT_DESC"
+effects = {
+"root_water": 0.25
+}
+
+[sub_resource type="Resource" id="Resource_tlib3"]
+script = ExtResource("1_qhgpv")
+id = "rain_absorption"
+title_key = "SKILL_RAIN_TITLE"
+desc_key = "SKILL_RAIN_DESC"
+cost = 18.0
+prerequisites = Array[String](["root_efficiency"])
+effects = {
+"rain_boost": 0.3
+}
+graph_position = Vector2(330, 0)
+
+[sub_resource type="Resource" id="Resource_odram"]
+script = ExtResource("1_qhgpv")
+id = "reservoir_tap"
+title_key = "SKILL_TAP_TITLE"
+desc_key = "SKILL_TAP_DESC"
+cost = 26.0
+prerequisites = Array[String](["rain_absorption"])
+effects = {
+"reservoir_gain": 0.25
+}
+graph_position = Vector2(660, 0)
+
+[sub_resource type="Resource" id="Resource_sqp3d"]
+script = ExtResource("1_qhgpv")
+id = "deep_roots"
+title_key = "SKILL_DEEP_TITLE"
+desc_key = "SKILL_DEEP_DESC"
+cost = 34.0
+prerequisites = Array[String](["reservoir_tap"])
+effects = {
+"root_cost": -0.2
+}
+graph_position = Vector2(990, 0)
+
+[sub_resource type="Resource" id="Resource_ecxck"]
+script = ExtResource("1_qhgpv")
+id = "leaf_efficiency"
+title_key = "SKILL_LEAF_TITLE"
+desc_key = "SKILL_LEAF_DESC"
+effects = {
+"glucose": 0.2
+}
+graph_position = Vector2(0, 220)
+branch = "leaf"
+
+[sub_resource type="Resource" id="Resource_h76w0"]
+script = ExtResource("1_qhgpv")
+id = "photosynthesis_plus"
+title_key = "SKILL_PHOTOSYN_TITLE"
+desc_key = "SKILL_PHOTOSYN_DESC"
+cost = 18.0
+prerequisites = Array[String](["leaf_efficiency"])
+effects = {
+"glucose": 0.15
+}
+graph_position = Vector2(330, 220)
+branch = "leaf"
+
+[sub_resource type="Resource" id="Resource_dyf2o"]
+script = ExtResource("1_qhgpv")
+id = "crown_growth"
+title_key = "SKILL_CROWN_TITLE"
+desc_key = "SKILL_CROWN_DESC"
+cost = 26.0
+prerequisites = Array[String](["photosynthesis_plus"])
+effects = {
+"grant_leaves": 2.0,
+"max_leaves": 2.0
+}
+graph_position = Vector2(660, 220)
+branch = "leaf"
+
+[sub_resource type="Resource" id="Resource_25luk"]
+script = ExtResource("1_qhgpv")
+id = "trunk_saver"
+title_key = "SKILL_TRUNK_TITLE"
+desc_key = "SKILL_TRUNK_DESC"
+cost = 34.0
+prerequisites = Array[String](["crown_growth"])
+effects = {
+"growth_cost": -0.2
+}
+graph_position = Vector2(990, 220)
+branch = "leaf"
+
+[sub_resource type="Resource" id="Resource_0kykm"]
+script = ExtResource("1_qhgpv")
+id = "spread"
+title_key = "SKILL_SPREAD_TITLE"
+desc_key = "SKILL_SPREAD_DESC"
+cost = 14.0
+prerequisites = Array[String](["leaf_efficiency"])
+effects = {
+"spread": 0.3
+}
+graph_position = Vector2(0, 440)
+branch = "resist"
+
+[sub_resource type="Resource" id="Resource_6w5vl"]
+script = ExtResource("1_qhgpv")
+id = "parasite_res"
+title_key = "SKILL_PARASITE_TITLE"
+desc_key = "SKILL_PARASITE_DESC"
+cost = 20.0
+prerequisites = Array[String](["spread"])
+effects = {
+"parasite_risk": -0.5,
+"water_consumption": -0.1
+}
+graph_position = Vector2(330, 440)
+branch = "resist"
+
+[sub_resource type="Resource" id="Resource_oxg53"]
+script = ExtResource("1_qhgpv")
+id = "disease_res"
+title_key = "SKILL_DISEASE_TITLE"
+desc_key = "SKILL_DISEASE_DESC"
+cost = 26.0
+prerequisites = Array[String](["parasite_res"])
+effects = {
+"disease_risk": -0.5,
+"water_consumption": -0.1
+}
+graph_position = Vector2(660, 440)
+branch = "resist"
+
+[sub_resource type="Resource" id="Resource_vhuu6"]
+script = ExtResource("1_qhgpv")
+id = "wood_hardness"
+title_key = "SKILL_WOOD_TITLE"
+desc_key = "SKILL_WOOD_DESC"
+cost = 32.0
+prerequisites = Array[String](["disease_res"])
+effects = {
+"root_water": 0.1,
+"storm_risk": -0.5
+}
+graph_position = Vector2(990, 440)
+branch = "resist"
+
+[sub_resource type="Resource" id="Resource_t3o0f"]
+script = ExtResource("1_qhgpv")
+id = "symbiosis"
+title_key = "SKILL_SYMBIOSIS_TITLE"
+desc_key = "SKILL_SYMBIOSIS_DESC"
+cost = 22.0
+prerequisites = Array[String](["root_efficiency", "leaf_efficiency"])
+effects = {
+"root_water": 0.1
+}
+graph_position = Vector2(330, 660)
+branch = "symbiosis"
+
+[sub_resource type="Resource" id="Resource_8f66f"]
+script = ExtResource("1_qhgpv")
+id = "mushroom_node"
+title_key = "SKILL_MUSHROOM_TITLE"
+desc_key = "SKILL_MUSHROOM_DESC"
+cost = 30.0
+prerequisites = Array[String](["symbiosis"])
+effects = {
+"glucose": 0.1,
+"nutrients": 0.15
+}
+graph_position = Vector2(660, 660)
+branch = "symbiosis"
+
+[sub_resource type="Resource" id="Resource_aoxn6"]
+script = ExtResource("1_qhgpv")
+id = "winter_hardy"
+title_key = "SKILL_WINTER_TITLE"
+desc_key = "SKILL_WINTER_DESC"
+cost = 28.0
+prerequisites = Array[String](["mushroom_node"])
+effects = {
+"winter_water": 0.3
+}
+graph_position = Vector2(990, 660)
+branch = "symbiosis"
+
+[resource]
+script = ExtResource("2_75tt0")
+nodes = Array[ExtResource("1_qhgpv")]([SubResource("Resource_n84mm"), SubResource("Resource_tlib3"), SubResource("Resource_odram"), SubResource("Resource_sqp3d"), SubResource("Resource_ecxck"), SubResource("Resource_h76w0"), SubResource("Resource_dyf2o"), SubResource("Resource_25luk"), SubResource("Resource_0kykm"), SubResource("Resource_6w5vl"), SubResource("Resource_oxg53"), SubResource("Resource_vhuu6"), SubResource("Resource_t3o0f"), SubResource("Resource_8f66f"), SubResource("Resource_aoxn6")])

@@ -38,6 +38,9 @@ var ghost: GhostPreview
 ## PHASE 3: Samen auf dem Boden / vergraben (bewusst untyped, damit die
 ## Reihenfolge der Klassen-Registrierung beim Import egal ist).
 var season_system = null
+## PHASE 5: Tiere und Parasiten sind ebenfalls anklickbar.
+var wildlife = null
+var parasite_system = null
 
 var _next_id: int = 1
 
@@ -45,7 +48,7 @@ var _next_id: int = 1
 func setup(p_camera: Camera2D, p_chunk_manager: ChunkManager, p_trees_root: Node2D,
 		p_bird_layer: BirdEvent, p_water: WaterSystem, p_growth: GrowthSystem,
 		p_world_state: WorldState = null, p_ghost: GhostPreview = null,
-		p_season_system = null) -> void:
+		p_season_system = null, p_wildlife = null, p_parasites = null) -> void:
 	camera = p_camera
 	generator = p_chunk_manager.generator
 	trees_root = p_trees_root
@@ -55,6 +58,8 @@ func setup(p_camera: Camera2D, p_chunk_manager: ChunkManager, p_trees_root: Node
 	world_state = p_world_state
 	ghost = p_ghost
 	season_system = p_season_system
+	wildlife = p_wildlife
+	parasite_system = p_parasites
 
 
 func _process(_delta: float) -> void:
@@ -107,6 +112,13 @@ func _left_click(pos: Vector2) -> void:
 		_place_carried(pos)
 		get_viewport().set_input_as_handled()
 		return
+	# PHASE 5: Tiere / Ameisenhuegel / Parasiten / Pilze sind interaktiv.
+	if wildlife != null and wildlife.click_at(pos):
+		get_viewport().set_input_as_handled()
+		return
+	if parasite_system != null and parasite_system.click_at(pos):
+		get_viewport().set_input_as_handled()
+		return
 	# PHASE 3: eine herumliegende Eichel aufsammeln (Samen finden).
 	if season_system != null and season_system.collect_at(pos):
 		get_viewport().set_input_as_handled()
@@ -131,6 +143,11 @@ func _left_click(pos: Vector2) -> void:
 
 
 func _right_click(pos: Vector2) -> void:
+	# PHASE 5: Tier-/Parasiten-Info hat Vorrang vor der Boden-Info.
+	if wildlife != null and wildlife.right_info_at(pos):
+		return
+	if parasite_system != null and parasite_system.right_info_at(pos):
+		return
 	# PHASE 3: vergrabene Eicheln geben einen Hinweis statt Boden-Info.
 	if season_system != null and season_system.has_buried_at(pos):
 		EventBus.toast.emit(tr("MSG_SEED_BURIED"))
@@ -145,7 +162,8 @@ func _right_click(pos: Vector2) -> void:
 	var kind := generator.material_at(gx, ty)
 	var depth := int(maxf(pos.y - generator.height_at(pos.x), 0.0))
 	var cost := GrowthCost.for_tile(generator, gx, ty,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("growth_cost") if SkillTree.instance != null else 1.0))
 	EventBus.toast.emit(tr("MSG_SOIL_INFO") % [
 		GrowthCost.material_name(kind), depth, cost, Global.world_seed])
 
@@ -383,7 +401,8 @@ func update_ghost(world_pos: Vector2) -> void:
 	var gt := tree.global_tile_for(target)
 	var kind := generator.material_at(gt.x, gt.y)
 	var cost := GrowthCost.for_tile(generator, gt.x, gt.y,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("root_cost") if SkillTree.instance != null else 1.0))
 	var affordable := tree.glucose >= cost
 	var material := GrowthCost.material_name(kind)
 	ghost.show_at(Vector2(float(gt.x * WorldGenerator.TILE_SIZE),
@@ -418,7 +437,8 @@ func manual_root_growth(tree: BaseTree, segment: RootSegment) -> bool:
 		EventBus.toast.emit(tr("MSG_ROOT_BLOCKED"))
 		return false
 	var cost := GrowthCost.for_tile(generator, gt.x, gt.y,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("root_cost") if SkillTree.instance != null else 1.0))
 	if tree.glucose < cost:
 		EventBus.toast.emit(tr("MSG_NOT_ENOUGH_GLUCOSE"))
 		return false
@@ -442,7 +462,8 @@ func manual_growth(tree: BaseTree, pos: Vector2) -> bool:
 		return false
 	if pos.y >= tree.global_position.y:
 		return manual_root_growth(tree, tree.deepest_tip())
-	var cost: float = tree.species.growth_cost
+	var cost: float = tree.species.growth_cost \
+		* (SkillTree.instance.modifier("growth_cost") if SkillTree.instance != null else 1.0)
 	if not tree.can_grow("leaf"):
 		return false
 	if tree.glucose < cost:
@@ -541,7 +562,8 @@ func debug_show_ghost() -> void:
 	var gt := tree.global_tile_for(target)
 	var kind := generator.material_at(gt.x, gt.y)
 	var cost := GrowthCost.for_tile(generator, gt.x, gt.y,
-		Global.difficulty_factor("growth_cost"))
+		Global.difficulty_factor("growth_cost")
+		* (SkillTree.instance.modifier("root_cost") if SkillTree.instance != null else 1.0))
 	var affordable := tree.glucose >= cost
 	var material := GrowthCost.material_name(kind)
 	ghost.show_at(Vector2(float(gt.x * WorldGenerator.TILE_SIZE),

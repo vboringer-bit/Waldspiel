@@ -47,3 +47,26 @@ signal time_scale_changed(scale: float, paused: bool)
 signal difficulty_changed(difficulty: int)
 signal acorn_dropped(position: Vector2)
 signal seed_found(id: String, buried: bool)
+
+# --- PHASE 4: Skilltree + Winter-Schnee ------------------------------------
+signal skill_unlocked(node_id: String)
+signal skilltree_changed
+signal skilltree_open_requested
+signal precipitation_mode_changed(snow: bool)
+## PHASE-4-FIX: 0.0 = Regen, 1.0 = Schnee, dazwischen = sanfter Uebergang.
+signal precipitation_blend_changed(snow_blend: float)
+
+# --- PHASE 5: Tiere, Symbiose, Parasiten -----------------------------------
+signal forest_health_changed(value: float)
+signal wildlife_changed
+signal animal_spawned(species: String)
+signal animal_state_changed(animal: Node, state: int)
+signal animal_clicked(animal: Node)
+signal food_changed(count: int)
+signal anthill_built(position: Vector2)
+signal colony_grown(size: int)
+signal parasite_spawned(tree: Node, kind: int)
+signal parasite_removed(tree: Node, kind: int, by: String)
+signal fungus_patch_spawned(tree: Node)
+signal seed_carried(from_pos: Vector2, to_pos: Vector2)
+signal seed_planted_remote(position: Vector2)

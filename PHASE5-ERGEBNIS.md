@@ -210,11 +210,11 @@ func _draw() -> void:
 		Vector2(w * 0.62, -h * 0.42),
 		Vector2(w, 0.0),
 	])
-	draw_colored_polygon(pts, Color(0.36, 0.25, 0.15, 1.0))
-	draw_polyline(pts, Color(0.22, 0.15, 0.10, 1.0), 2.0)
-	var n := colony_size
-	if n > 7:
-		n = 7
+	draw_colored_polygon(pts, Color(0.34, 0.24, 0.15, 1.0))
+	draw_polyline(pts, Color(0.20, 0.14, 0.09, 1.0), 2.0)
+	draw_circle(Vector2(0.0, -h * 0.42), 2.2,
+		Color(0.10, 0.08, 0.06, 1.0))
+	for i in range(3):
 ```
 
 ### WildlifeSystem.gd — Basisbesatzung und Reset
