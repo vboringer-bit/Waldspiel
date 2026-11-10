@@ -126,6 +126,11 @@ func _ready() -> void:
 		smoke_r6.setup(_interaction, _skill_tree, _skill_ui, _wildlife,
 			_chunk_manager, _hud, _save, _growth, _water, _time, _season)
 		add_child(smoke_r6)
+	elif args.has("--rev7-smoke"):
+		var smoke_r7 = preload("res://tests/Revision7Smoke.gd").new()
+		smoke_r7.setup(_interaction, _skill_tree, _skill_ui, _wildlife,
+			_chunk_manager, _hud, _save, _growth, _water, _time, _season)
+		add_child(smoke_r7)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -362,6 +367,53 @@ func _apply_presets(args: PackedStringArray) -> void:
 		_wildlife.debug_step(9.0)
 		_hud.refresh()
 		EventBus.toast.emit(tr("MSG_BURROW"))
+
+	# --- REVISION 7: ruhiger Gang, bodenfester Huegel, 24 Skills, Licht ----
+	if args.has("--rev7-shot-worms"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(2.0)
+		_camera.teleport_to(Vector2(-180.0, 410.0))
+		_rev5_grow_tree(0.0, 3, 2, 2)
+		_wildlife.debug_step(14.0)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_BURROW"))
+	elif args.has("--rev7-shot-anthill"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(2.2)
+		_camera.teleport_to(Vector2(180.0, 390.0))
+		_rev5_grow_tree(0.0, 3, 2, 2)
+		var ah := _wildlife.debug_anthill(0)
+		if ah != null:
+			ah.grow(3)
+		_wildlife.debug_step(6.0)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_ANTHILL_INFO") % 4)
+	elif args.has("--rev7-shot-skilltree"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 330.0))
+		var st_tree := _rev5_grow_tree(0.0, 6, 6, 6)
+		st_tree.glucose = 400.0
+		for id in ["root_efficiency", "leaf_efficiency", "photosynthesis_plus",
+				"crown_growth", "symbiosis", "light_seeker", "shade_leaf"]:
+			_skill_tree.debug_unlock(id)
+		_skill_ui.open()
+		_hud.refresh()
+	elif args.has("--rev7-shot-crowding"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.15)
+		_camera.teleport_to(Vector2(0.0, 400.0))
+		var big := _rev5_grow_tree(-40.0, 28, 24, 12)
+		var small := _rev5_grow_tree(20.0, 2, 1, 2)
+		for _i in 40:
+			if not small.add_trunk_tile():
+				break
+		for _i in 40:
+			if not small.add_leaf():
+				break
+		_interaction.select_tree(small)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_CROWD_BLOCKED"))
 
 	# --- PHASE 4: Skilltree + Winter-Schnee ----------------------------------
 	if args.has("--phase4-shot-skilltree"):

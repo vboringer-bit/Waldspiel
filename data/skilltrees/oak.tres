@@ -238,6 +238,87 @@ effects = {
 graph_position = Vector2(1320, 880)
 branch = "leaf"
 
+[sub_resource type="Resource" id="Resource_5fr83"]
+script = ExtResource("1_qhgpv")
+id = "light_seeker"
+title_key = "SKILL_LIGHTSEEK_TITLE"
+desc_key = "SKILL_LIGHTSEEK_DESC"
+cost = 24.0
+prerequisites = Array[String](["crown_growth"])
+effects = {
+"crowd_tolerance": 0.3
+}
+graph_position = Vector2(1320, 220)
+branch = "light"
+
+[sub_resource type="Resource" id="Resource_rsptp"]
+script = ExtResource("1_qhgpv")
+id = "shade_leaf"
+title_key = "SKILL_SHADELEAF_TITLE"
+desc_key = "SKILL_SHADELEAF_DESC"
+cost = 30.0
+prerequisites = Array[String](["light_seeker"])
+effects = {
+"shade_gain": 0.5
+}
+graph_position = Vector2(1650, 220)
+branch = "light"
+
+[sub_resource type="Resource" id="Resource_gk8yr"]
+script = ExtResource("1_qhgpv")
+id = "forest_edge"
+title_key = "SKILL_FORESTEDGE_TITLE"
+desc_key = "SKILL_FORESTEDGE_DESC"
+cost = 36.0
+prerequisites = Array[String](["shade_leaf"])
+effects = {
+"crowd_tolerance": 0.25,
+"germination": 0.35
+}
+graph_position = Vector2(1980, 220)
+branch = "light"
+
+[sub_resource type="Resource" id="Resource_ov26s"]
+script = ExtResource("1_qhgpv")
+id = "spring_sap"
+title_key = "SKILL_SPRINGSAP_TITLE"
+desc_key = "SKILL_SPRINGSAP_DESC"
+cost = 20.0
+prerequisites = Array[String](["photosynthesis_plus"])
+effects = {
+"spring_vigor": 0.45
+}
+graph_position = Vector2(330, 1100)
+branch = "season"
+
+[sub_resource type="Resource" id="Resource_bid7p"]
+script = ExtResource("1_qhgpv")
+id = "humus_net"
+title_key = "SKILL_HUMUSNET_TITLE"
+desc_key = "SKILL_HUMUSNET_DESC"
+cost = 28.0
+prerequisites = Array[String](["symbiosis"])
+effects = {
+"nutrients": 0.15,
+"root_water": 0.1
+}
+graph_position = Vector2(660, 1100)
+branch = "season"
+
+[sub_resource type="Resource" id="Resource_20nhq"]
+script = ExtResource("1_qhgpv")
+id = "winter_store"
+title_key = "SKILL_WINTERSTORE_TITLE"
+desc_key = "SKILL_WINTERSTORE_DESC"
+cost = 34.0
+prerequisites = Array[String](["humus_net"])
+effects = {
+"water_consumption": -0.1,
+"winter_water": 0.25
+}
+graph_position = Vector2(990, 1100)
+branch = "season"
+
 [resource]
 script = ExtResource("2_75tt0")
-nodes = Array[ExtResource("1_qhgpv")]([SubResource("Resource_n84mm"), SubResource("Resource_tlib3"), SubResource("Resource_odram"), SubResource("Resource_sqp3d"), SubResource("Resource_ecxck"), SubResource("Resource_h76w0"), SubResource("Resource_dyf2o"), SubResource("Resource_25luk"), SubResource("Resource_0kykm"), SubResource("Resource_6w5vl"), SubResource("Resource_oxg53"), SubResource("Resource_vhuu6"), SubResource("Resource_t3o0f"), SubResource("Resource_8f66f"), SubResource("Resource_aoxn6"), SubResource("Resource_gsj4w"), SubResource("Resource_yjreb"), SubResource("Resource_g8y1f")])
+nodes = Array[ExtResource("1_qhgpv")]([SubResource("Resource_n84mm"), SubResource("Resource_tlib3"), SubResource("Resource_odram"), SubResource("Resource_sqp3d"), SubResource("Resource_ecxck"), SubResource("Resource_h76w0"), SubResource("Resource_dyf2o"), SubResource("Resource_25luk"), SubResource("Resource_0kykm"), SubResource("Resource_6w5vl"), SubResource("Resource_oxg53"), SubResource("Resource_vhuu6"), SubResource("Resource_t3o0f"), SubResource("Resource_8f66f"), SubResource("Resource_aoxn6"), SubResource("Resource_gsj4w"), SubResource("Resource_yjreb"), SubResource("Resource_g8y1f"), SubResource("Resource_5fr83"), SubResource("Resource_rsptp"), SubResource("Resource_gk8yr"), SubResource("Resource_ov26s"), SubResource("Resource_bid7p"), SubResource("Resource_20nhq")])

@@ -502,6 +502,9 @@ func manual_growth(tree: BaseTree, pos: Vector2) -> bool:
 	var cost: float = tree.species.growth_cost \
 		* (SkillTree.instance.modifier("growth_cost") if SkillTree.instance != null else 1.0)
 	if not tree.can_grow("leaf"):
+		# REVISION 7: verstaendliche Rueckmeldung statt stummem Klick.
+		if tree.debug_is_crowded() and tree.leaves_count >= tree.debug_crowd_cap("leaf"):
+			EventBus.toast.emit(tr("MSG_CROWD_BLOCKED"))
 		return false
 	if tree.glucose < cost:
 		EventBus.toast.emit(tr("MSG_NOT_ENOUGH_GLUCOSE"))
@@ -629,7 +632,10 @@ func apply_drag_growth(tree: BaseTree, kind: String,
 	else:
 		actual = tree.grow_wood_along(world_points, steps)
 	if actual <= 0:
-		EventBus.toast.emit(tr("MSG_DRAG_BLOCKED"))
+		if tree.debug_is_crowded():
+			EventBus.toast.emit(tr("MSG_CROWD_BLOCKED"))
+		else:
+			EventBus.toast.emit(tr("MSG_DRAG_BLOCKED"))
 		return false
 	tree.glucose -= unit * float(actual)
 	EventBus.tree_grew.emit(tree, "root" if kind == "root" else "trunk")

@@ -3,7 +3,8 @@ extends SceneTree
 ## SkillNodeData-Resources. Aufruf (nach --headless --import):
 ##   godot --headless --path . --script tools/generate_skilltree.gd --quit-after 5
 ## So ist die .tres garantiert im korrekten Godot-4.7-Format und enthaelt
-## alle 18 Knoten als eingebettete Sub-Resources.
+## alle 24 Knoten als eingebettete Sub-Resources (18 aus REVISION 6 + 6 neue
+## Licht-/Jahreszeit-Mutationen aus REVISION 7).
 
 const OUT := "res://data/skilltrees/oak.tres"
 
@@ -93,6 +94,31 @@ func _initialize() -> void:
 	d.nodes.append(_node("canopy_iii", "CANOPY3", "CANOPY3", 38.0,
 			["canopy_ii"], {"max_leaves": 12.0, "grant_leaves": 12.0,
 			"leaf_density": 1.0}, Vector2(1320.0, 880.0), "leaf"))
+
+	# --- Ast LICHT & KONKURRENZ (REVISION 7) -------------------------------
+	# Sinnvolle Antwort auf die neue Lichtkonkurrenz: wer dichter pflanzt,
+	# kann ueber den Skilltree gezielt gegensteuern - oder laesst die Baeume
+	# bewusst klein und natuerlich gestaffelt.
+	d.nodes.append(_node("light_seeker", "LIGHTSEEK", "LIGHTSEEK", 24.0,
+			["crown_growth"], {"crowd_tolerance": 0.30},
+			Vector2(1320.0, 220.0), "light"))
+	d.nodes.append(_node("shade_leaf", "SHADELEAF", "SHADELEAF", 30.0,
+			["light_seeker"], {"shade_gain": 0.50},
+			Vector2(1650.0, 220.0), "light"))
+	d.nodes.append(_node("forest_edge", "FORESTEDGE", "FORESTEDGE", 36.0,
+			["shade_leaf"], {"crowd_tolerance": 0.25, "germination": 0.35},
+			Vector2(1980.0, 220.0), "light"))
+
+	# --- Ast JAHRESZEIT & BODEN (REVISION 7) -------------------------------
+	d.nodes.append(_node("spring_sap", "SPRINGSAP", "SPRINGSAP", 20.0,
+			["photosynthesis_plus"], {"spring_vigor": 0.45},
+			Vector2(330.0, 1100.0), "season"))
+	d.nodes.append(_node("humus_net", "HUMUSNET", "HUMUSNET", 28.0,
+			["symbiosis"], {"nutrients": 0.15, "root_water": 0.10},
+			Vector2(660.0, 1100.0), "season"))
+	d.nodes.append(_node("winter_store", "WINTERSTORE", "WINTERSTORE", 34.0,
+			["humus_net"], {"winter_water": 0.25, "water_consumption": -0.10},
+			Vector2(990.0, 1100.0), "season"))
 
 	var err := ResourceSaver.save(d, OUT)
 	print("[SKILLTREE] ", OUT, " | Knoten=", d.nodes.size(), " | err=", err)

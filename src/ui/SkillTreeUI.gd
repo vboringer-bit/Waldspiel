@@ -1,7 +1,7 @@
 class_name SkillTreeUI
 extends CanvasLayer
 ## PHASE 4 (Master-Punkt 6 + 8): Zoom- & pannable Skilltree-UI auf Basis von
-## Godot `GraphEdit` / `GraphNode`. 18 Knoten aus `data/skilltrees/oak.tres`,
+## Godot `GraphEdit` / `GraphNode`. 24 Knoten aus `data/skilltrees/oak.tres`,
 ## Vorbedingungen als echte Verbindungslinien, Freischalten kostet Glucose.
 ##
 ## * Oben rechts im HUD: Button "Skilltree (T)". Taste T / Esc schliesst.
@@ -17,6 +17,9 @@ func _branch_color(branch: String) -> Color:
 		"leaf": return Color(0.60, 0.84, 0.55)
 		"resist": return Color(0.88, 0.75, 0.48)
 		"symbiosis": return Color(0.78, 0.65, 0.92)
+		# REVISION 7: eigene Farben fuer Licht- und Jahreszeit-Ast.
+		"light": return Color(0.96, 0.84, 0.48)
+		"season": return Color(0.52, 0.82, 0.78)
 	return Color.WHITE
 
 var interaction: InteractionController

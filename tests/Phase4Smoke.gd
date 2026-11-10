@@ -2,9 +2,9 @@ extends Node
 ## Headless-Smoke-Test PHASE 4:
 ##   godot --headless --path . -- --phase4-smoke
 ##
-## 1) Skilltree: 18 Knoten, 7 Pflicht-Mutationen, Vorbedingungen, Glucose-
+## 1) Skilltree: 24 Knoten, 7 Pflicht-Mutationen, Vorbedingungen, Glucose-
 ##    Kosten, globale Synchronitaet, ECHTE Effekte auf Wasser/Glucose/Wachstum.
-## 2) GraphEdit-UI: 18 Knoten, 17 Verbindungslinien, Zoom, oeffnen/schliessen.
+## 2) GraphEdit-UI: 24 Knoten, 23 Verbindungslinien, Zoom, oeffnen/schliessen.
 ## 3) Save v5: Skill-Fortschritt wird gespeichert und geladen.
 ## 4) Winter: SCHNEE statt Regen (keine Spritzer, keine Flocken unter dem
 ##    Boden), aber R3-Regeln (keine Entnahme, Auffuellen laeuft) bleiben.
@@ -77,7 +77,7 @@ func run() -> void:
 	# --- 1) Daten / Graph -----------------------------------------------------
 	_check(skill_tree != null and skill_tree.data != null,
 		"SkillTree + data/skilltrees/oak.tres geladen")
-	_check(skill_tree.all_nodes().size() == 18, "Genau 18 Knoten (15 MVP + 3 dichte Krone)")
+	_check(skill_tree.all_nodes().size() == 24, "Genau 24 Knoten (15 MVP + 3 dichte Krone + 6 R7)")
 	var mandatory := ["root_efficiency", "leaf_efficiency", "symbiosis",
 		"parasite_res", "disease_res", "wood_hardness", "spread"]
 	var all_present := true
@@ -85,8 +85,8 @@ func run() -> void:
 		if skill_tree.node_data(id) == null:
 			all_present = false
 	_check(all_present, "Alle 7 Pflicht-Mutationen aus Master-Punkt 6")
-	_check(skill_tree.connection_pairs().size() == 17,
-		"17 Vorbedingungs-Verbindungen")
+	_check(skill_tree.connection_pairs().size() == 23,
+		"23 Vorbedingungs-Verbindungen")
 	_check(skill_tree.unlocked_count() == 0
 		and is_equal_approx(skill_tree.modifier("root_water"), 1.0),
 		"Start: nichts freigeschaltet, alle Modifikatoren = 1.0")
@@ -169,8 +169,8 @@ func run() -> void:
 	_check(count_before >= 6, "%d Knoten freigeschaltet" % count_before)
 
 	# --- 3) GraphEdit-UI ------------------------------------------------------
-	_check(skill_ui.debug_node_count() == 18, "GraphEdit: 18 GraphNodes")
-	_check(skill_ui.debug_connection_count() == 17, "GraphEdit: 17 Linien")
+	_check(skill_ui.debug_node_count() == 24, "GraphEdit: 24 GraphNodes")
+	_check(skill_ui.debug_connection_count() == 23, "GraphEdit: 23 Linien")
 	EventBus.skilltree_open_requested.emit()   # derselbe Weg wie der HUD-Button
 	_check(skill_ui.is_open(), "Skilltree-UI oeffnet ueber HUD-Signal / T")
 	skill_ui.debug_set_zoom(1.2)

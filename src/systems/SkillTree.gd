@@ -2,9 +2,9 @@ class_name SkillTree
 extends Node
 ## PHASE 4 (Master-Punkt 6): Skilltree PRO BAUMART, global synchron.
 ##
-## * `data/skilltrees/oak.tres` enthaelt 15 SkillNodeData-Knoten (MVP-Grund-
-##   geruest; Final-Ziel 40-60). Jeder Knoten hat Glucose-Kosten, beliebig
-##   viele Vorbedingungen und eine Map aus Effekten.
+## * `data/skilltrees/oak.tres` enthaelt 24 SkillNodeData-Knoten (15 MVP +
+##   3 "Dichte Krone" aus R6 + 6 Licht-/Jahreszeit-Mutationen aus R7).
+##   Jeder Knoten hat Glucose-Kosten, Vorbedingungen und echte Effekte.
 ## * Der Freischalt-Zustand liegt NUR hier. Alle Eichen-Instanzen teilen ihn;
 ##   beim Freischalten wird `apply_effect(tree_instance)` auf JEDEN Baum
 ##   angewandt (und auf neu spawnende Baeume automatisch).
@@ -137,6 +137,10 @@ func apply_effect(_node_id: String, tree_instance: Node) -> void:
 	t.skill_max_leaves_bonus = int(roundf(bonus("max_leaves")))
 	# REVISION 6: "Dichte Krone" macht aus 2+38 Blaettern eine volle Krone.
 	t.skill_leaf_density = int(roundf(bonus("leaf_density")))
+	# REVISION 7: Lichtsucher/Waldrand verringern den Schattenwurf des
+	# Nachbarn, Schattenlaub kompensiert den Glucose-Verlust im Schatten.
+	t.crowd_tolerance = clampf(bonus("crowd_tolerance"), 0.0, 0.80)
+	t.shade_gain = clampf(bonus("shade_gain"), 0.0, 1.0)
 	# PHASE 5: Pilz-Knoten gibt echte Naehrstoffe (+15 % Fotosynthese).
 	t.nutrient_mult = modifier("nutrients")
 	# PHASE-4-FIX: "Kronenwuchs" schenkt die +2 Blaetter sofort sichtbar.

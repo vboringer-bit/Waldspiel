@@ -193,12 +193,12 @@ func run() -> void:
 		if not skill_tree.debug_unlock(id):
 			unlocked = false
 	_check(unlocked, "Dichte-Krone-Kette im Skilltree freischaltbar")
-	_check(skill_tree.all_nodes().size() == 18
-		and skill_tree.connection_pairs().size() == 17,
-		"18 Knoten / 17 Verbindungen im Skilltree")
-	_check(skill_ui.debug_node_count() == 18
-		and skill_ui.debug_connection_count() == 17,
-		"GraphEdit zeigt 18 Knoten / 17 Linien")
+	_check(skill_tree.all_nodes().size() == 24
+		and skill_tree.connection_pairs().size() == 23,
+		"24 Knoten / 23 Verbindungen im Skilltree")
+	_check(skill_ui.debug_node_count() == 24
+		and skill_ui.debug_connection_count() == 23,
+		"GraphEdit zeigt 24 Knoten / 23 Linien")
 	_check(tree.skill_max_leaves_bonus >= 38,
 		"Blatt-Obergrenze +%d (Kronenwuchs + 3 Stufen)"
 			% tree.skill_max_leaves_bonus)

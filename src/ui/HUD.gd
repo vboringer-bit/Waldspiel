@@ -68,6 +68,8 @@ var _p5_wildlife: Label
 var _p5_parasites: Label
 ## REVISION 5: Versorgungs-Bilanz des ausgewaehlten Baums.
 var _p5_supply: Label
+## REVISION 7: echtes Licht aus der Nachbarschaft (Lichtkonkurrenz).
+var _p7_light: Label
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
@@ -228,6 +230,8 @@ func _build_widgets() -> void:
 	_p5_parasites = _label("", _small)
 	_p5_supply = _label("", _small)
 	_p5_supply.modulate = Color(0.74, 0.88, 0.70, 1.0)
+	_p7_light = _label("", _small)
+	_p7_light.modulate = Color(0.90, 0.84, 0.58, 1.0)
 
 	_hint = _label("", _small)
 	_toast_label = _label("", _settings)
@@ -419,7 +423,7 @@ func _layout() -> void:
 	_season_bar.size = Vector2(300.0, 16.0)
 
 	_p5_panel.position = Vector2(20.0, 24.0)
-	_p5_panel.size = Vector2(310.0, 176.0)
+	_p5_panel.size = Vector2(310.0, 198.0)
 	_p5_title.position = Vector2(36.0, 30.0)
 	_p5_health.position = Vector2(36.0, 58.0)
 	_p5_health_bar.position = Vector2(36.0, 82.0)
@@ -428,12 +432,13 @@ func _layout() -> void:
 	_p5_wildlife.position = Vector2(170.0, 100.0)
 	_p5_parasites.position = Vector2(36.0, 122.0)
 	_p5_supply.position = Vector2(36.0, 146.0)
+	_p7_light.position = Vector2(36.0, 168.0)
 
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
 	_hint.position = Vector2(24.0, y - 30.0)
 	# PHASE 5: Toast unter das neue Oekologie-Panel legen.
-	_toast_label.position = Vector2(0.0, 190.0)
+	_toast_label.position = Vector2(0.0, 214.0)
 	_toast_label.size = Vector2(vp.x, 44.0)
 
 
@@ -521,6 +526,7 @@ func _refresh_p5_panel() -> void:
 		tree = interaction.selected_tree
 	if tree == null:
 		_p5_supply.text = ""
+		_p7_light.text = ""
 	else:
 		var parts := tree.environment_parts()
 		var total := int(roundf(clampf(float(parts["total"]), 0.0, 1.0) * 100.0))
@@ -538,10 +544,19 @@ func _refresh_p5_panel() -> void:
 		if worst >= 0.85:
 			limit = "SUPPLY_LIMIT_OK"
 		_p5_supply.text = tr("HUD_SUPPLY") % [total, tr(limit)]
+		# REVISION 7: zeigt an, warum ein dichter Stand klein bleibt.
+		var light_pct := int(roundf(tree.debug_light_factor() * 100.0))
+		var light_state := "LIGHT_LIMIT_OK" if light_pct >= 99 \
+			else "LIGHT_LIMIT_CROWD"
+		_p7_light.text = tr("HUD_LIGHT") % [light_pct, tr(light_state)]
 
 
 func debug_supply_text() -> String:
 	return _p5_supply.text if _p5_supply != null else ""
+
+
+func debug_light_text() -> String:
+	return _p7_light.text if _p7_light != null else ""
 
 
 func debug_health_text() -> String:

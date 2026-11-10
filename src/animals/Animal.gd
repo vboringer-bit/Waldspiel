@@ -14,6 +14,14 @@ extends Node2D
 ##   * Der Wurm ist ein rotiertes 16x16-Pixelart-Sprite; bei senkrechtem
 ##     Graben steht er senkrecht, bei waagerechtem Graben waagerecht.
 ##   * Ameisen folgen der Geländeoberkante und laufen nicht mehr in der Luft.
+## REVISION 7 (endgueltige Gang-Fixierung):
+##   * Der Tunnel ist ein EIGENER `BurrowTrail`-Node mit `top_level = true`
+##     und Identitaets-Transformation. Er kann sich nicht mehr mitbewegen.
+##   * Der Wurmkoerper hat KEIN sinusfoermiges Wackeln mehr; `position.y`
+##     ist exakt die stabile Gang-Mittellinie.
+##   * Die Tiefe richtet sich nach der sichtbaren 4px-Gelaendekante, nicht
+##     mehr nach dem fliessenden Rohwert -> kein langsames Wegdriften.
+##   * Wurm-Pixelart und gezeichnete Details sind deutlich dunkler/erdiger.
 ## Alle Tiere sind per Linksklick anwaehlbar (Info-Toast + EventBus-Signal).
 
 enum State { IDLE, WANDER, EAT, HELP_TREE, CARRY }
@@ -35,6 +43,10 @@ const FOOD_TIME := 2.4
 const WORM_DEPTH_MIN := 20.0
 const WORM_DEPTH_MAX := 120.0
 const WORM_BURROW_SPEED := 7.0
+## REVISION 7: ruhige, ortsfeste Gang-Spur. Nur echte Bewegung >= 2 px und
+## hoechstens alle 0,30 s erzeugt einen neuen Stuetzpunkt.
+const BURROW_SAMPLE_STEP := 2.0
+const BURROW_SAMPLE_TIME := 0.30
 const BODY_SPAN := {
 	"worm": 12.0,
 	"ant": 9.0,
@@ -68,6 +80,9 @@ var _body_angle: float = 0.0
 ## bei draw_texture_* bei diesem Slot die RGB-Werte durch modulate (weisser
 ## Block); ein Sprite2D rendert die Pixelart-Textur dagegen korrekt.
 var _body_sprite: Sprite2D = null
+## REVISION 7: ortsfester Tunnel ausserhalb des Tier-Transforms.
+var _trail_node: BurrowTrail = null
+var _debug_frozen: bool = false
 
 
 func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
@@ -76,6 +91,7 @@ func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
 	generator = p_generator
 	wildlife = p_wildlife
 	_ensure_body_sprite()
+	_ensure_trail_node()
 	home_x = p_x
 	surface_y = generator.height_smooth_at(p_x)
 	reseat(p_x, -1.0)
@@ -87,7 +103,7 @@ func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
 ## auch von WildlifeSystem.from_dict() benutzt (Savegame kennt die Tiefe).
 func reseat(p_x: float, p_depth: float = -1.0) -> void:
 	position.x = p_x
-	surface_y = generator.height_smooth_at(p_x)
+	surface_y = generator.ground_y_at(p_x)
 	if species == "worm":
 		if p_depth > 0.0:
 			burrow_depth = clampf(p_depth, WORM_DEPTH_MIN, WORM_DEPTH_MAX)
@@ -99,16 +115,47 @@ func reseat(p_x: float, p_depth: float = -1.0) -> void:
 	else:
 		burrow_depth = 0.0
 		burrow_target = 0.0
-		# REVISION 6: Ameisen stehen mit den Fuessen AUF der Oberkante.
+		# REVISION 6/7: Ameisen stehen mit den Fuessen AUF der sichtbaren Kante.
 		base_y = surface_y - (1.0 if species == "ant" else 4.0)
 	position.y = base_y
 	target_x = p_x
 	_burrow_center = Vector2(p_x, base_y)
 	_body_angle = 0.0
+	_debug_frozen = false
 	_trail.clear()
 	if species == "worm":
 		_trail.append(_burrow_center)
+		_publish_trail()
 	queue_redraw()
+
+
+## REVISION 7: Der Tunnel ist KEIN Kind des Wurms. Er haengt am
+## WildlifeSystem, ist top_level und bleibt deshalb ortsfest, egal was der
+## Wurmkoerper tut. Beim Entfernen des Tiers wird er mit aufgeraeumt.
+func _ensure_trail_node() -> void:
+	if species != "worm" or get_parent() == null:
+		return
+	if _trail_node == null or not is_instance_valid(_trail_node):
+		_trail_node = BurrowTrail.new()
+		_trail_node.name = "BurrowTrail"
+		_trail_node.top_level = true
+		# top_level ignoriert den Parent-Transform; mit z_as_relative=false
+		# liegt der Tunnel absolut bei 39 (ueber Boden/Baeumen, unter Tieren).
+		_trail_node.z_as_relative = false
+		_trail_node.z_index = 39
+		get_parent().add_child(_trail_node)
+
+
+func _exit_tree() -> void:
+	if _trail_node != null and is_instance_valid(_trail_node):
+		_trail_node.queue_free()
+		_trail_node = null
+
+
+func _publish_trail() -> void:
+	if _trail_node == null or not is_instance_valid(_trail_node):
+		return
+	_trail_node.set_points(_world_trail())
 
 
 func _ensure_body_sprite() -> void:
@@ -179,6 +226,17 @@ func speed() -> float:
 func tick(dt: float) -> void:
 	phase += dt
 	timer -= dt
+	# REVISION 7 Debug: Tier laeuft weiter durch die Simulation, bewegt sich
+	# aber NICHT. Damit ist pruefbar, dass der Tunnel auch bei laufenden
+	# Ticks keinen einzigen neuen Punkt / kein Wackeln erzeugt.
+	if _debug_frozen:
+		if species == "worm":
+			_sync_worm_motion(dt)
+		elif species == "ant":
+			_follow_ground()
+		_update_body_sprite()
+		queue_redraw()
+		return
 	if species == "worm":
 		_tick_burrow(dt)
 	elif species == "ant":
@@ -225,11 +283,15 @@ func _tick_burrow(dt: float) -> void:
 
 func _sync_worm_motion(dt: float) -> void:
 	var prev := _burrow_center
-	surface_y = generator.height_smooth_at(position.x)
+	# REVISION 7: sichtbare, auf 4px gerastete Gelaendekante. Der Rohwert
+	# height_smooth_at() aenderte sich in JEDEM Frame und liess den Gang
+	# langsam mitdriften; jetzt bleibt er zwischen zwei Kantenpixeln exakt
+	# stehen.
+	surface_y = generator.ground_y_at(position.x)
 	base_y = surface_y + burrow_depth
 	_burrow_center = Vector2(position.x, base_y)
-	# Sichtbares, sehr kleines Koerper-Wackeln. Der GANG selber wackelt nicht.
-	position.y = base_y + sin(phase * 2.2) * 0.30
+	# KEIN Koerper-Wackeln mehr: das Tier sitzt exakt auf der Mittellinie.
+	position.y = base_y
 	var vel := _burrow_center - prev
 	if vel.length() > 0.02:
 		# atan2: oben/unten -> ±PI/2 (senkrecht), links/rechts -> 0/PI.
@@ -237,21 +299,25 @@ func _sync_worm_motion(dt: float) -> void:
 		_body_angle = lerp_angle(_body_angle, target_angle,
 			clampf(dt * 10.0, 0.0, 1.0))
 	_trail_timer += dt
-	if _trail_timer >= 0.30:
+	if _trail_timer >= BURROW_SAMPLE_TIME:
 		_trail_timer = 0.0
-		if _trail.is_empty() \
-				or _burrow_center.distance_to(_trail[_trail.size() - 1]) >= 1.0:
+		var last := _burrow_center
+		if not _trail.is_empty():
+			last = _trail[_trail.size() - 1]
+		if _burrow_center.distance_to(last) >= BURROW_SAMPLE_STEP:
 			_trail.append(_burrow_center)
 			if _trail.size() > 30:
 				_trail.remove_at(0)
+			_publish_trail()
 
 
 ## REVISION 6: Ameisen sind strikt bodengebunden. Nach jeder x-Bewegung wird
 ## die lokale Geländehöhe neu abgefragt; kein Schweben über Senken mehr.
 func _follow_ground() -> void:
-	surface_y = generator.height_smooth_at(position.x)
+	# REVISION 7: ebenfalls auf die sichtbare Kante rasten.
+	surface_y = generator.ground_y_at(position.x)
 	base_y = surface_y - 1.0
-	position.y = base_y + sin(phase * 5.0) * 0.30
+	position.y = base_y + sin(phase * 5.0) * 0.15
 
 
 func _move_toward(target: float, step: float) -> void:
@@ -400,13 +466,37 @@ func debug_body_angle() -> float:
 
 
 func debug_ground_gap() -> float:
-	return position.y - generator.height_smooth_at(position.x)
+	return position.y - generator.ground_y_at(position.x)
 
 
 func debug_trail_point(i: int) -> Vector2:
 	if i < 0 or i >= _trail.size():
 		return Vector2.ZERO
 	return _trail[i]
+
+
+## REVISION 7 Debug-Hooks ----------------------------------------------------
+func debug_body_offset() -> float:
+	return position.y - base_y
+
+
+## REVISION 7: Bewegung einfrieren, aber weiter ticken (Stabilitaetsprobe).
+func debug_freeze_motion() -> void:
+	_debug_frozen = true
+	target_x = position.x
+	burrow_target = burrow_depth
+	timer = 9999.0
+
+
+func debug_trail_node() -> BurrowTrail:
+	return _trail_node
+
+
+func debug_trail_signature() -> Vector2:
+	var acc := Vector2.ZERO
+	for q in _trail:
+		acc += q
+	return acc
 
 
 ## Direkter, kollisionsfreier Test-Schub (Smoke: waagerechte Rotation).
@@ -455,49 +545,43 @@ func _catmull(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2,
 ## REVISION 6: Catmull-Rom-Glaettung der STABILEN Mittellinie. Die Punkte
 ## liegen in Eltern-Koordinaten; `position` (mit Koerper-Wackeln) wird hier
 ## abgezogen, damit der Gang beim Redraw nicht mitwackelt.
-func _smooth_trail() -> PackedVector2Array:
+## REVISION 7: Catmull-Rom-Glaettung in WELT-/Eltern-Koordinaten. Es wird
+## NICHTS mehr vom Tier-Transform abgezogen: der BurrowTrail besitzt seine
+## eigene Identitaets-Transformation und zeichnet diese Punkte unveraendert.
+func _world_trail() -> PackedVector2Array:
 	var out := PackedVector2Array()
 	if _trail.size() < 2:
 		return out
 	for i in range(_trail.size() - 1):
-		var p0: Vector2 = _trail[maxi(i - 1, 0)] - position
-		var p1: Vector2 = _trail[i] - position
-		var p2: Vector2 = _trail[i + 1] - position
-		var p3: Vector2 = _trail[mini(i + 2, _trail.size() - 1)] - position
+		var p0: Vector2 = _trail[maxi(i - 1, 0)]
+		var p1: Vector2 = _trail[i]
+		var p2: Vector2 = _trail[i + 1]
+		var p3: Vector2 = _trail[mini(i + 2, _trail.size() - 1)]
 		for q in range(3):
 			out.append(_catmull(p0, p1, p2, p3, float(q) / 3.0))
-	out.append(_trail[_trail.size() - 1] - position)
+	out.append(_trail[_trail.size() - 1])
 	return out
 
 
 func _draw_worm(_f: float, _w: float) -> void:
-	# 1) Gang: stabile, geglaettete Mittellinie ohne Animations-Jitter.
-	var smooth := _smooth_trail()
-	if smooth.size() >= 2:
-		var tunnel := Color(PixelArt.SOIL_DARK.r, PixelArt.SOIL_DARK.g,
-			PixelArt.SOIL_DARK.b, 0.62)
-		var loose := Color(PixelArt.SOIL_LOOSE.r, PixelArt.SOIL_LOOSE.g,
-			PixelArt.SOIL_LOOSE.b, 0.68)
-		draw_polyline(smooth, tunnel, 5.4)
-		draw_polyline(smooth, loose, 2.1)
-		for i in range(2, smooth.size(), 6):
-			draw_circle(smooth[i], 1.3, loose)
-	# 2) Koerper: Sprite2D-Kind (oben), hier nur noch rotierte Details.
+	# 1) Der GANG wird vom separaten BurrowTrail gezeichnet (ortsfest).
+	#    Hier bleiben nur Koerperdetails - deutlich dunkler als in R6.
+	# 2) Segment-Highlights in gedecktem Rosabraun statt leuchtendem Pink.
 	draw_set_transform(Vector2.ZERO, _body_angle, Vector2.ONE)
 	for x in [-4.0, 0.0, 4.0]:
-		draw_circle(Vector2(x, -1.0), 0.8, Color(0.96, 0.72, 0.67, 1.0))
-	draw_circle(Vector2(7.0, -1.0), 0.9, Color(0.98, 0.84, 0.78, 1.0))
+		draw_circle(Vector2(x, -1.0), 0.75, Color(0.55, 0.34, 0.30, 0.90))
+	draw_circle(Vector2(7.0, -1.0), 0.8, Color(0.60, 0.40, 0.34, 0.90))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	# 3) Krumen vor der Grabespitze, ebenfalls mitrotiert, aber ortsfest.
+	# 3) Krumen vor der Grabespitze, erdfarben und unauffaellig.
 	var head := Vector2(9.0, 0.0).rotated(_body_angle)
 	var side := Vector2(0.0, 1.0).rotated(_body_angle)
 	for i in range(3):
 		var off := float(i)
 		var crumb := head + side * (off * 1.4 - 1.4) \
 			+ Vector2(off * 1.2, 0.0).rotated(_body_angle)
-		draw_circle(crumb, 0.9, Color(0.44, 0.31, 0.20, 0.85))
-	# 4) Erd-Schleier: rotationsunabhaengig, der Wurm steckt IM Boden.
-	draw_circle(Vector2.ZERO, 7.0, Color(0.31, 0.21, 0.14, 0.10))
+		draw_circle(crumb, 0.9, Color(0.34, 0.24, 0.16, 0.80))
+	# 4) Staerkerer Erd-Schleier: der Wurm faellt weniger auf.
+	draw_circle(Vector2.ZERO, 7.0, Color(0.26, 0.18, 0.12, 0.20))
 
 
 func _draw_ant(w: float) -> void:

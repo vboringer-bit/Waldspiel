@@ -1,0 +1,89 @@
+REVISION 7 — TESTPROTOKOLL (auf GitHub, Basis bcbd1ba / REVISION 6)
+=====================================================================
+Datum: 2026-11-05 (Europe/Berlin)
+Engine: Godot 4.7.2.stable.official.ed1daf0bf
+Basis-Import:
+  $G --headless --path . --import
+  -> exit 0, 0 SCRIPT ERROR / Parse Error / ERROR
+
+SKILLTREE
+  $G --headless --path . --script tools/generate_skilltree.gd --quit-after 5
+  -> [SKILLTREE] res://data/skilltrees/oak.tres | Knoten=24 | err=0
+  -> 17 bestehende + 6 neue Verbindungen = 23 Linien
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  phase0   3 OK   0 FEHLER
+  phase1  26 OK   0 FEHLER
+  phase2  25 OK   0 FEHLER
+  rev1    32 OK   0 FEHLER
+  rev2    27 OK   0 FEHLER
+  p3      56 OK   0 FEHLER
+  rev3    20 OK   0 FEHLER
+  rev4    32 OK   0 FEHLER
+  phase4  63 OK   0 FEHLER   (24 Knoten / 23 Linien)
+  phase5  58 OK   0 FEHLER   (24 Knoten)
+  rev5    35 OK   0 FEHLER
+  rev6    34 OK   0 FEHLER   (24 Knoten / 23 Linien)
+  rev7    51 OK   0 FEHLER   (NEU)
+  ------------------------------------------------
+  13/13 Smokes, TOTAL_OK = 462, BAD = 0, SCRIPT ERROR = 0
+  Bestaetigt in ZWEI kompletten Laeufen mit unterschiedlichen Zufalls-Seeds,
+  jeweils 462 OK / 0 FEHLER / 0 Render-Fehler.
+
+REVISION-7-SMOKE ABDECKUNG (51 Checks)
+  - BurrowTrail existiert, top_level, absolute z=39, NICHT Kind des Wurms
+  - Tunnel-Punkte >= 2; bei eingefrorener Bewegung bleibt Stuetzpunkt,
+    Signatur UND gezeichneter erster Punkt exakt ortsfest
+  - debug_body_offset() ~ 0 (kein Sinus-Wackeln)
+  - Wurm-PNG echte Pixel gelesen: Koerper 0.44/0.21/0.18, Kontur dunkel
+  - Huegel: 9 Basispunkte, jeder auf ground_y_at(), Abstand 0.000 px,
+    Klickflaeche schliesst mit dem Boden ab; gezeichnet als konvexe
+    Dreiecksstreifen -> 0 "triangulation failed" in Smokes UND Renders
+  - Ameisen weiter bodengebunden
+  - Skilltree 24/23, UI 24/23, 6 neue IDs, 16 neue DE/EN-Schluessel
+  - Freischalt-Kette inkl. mushroom_node/winter_hardy erfolgreich
+  - germination 1.35 / spring_vigor 1.45 / winter_water 1.55 /
+    nutrients 1.30 / SeasonSystem.germination_mult 1.35
+  - Alleinstehender Baum: 100 % Licht, waechst voll aus (28/12)
+  - Nachbar in 64 px: 53 % Licht, Cap 15 Stamm / 6 Blatt
+  - Beschatteter Baum bleibt 15/6 statt 28/12, Stamm 255 statt 476 px
+  - HUD zeigt "Licht 53% · Nachbarbaum beschattet"
+  - Klick am Cap meldet MSG_CROWD_BLOCKED
+  - Licht-Skills hellen auf 53 % -> 79 %, crowd_tolerance 0.55 /
+    shade_gain 0.50 am Baum wirksam
+  - Save v6 / Load mit beschattetem Baum bleibt klein
+  - Regression: AUTO aus, GLUCOSE_PACE 0.2, 21 Pixelart-Slots,
+    16x16-Hitbox unveraendert
+
+F5-LAUF
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/f.png --quit-after 25 \
+    -- --seed=20261105 --windowed --rev7-shot-<preset>
+  Presets: worms, anthill, skilltree, crowding
+  Ergebnis: screenshots/rev7_{worms,anthill,skilltree,crowding}.png
+
+VISUELLE PRUEFUNG
+  - Wurm dunkelrot, Gang als ruhige braune Linie sichtbar, kein weisser Block
+  - Ameisenhuegelbasis folgt den 4px-Gelaendestufen, keine Schwebe-Kante
+  - Skilltree zeigt 24 Knoten in zwei neuen Farben (gold/teal)
+  - Dichter Stand: grosser Baum + deutlich kleinerer Baum, HUD "Licht 53%"
+
+REGRESSION
+  Global.auto_mode = false (Standard)
+  SaveManager.FORMAT_VERSION = 6 (neue Felder weiterhin optional)
+  RootSegment.hit_rect() = 16x16 (Wasser/Klick/Save)
+  BaseTree.GLUCOSE_PACE = 0.2, MAX_TRUNK = 28, MAX_ROOTS = 72
+  Alle P0-P5/R5/R6-Smokes unveraendert gruen
+
+LIEFERUNG
+  Vollstaendiger Stand inkl. deliverables/waldspiel-REVISION7.zip
+  (Komplett-Paket, project.godot im ZIP-Root, .godot ausgeschlossen,
+  CRC geprueft, frischer Extrakt mit Import + 13/13 Smokes geprueft).
+  Als EIN Commit auf main gepusht (Nachfolger von bcbd1ba, REVISION 6).
+  Remote-Verifikation: git ls-remote / API-HEAD / Tree / Raw / ZIP-HEAD.
+  Keine Credentials in Commit, Remote-URL, Git-Config oder Repo-Dateien.

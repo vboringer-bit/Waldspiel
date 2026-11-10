@@ -1,20 +1,22 @@
-WALD-REGENERATION — REVISION 6 — Godot 4.7.2 stable
+WALD-REGENERATION — REVISION 7 (auf GitHub) — Godot 4.7.2 stable
 ======================================================================
 
-HINWEIS: Dieses Paket enthaelt den vollstaendigen REVISION-6-Stand (gezielt
-ziehbare Wurzeln/Staemme/Aeste, stabiler Wurm-Gang, rotierte Würmer,
-bodengebundene Ameisen, Pixelart-Registry, Skilltree "Dichte Krone").
-R6 ist als Nachfolger von 5854ac5 auf GitHub gepusht und zusaetzlich als
-deliverables/waldspiel-REVISION6.zip eingefroren. Zum Import entweder den
+HINWEIS: Dieses Paket enthaelt den vollstaendigen REVISION-7-Stand (ortsfester
+Wurm-Gang, dunklere Würmer, bodenfeste Ameisenhuegel, 24 Skilltree-Knoten,
+Lichtkonkurrenz bei dichtem Stand). R7 ist als vollstaendiger Stand auf
+GitHub gepusht (Nachfolger von bcbd1ba, REVISION 6) und zusaetzlich als
+deliverables/waldspiel-REVISION7.zip eingefroren. Zum Import entweder den
 Repo-Root direkt in Godot oeffnen oder diese ZIP entpacken
 (project.godot liegt jeweils im Root).
 
 NEUE STEUERUNG (MANUELL, Standard): Wurzel oder Baum mit linker Maustaste
-ANKLaCKEN, ZIEHEN, LOSLASSEN -> das Wachstum folgt dem Zugpfad. Ein kurzer
+ANKLICKEN, ZIEHEN, LOSLASSEN -> das Wachstum folgt dem Zugpfad. Ein kurzer
 Klick ohne Bewegung verhaelt sich wie vorher. Skilltree mit T oeffnen und
-"Dichte Krone I/II/III" freischalten, falls mehr Blaetter gewuenscht sind.
-Alle Platzhalter-Texturen liegen zentral in src/render/PixelArt.gd; Details
-in assets/placeholders/PIXELART.md.
+"Dichte Krone I/II/III" sowie die neuen Aeste Lichtsucher, Schattenlaub,
+Waldrand, Fruehlingssaft, Humusnetz und Wintervorrat freischalten.
+Dicht stehende Baeume bleiben wegen Lichtmangel kleiner; das HUD zeigt
+"Licht xx%". Alle Platzhalter-Texturen liegen zentral in
+src/render/PixelArt.gd; Details in assets/placeholders/PIXELART.md.
 
 Dieses ZIP enthaelt das KOMPLETTE, lauffaehige Projekt. project.godot liegt
 direkt im ZIP-Root (kein zusaetzlicher Unterordner).

@@ -1,6 +1,6 @@
 class_name PixelArt
 extends RefCounted
-## REVISION 6: EINZIGE zentrale Stelle fuer alle Platzhalter-Texturen.
+## REVISION 6/7: EINZIGE zentrale Stelle fuer alle Platzhalter-Texturen.
 ##
 ## Ziel: spaeter kann jedes 16x16-Pixelart einfach durch eine gleich grosse
 ## PNG ersetzt werden, OHNE dass Simulationscode angefasst werden muss.
@@ -59,7 +59,8 @@ const ROOT_HALO := Color(0.60, 0.45, 0.27, 0.30)
 const HYPHA := Color(0.70, 0.54, 0.33, 0.88)
 const SOIL_DARK := Color(0.15, 0.10, 0.06)
 const SOIL_LOOSE := Color(0.66, 0.48, 0.29)
-const WORM_BODY := Color(0.88, 0.52, 0.47)
+## REVISION 7: Wurm deutlich dunkler und erdiger (weniger Kontrast).
+const WORM_BODY := Color(0.50, 0.30, 0.27)
 const ANT_BODY := Color(0.16, 0.12, 0.10)
 
 

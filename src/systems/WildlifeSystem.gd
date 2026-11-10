@@ -134,9 +134,12 @@ func _spawn_animal(species: String, p_x: float, silent: bool = false) -> Animal:
 func _spawn_anthill(p_x: float, colony_size: int = 1) -> Anthill:
 	var h := preload("res://src/animals/Anthill.gd").new()
 	add_child(h)
-	h.setup(p_x, generator.height_smooth_at(p_x), self, colony_size)
+	# REVISION 7: Huegel auf die sichtbare 4px-Kante setzen UND den Generator
+	# uebergeben, damit die gesamte Basis dem Gelaendeprofil folgen kann.
+	var gy := generator.ground_y_at(p_x)
+	h.setup(p_x, gy, self, colony_size, generator)
 	anthills.append(h)
-	EventBus.anthill_built.emit(Vector2(p_x, generator.height_smooth_at(p_x)))
+	EventBus.anthill_built.emit(Vector2(p_x, gy))
 	return h
 
 
@@ -445,6 +448,12 @@ func debug_colony_size() -> int:
 
 func debug_anthill_count() -> int:
 	return anthills.size()
+
+
+func debug_anthill(index: int = 0) -> Anthill:
+	if index < 0 or index >= anthills.size():
+		return null
+	return anthills[index] as Anthill
 
 
 func debug_species_count() -> int:

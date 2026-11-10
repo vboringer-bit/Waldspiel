@@ -9,7 +9,7 @@ HUD_YEAR,Jahr,Year
 HUD_NO_TREE,Kein Baum ausgewählt,No tree selected
 HUD_SELECTED,Ausgewählt,Selected
 HUD_SKILLTREE,Skilltree (T),Skill tree (T)
-HUD_HINT,Boden-Eicheln anklicken = einsammeln   ·   Inventar-Eichel anklicken = aufnehmen   ·   Linksklick auf den Boden = platzieren   ·   Rechtsklick/Esc = zurücklegen   ·   MANUELL: Wurzel anklicken = wachsen   ·   R = Regen / Schnee   ·   T = Skilltree   ·   F11 = Vollbild   ·   Ziehen = Wurzel/Stamm/Ast lenken,Click ground acorns to collect   ·   Click the inventory acorn to pick it up   ·   Left click on the ground = place   ·   Right click/Esc = put back   ·   MANUAL: click a root = grow   ·   R = rain / snow   ·   T = skill tree   ·   F11 = fullscreen   ·   Drag = direct roots/trunk/branches
+HUD_HINT,Boden-Eicheln anklicken = einsammeln   ·   Inventar-Eichel anklicken = aufnehmen   ·   Linksklick auf den Boden = platzieren   ·   Rechtsklick/Esc = zurücklegen   ·   MANUELL: Wurzel anklicken = wachsen   ·   R = Regen / Schnee   ·   T = Skilltree   ·   F11 = Vollbild   ·   Ziehen = Wurzel/Stamm/Ast lenken   ·   Dichter Stand = weniger Licht,Click ground acorns to collect   ·   Click the inventory acorn to pick it up   ·   Left click on the ground = place   ·   Right click/Esc = put back   ·   MANUAL: click a root = grow   ·   R = rain / snow   ·   T = skill tree   ·   F11 = fullscreen   ·   Drag = direct roots/trunk/branches   ·   Close planting = less light
 BTN_SKILLTREE,Skilltree,Skill tree
 MODE_AUTO,AUTO,AUTO
 MODE_MANUAL,MANUELL,MANUAL
@@ -118,7 +118,7 @@ SKILL_MUSHROOM_DESC,+10 % Glucose und +15 % Naehrstoffe durch Pilz-Symbiose (PHA
 SKILL_WINTER_TITLE,Winterhaerte,Winter hardiness
 SKILL_WINTER_DESC,+30 % Wasseraufnahme im Winter. Die Winterruhe bleibt bestehen.,+30 % water uptake in winter. Winter dormancy stays in place.
 SKILL_UI_TITLE,SKILLTREE · EICHE,SKILL TREE · OAK
-SKILL_UI_SUBTITLE,15 Mutationen · global fuer alle Eichen · Freischalten kostet Glucose des ausgewaehlten Baums,15 mutations · shared by all oaks · unlocking costs glucose of the selected tree
+SKILL_UI_SUBTITLE,24 Mutationen · global fuer alle Eichen · Freischalten kostet Glucose des ausgewaehlten Baums,24 mutations · shared by all oaks · unlocking costs glucose of the selected tree
 SKILL_UI_CLOSE,Schliessen (T),Close (T)
 SKILL_UI_GLUCOSE,Glucose des ausgewaehlten Baums,Glucose of selected tree
 SKILL_UI_HINT,Mittlere Maustaste = Graph verschieben · Mausrad / +/- = Zoom · Knoten anklicken zum Freischalten,Middle mouse = pan graph · wheel / +/- = zoom · click a node to unlock
@@ -131,7 +131,7 @@ SKILL_UI_COST,Kosten,Cost
 SKILL_UI_ZOOM_IN,+,+
 SKILL_UI_ZOOM_OUT,−,−
 SKILL_UI_ZOOM_RESET,1:1,1:1
-SKILL_UI_COUNT,%d / 15 freigeschaltet,%d / 15 unlocked
+SKILL_UI_COUNT,%d / 24 freigeschaltet,%d / 24 unlocked
 SKILL_UI_BRANCH_WATER,Wasser,Water
 SKILL_UI_BRANCH_LEAF,Glucose,Glucose
 SKILL_UI_BRANCH_RESIST,Resistenz,Resistance
@@ -187,3 +187,19 @@ SUPPLY_LIMIT_OK,optimal versorgt,Well supplied
 MSG_BURROW,Der Wurm gräbt sich langsam durch den Boden.,The worm burrows slowly through the soil.
 MSG_SLOW_GROWTH,"Wenig Wurzeln, Wasser oder Licht: deutlich weniger Glucose und langsameres Wachstum.","Few roots, water or light: much less glucose and slower growth."
 MSG_ORGANIC_GROWTH,Stamm und Wurzeln verzweigen sich jetzt frei statt im Kachelraster.,Trunk and roots now branch freely instead of on the tile grid.
+SKILL_LIGHTSEEK_TITLE,Lichtsucher,Light seeker
+SKILL_LIGHTSEEK_DESC,-30 % Schatten durch Nachbarbaeume.,-30% shade from neighbouring trees.
+SKILL_SHADELEAF_TITLE,Schattenlaub,Shade foliage
+SKILL_SHADELEAF_DESC,+50 % Glucose im Schatten.,+50% glucose while shaded.
+SKILL_FORESTEDGE_TITLE,Waldrand,Forest edge
+SKILL_FORESTEDGE_DESC,Noch weniger Schatten und +35 % Keimung.,Even less shade and +35% germination.
+SKILL_SPRINGSAP_TITLE,Fruehlingssaft,Spring sap
+SKILL_SPRINGSAP_DESC,+45 % Wuchskraft im Fruehjahr.,+45% growth vigour in spring.
+SKILL_HUMUSNET_TITLE,Humusnetz,Humus net
+SKILL_HUMUSNET_DESC,+15 % Naehrstoffe und +10 % Wurzelwasser.,+15% nutrients and +10% root water.
+SKILL_WINTERSTORE_TITLE,Wintervorrat,Winter store
+SKILL_WINTERSTORE_DESC,+25 % Winterwasser und -10 % Verbrauch.,+25% winter water and -10% consumption.
+HUD_LIGHT,Licht %d%% · %s,Light %d%% · %s
+LIGHT_LIMIT_CROWD,Nachbarbaum beschattet,Shaded by a neighbour
+LIGHT_LIMIT_OK,volles Licht,Full light
+MSG_CROWD_BLOCKED,Zu wenig Licht: ein Nachbarbaum beschattet diesen Baum.,Not enough light: a neighbouring tree shades it.

@@ -1,11 +1,26 @@
-# Wald-Regeneration — REVISION 6
+# Wald-Regeneration — REVISION 7 (auf GitHub)
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
-> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 18 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
+> Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 24 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · **REVISION 6 ✅ auf GitHub (12/12 Smokes OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · **REVISION 6 ✅ · REVISION 7 ✅ auf GitHub (13/13 Smokes OK)**
 
-**Wichtig:** REVISION 6 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `5854ac5`, REVISION 5). `deliverables/waldspiel-REVISION6.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `REVISION6-ERGEBNIS.md` / `.html`, `REVISION6-TESTPROTOKOLL.txt`, `DECISIONS.md` §72.
+**Wichtig:** REVISION 7 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `bcbd1ba`, REVISION 6). `deliverables/waldspiel-REVISION7.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `REVISION7-ERGEBNIS.md` / `.html`, `REVISION7-TESTPROTOKOLL.txt`, `DECISIONS.md` §73.
+
+---
+
+## REVISION 7 — ruhige Gänge, Erdschluss, Licht & neue Skills
+
+**User-Auftrag:** Wurm-Gang wackelt immer noch; Würmer dunkler; Ameisenhaufen sollen nicht mehr teilweise in der Luft hängen; Skilltree um sinnvolle Erweiterungen ergänzen; zu dicht stehende Bäume sollen wegen Lichtmangel klein bleiben.
+
+1. **Endgültig ruhiger Gang.** Der Tunnel ist jetzt ein eigener `BurrowTrail`-Node (`top_level`, Identitäts-Transformation, absolute `z = 39`) statt eines `_draw()` am Tier. Das `sin()`-Wackeln des Wurms ist entfernt, die Tiefe rastet auf `WorldGenerator.ground_y_at()` (sichtbare 4px-Kante). Neue Stützpunkte entstehen nur noch bei echter Bewegung ≥ 2 px.
+2. **Dunklere Würmer.** `worm.png`, Segment-Highlights, Krumen und Erd-Schleier sind deutlich gedeckter; der Wurm fällt im Boden nicht mehr als Pink auf.
+3. **Ameisenhaufen mit Erdschluss.** `Anthill._ground_line()` tastet neun Punkte entlang der sichtbaren Geländekante ab; die Polygon-Basis folgt jedem Höhenschritt. Ameisen rasten auf dieselbe Kante.
+4. **Sechs neue Skilltree-Knoten.** Lichtsucher, Schattenlaub, Waldrand, Frühlingssaft, Humusnetz, Wintervorrat ⇒ **24 Knoten / 23 Linien**. Alle Effekte sind echt verdrahtet: `crowd_tolerance`, `shade_gain`, `germination`, `spring_vigor`, `nutrients`, `root_water`, `winter_water`, `water_consumption`.
+5. **Lichtkonkurrenz.** Bäume < 170 px Abstand beschatten sich; `light_factor()` begrenzt Stamm, Blätter, Wurzeln, gezogene Äste und Glucose. HUD zeigt `Licht xx%`, ein Toast erklärt blockiertes Wachstum. Licht-Skills hellen den Stand gezielt auf.
+6. **Abnahme.** `tests/Revision7Smoke.gd` (51 Checks), vier Presets `--rev7-shot-worms|anthill|skilltree|crowding`, **13/13 Smokes · 462 OK · 0 Fehler**, 180 Frames, 4×25 Render-Frames. `AUTO` aus, Save v6, `GLUCOSE_PACE 0.2`, 16×16-Hitbox unverändert.
+
+Siehe `REVISION7-ERGEBNIS.html` / `.md`, `REVISION7-TESTPROTOKOLL.txt` und `DECISIONS.md` §73.
 
 ---
 

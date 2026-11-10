@@ -43,6 +43,8 @@ var seed_layer: Node2D
 var seeds: Dictionary = {}
 var collected: Dictionary = {}
 var spread_bonus: float = 0.0          # PHASE 4: Skill "Verbreitung"
+## REVISION 7: Skill "Waldrand" erhoeht die Keimchance zusaetzlich.
+var germination_mult: float = 1.0
 var debug_no_germination: bool = false # Smoke-Test: Eicheln bleiben liegen
 
 var _rng := RandomNumberGenerator.new()
@@ -347,7 +349,7 @@ func _land(rec: Dictionary) -> void:
 
 	var sunlight := time_manager.sunlight_factor() if time_manager != null else 1.0
 	var chance := GERMINATION_CHANCE * Global.difficulty_factor("germination") \
-		* (1.0 + spread_bonus)
+		* (1.0 + spread_bonus) * germination_mult
 	var can_germinate := (sunlight > 0.4
 		and (time_manager == null or not time_manager.is_winter())
 		and get_tree().get_nodes_in_group("trees").size() < MAX_TREES)
@@ -389,6 +391,7 @@ func set_spread_bonus(value: float) -> void:
 func _sync_skills() -> void:
 	var st := SkillTree.instance
 	set_spread_bonus(st.bonus("spread") if st != null else 0.0)
+	germination_mult = st.modifier("germination") if st != null else 1.0
 
 
 func to_dict() -> Dictionary:

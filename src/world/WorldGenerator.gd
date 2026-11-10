@@ -121,6 +121,13 @@ func surface_tile_y_at(world_x: float) -> int:
 	return int(height_at(world_x) / float(TILE_SIZE))
 
 
+## REVISION 7: DIESE Kante zeichnet TerrainSurface (4px-Schritte). Alle
+## Objekte, die "auf dem Boden abschliessen" muessen (Ameisenhuegel, Tiere),
+## muessen sich an diesem Wert ausrichten - nicht am fliessenden Rohwert.
+func ground_y_at(world_x: float) -> float:
+	return roundf(height_smooth_at(world_x) / 4.0) * 4.0
+
+
 func depth_tiles_at(global_tile_x: int, tile_y: int) -> int:
 	return tile_y - surface_tile_y_at(float(global_tile_x * TILE_SIZE))
 

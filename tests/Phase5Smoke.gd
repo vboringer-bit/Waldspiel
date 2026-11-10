@@ -281,8 +281,8 @@ func run() -> void:
 
 	# --- 11) Regression ------------------------------------------------------
 	_check(not Global.auto_mode, "AUTO bleibt standardmaessig aus (P4-Fix)")
-	_check(skill_tree.all_nodes().size() == 18,
-		"Skilltree bleibt bei 18 Knoten")
+	_check(skill_tree.all_nodes().size() == 24,
+		"Skilltree bleibt bei 24 Knoten")
 	_check(chunk_manager.loaded_chunk_count() == 5,
 		"Weiterhin 5 geladene Chunks")
 	_finish()

@@ -45,6 +45,15 @@ const MAX_CUSTOM_BRANCHES := 24
 const MAX_GUIDE_POINTS := 96
 const NO_FREE_TARGET := Vector2(1.0e9, 1.0e9)
 
+## REVISION 7: Lichtkonkurrenz. Stehen Baeume dichter als CROWD_RADIUS,
+## beschattet der groessere Nachbar den kleineren. Statt zwei ausgewachsene
+## Kronen uebereinander zu zeichnen, bleibt der beschattete Baum sichtbar
+## kleiner (Stamm, Blaetter, Wurzeln und gezogene Aeste werden mitbegrenzt)
+## und produziert entsprechend weniger Glucose.
+const CROWD_RADIUS := 170.0
+const CROWD_MIN_LIGHT := 0.38
+const CROWD_SHADE_STRENGTH := 0.75
+
 ## REVISION 4: Fuenf VISUELLE WACHSTUMSSTUFEN fuer Stamm und Wurzeln.
 const STAGE_WIDTHS := [0.30, 0.46, 0.62, 0.80, 1.0]
 const STAGE_TINT := [
@@ -80,6 +89,9 @@ var skill_leaf_grants: int = 0
 var skill_leaf_density: int = 0
 ## PHASE 5: Pilz-Symbiose erhoeht die Naehrstoff-Versorgung (mushroom_node).
 var nutrient_mult: float = 1.0
+## REVISION 7: Skilltree-Mods gegen die Lichtkonkurrenz.
+var crowd_tolerance: float = 0.0
+var shade_gain: float = 0.0
 
 ## REVISION 5: Versorgungsabhaengige Wuchskraft + zuletzt gesehene Sonne.
 var growth_vigor: float = AUTO_GROWTH_INTERVAL
@@ -180,10 +192,59 @@ func _sprite(path: String, pos: Vector2, parent: Node2D) -> Sprite2D:
 
 
 # --------------------------------------------------------------------------- #
+# REVISION 7: Lichtkonkurrenz / Beschattung durch Nachbarbaeume
+# --------------------------------------------------------------------------- #
+## Staerkster Schattenwurf aller Nachbarn innerhalb von CROWD_RADIUS. Ein
+## Keimling beschattet kaum, ein ausgewachsener Baum voll. `crowd_tolerance`
+## aus dem Skilltree reduziert den Schatten (Lichtsucher / Waldrand).
+func neighbor_shade() -> float:
+	if not is_inside_tree():
+		return 0.0
+	var shade := 0.0
+	for n in get_tree().get_nodes_in_group("trees"):
+		if n == self or not (n is BaseTree):
+			continue
+		var other := n as BaseTree
+		var d := absf(other.global_position.x - global_position.x)
+		# Exakt gleiche Position = Snapshot-/Test-Duplikat, kein echter
+		# Nachbar (sonst wuerde z.B. ein Save-Probe den Originalbaum beschatten).
+		if d < 1.0 or d >= CROWD_RADIUS:
+			continue
+		var maturity := clampf(float(other.trunk_tiles) / float(MAX_TRUNK),
+			0.25, 1.0)
+		shade = maxf(shade, (1.0 - d / CROWD_RADIUS) * maturity)
+	return clampf(shade * (1.0 - clampf(crowd_tolerance, 0.0, 0.80)),
+		0.0, 1.0)
+
+
+func light_factor() -> float:
+	return clampf(1.0 - CROWD_SHADE_STRENGTH * neighbor_shade(),
+		CROWD_MIN_LIGHT, 1.0)
+
+
+func crowd_cap_of(max_value: int, minimum: int) -> int:
+	var lf := light_factor()
+	if lf >= 0.999:
+		return max_value
+	return maxi(minimum, int(roundf(float(max_value) * lf)))
+
+
+## Harte, aber weiche Obergrenze: ein dichter Stand bleibt klein, statt
+## irgendwann doch die volle Krone in den Nachbarn hineinzuschieben.
+func crowd_cap(part: String) -> int:
+	match part:
+		"trunk": return crowd_cap_of(MAX_TRUNK, 2)
+		"leaf": return crowd_cap_of(MAX_LEAVES + skill_max_leaves_bonus, 2)
+		"root": return crowd_cap_of(MAX_ROOTS, 1)
+		"branch": return crowd_cap_of(MAX_CUSTOM_BRANCHES, 2)
+	return 999999
+
+
+# --------------------------------------------------------------------------- #
 # Wachstum (PHASE 1 API bleibt erhalten)
 # --------------------------------------------------------------------------- #
 func add_trunk_tile() -> bool:
-	if trunk_tiles >= MAX_TRUNK:
+	if trunk_tiles >= crowd_cap("trunk"):
 		return false
 	# REVISION 5: Der Sprite bleibt NUR als kompatibler Breiten-Traeger fuer
 	# debug_trunk_width()/Revision4Smoke. Sichtbar gezeichnet wird die freie
@@ -199,7 +260,8 @@ func add_trunk_tile() -> bool:
 
 func add_leaf() -> bool:
 	# PHASE-4-FIX: dieselbe Obergrenze wie can_grow("leaf") verwenden!
-	if leaves_count >= MAX_LEAVES + skill_max_leaves_bonus:
+	# REVISION 7: beschattete Baeume behalten eine kleinere Krone.
+	if leaves_count >= crowd_cap("leaf"):
 		return false
 	# REVISION 5: Blaetter sitzen an freien Astspitzen statt im 4-Spalten-Raster.
 	# Zwei kleine Deko-Blaetter pro logischem Blatt verdichten die Krone,
@@ -257,11 +319,11 @@ func can_grow(part: String) -> bool:
 	if growth_blocked:
 		return false
 	if part == "root":
-		return maxi(root_segments.size(), root_count) < MAX_ROOTS
+		return maxi(root_segments.size(), root_count) < crowd_cap("root")
 	if part == "leaf":
-		return leaves_count < MAX_LEAVES + skill_max_leaves_bonus
+		return leaves_count < crowd_cap("leaf")
 	if part == "trunk":
-		return trunk_tiles < MAX_TRUNK
+		return trunk_tiles < crowd_cap("trunk")
 	return false
 
 
@@ -737,7 +799,7 @@ func grow_wood_along(world_points: PackedVector2Array, max_steps: int) -> int:
 			if guide.is_empty() or (lp - guide[guide.size() - 1]).length() > 3.0:
 				guide.append(lp)
 		trunk_guide = _resample_path(guide, DRAG_STEP, MAX_GUIDE_POINTS)
-		var addable := mini(steps, MAX_TRUNK - trunk_tiles)
+		var addable := mini(steps, crowd_cap("trunk") - trunk_tiles)
 		var added := 0
 		for _i in addable:
 			if add_trunk_tile():
@@ -754,8 +816,11 @@ func grow_wood_along(world_points: PackedVector2Array, max_steps: int) -> int:
 		path.append(rp)
 	if path.size() < 2:
 		return 0
+	# REVISION 7: auch frei gezogene Aeste bleiben bei dichtem Stand kleiner.
+	if branch_paths.size() >= crowd_cap("branch"):
+		return 0
 	branch_paths.append(path)
-	while branch_paths.size() > MAX_CUSTOM_BRANCHES:
+	while branch_paths.size() > crowd_cap("branch"):
 		branch_paths.remove_at(0)
 	# Ein Astzug verdickt ebenfalls alle bereits vorhandenen Stammsegmente.
 	if trunk_tiles < MAX_TRUNK:
@@ -797,6 +862,23 @@ func debug_trunk_height() -> float:
 
 func debug_branch_count() -> int:
 	return _skel_branches.size()
+
+
+## REVISION 7 Debug-Hooks ----------------------------------------------------
+func debug_neighbor_shade() -> float:
+	return neighbor_shade()
+
+
+func debug_light_factor() -> float:
+	return light_factor()
+
+
+func debug_is_crowded() -> bool:
+	return neighbor_shade() > 0.001
+
+
+func debug_crowd_cap(part: String) -> int:
+	return crowd_cap(part)
 
 
 func debug_leaf_spread() -> float:
@@ -1012,10 +1094,16 @@ func photosynthesize(dt: float, sunlight: float = 1.0,
 	# Winter: sunlight = 0 und growth = 0 -> Winterruhe (nichts passiert).
 	if sunlight <= 0.0 or growth <= 0.0:
 		return
+	# REVISION 7: weniger Licht durch den Nachbarn = weniger Glucose.
+	# "Schattenlaub" (shade_gain) kompensiert einen Teil davon.
+	var shade := neighbor_shade()
+	var lf := clampf(1.0 - CROWD_SHADE_STRENGTH * shade,
+		CROWD_MIN_LIGHT, 1.0)
+	var compensation := 1.0 + shade_gain * shade
 	glucose += float(leaves_count) * species.photosynthesis_efficiency \
 		* growth * Global.difficulty_factor("photosynthesis") \
 		* skill_glucose_mult * GLUCOSE_PACE \
-		* environment_factor(sunlight) * dt
+		* environment_factor(sunlight) * lf * compensation * dt
 	water = maxf(water - species.water_consumption_rate \
 		* Global.difficulty_factor("water_consumption") \
 		* skill_water_consumption_mult * dt, 0.0)
@@ -1116,8 +1204,13 @@ func from_dict(d: Dictionary) -> void:
 		skill_root_water_mult = st.modifier("root_water")
 		skill_max_leaves_bonus = int(roundf(st.bonus("max_leaves")))
 		nutrient_mult = float(d.get("nutrient_mult", st.modifier("nutrients")))
+		# REVISION 7: Licht-Skills auch nach Spielstand-Laden wirksam.
+		crowd_tolerance = clampf(st.bonus("crowd_tolerance"), 0.0, 0.80)
+		shade_gain = clampf(st.bonus("shade_gain"), 0.0, 1.0)
 	else:
 		nutrient_mult = float(d.get("nutrient_mult", 1.0))
+		crowd_tolerance = 0.0
+		shade_gain = 0.0
 	skill_leaf_grants = int(d.get("skill_leaf_grants", 0))
 	# REVISION 6: gezogene Geometrie + Blattdichte VOR den Blatt-Sprites laden.
 	var saved_guide: Array = d.get("trunk_guide", [])

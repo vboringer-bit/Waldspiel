@@ -54,7 +54,12 @@ func tick(delta: float) -> void:
 		# ist bereits voll, damit ein Kauf mit ausreichend Glucose sofort
 		# moeglich bleibt (P0/P1-Smoke-Kompatibilitaet).
 		var env := clampf(tree.environment_factor(sun), 0.0, 1.0)
-		tree.growth_vigor += dt * maxf(env, 0.05)
+		# REVISION 7: "Fruehlingssaft" beschleunigt die Wuchskraft im Fruehjahr.
+		var season_boost := 1.0
+		if st != null and time_manager != null \
+				and time_manager.season == TimeManager.Season.SPRING:
+			season_boost = st.modifier("spring_vigor")
+		tree.growth_vigor += dt * maxf(env, 0.05) * season_boost
 		if tree.growth_vigor < BaseTree.AUTO_GROWTH_INTERVAL:
 			continue
 		# Prioritaet: Wurzeln bei Durst, sonst Blaetter (Stamm als Fallback).
