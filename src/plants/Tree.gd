@@ -206,9 +206,15 @@ func neighbor_shade() -> float:
 			continue
 		var other := n as BaseTree
 		var d := absf(other.global_position.x - global_position.x)
-		# Exakt gleiche Position = Snapshot-/Test-Duplikat, kein echter
-		# Nachbar (sonst wuerde z.B. ein Save-Probe den Originalbaum beschatten).
-		if d < 1.0 or d >= CROWD_RADIUS:
+		# REVISION 8: Baeume am EXAKT gleichen Fleck (d == 0) duerfen NICHT
+		# mehr ignoriert werden - genau dadurch konnten off-screen beliebig
+		# viele Baeume auf einem 16px-Slot voll auswachsen. Nur ein echtes
+		# Duplikat derselben tree_id (Save-/Snapshot-Probe) wird uebersprungen.
+		# d == 0 bedeutet jetzt MAXIMALEN Schatten, unabhaengig von Kamera,
+		# Viewport oder geladenen Chunks.
+		if d < 1.0 and other.tree_id == tree_id:
+			continue
+		if d >= CROWD_RADIUS:
 			continue
 		var maturity := clampf(float(other.trunk_tiles) / float(MAX_TRUNK),
 			0.25, 1.0)

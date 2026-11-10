@@ -14,6 +14,8 @@ extends Node2D
 ##   * Der Wurm ist ein rotiertes 16x16-Pixelart-Sprite; bei senkrechtem
 ##     Graben steht er senkrecht, bei waagerechtem Graben waagerecht.
 ##   * Ameisen folgen der Geländeoberkante und laufen nicht mehr in der Luft.
+## REVISION 8: Rotation folgt der dominanten Grabrichtung (4px-Stufen
+##   der Gelaendekante kippen den Wurm nicht mehr schraeg).
 ## REVISION 7 (endgueltige Gang-Fixierung):
 ##   * Der Tunnel ist ein EIGENER `BurrowTrail`-Node mit `top_level = true`
 ##     und Identitaets-Transformation. Er kann sich nicht mehr mitbewegen.
@@ -293,6 +295,15 @@ func _sync_worm_motion(dt: float) -> void:
 	# KEIN Koerper-Wackeln mehr: das Tier sitzt exakt auf der Mittellinie.
 	position.y = base_y
 	var vel := _burrow_center - prev
+	# REVISION 8: Die sichtbare Gelaendekante springt beim Weitergraben um
+	# ganze 4px-Stufen. Solche kleinen Vertikalspruenge duerfen eine
+	# ueberwiegend horizontale Grabbewegung nicht schraeg stellen (und
+	# umgekehrt). Massgeblich ist die DOMINANTE Grabrichtung - das macht
+	# die Rotation unabhaengig vom zufaelligen Gelaendeprofil.
+	if absf(vel.x) > absf(vel.y) * 2.0:
+		vel.y = 0.0
+	elif absf(vel.y) > absf(vel.x) * 2.0:
+		vel.x = 0.0
 	if vel.length() > 0.02:
 		# atan2: oben/unten -> ±PI/2 (senkrecht), links/rechts -> 0/PI.
 		var target_angle := atan2(vel.y, vel.x)

@@ -1,0 +1,100 @@
+REVISION 8 — TESTPROTOKOLL (auf GitHub, Basis 50979d5 / REVISION 7)
+=====================================================================
+Datum: 2026-11-05 (Europe/Berlin)
+Engine: Godot 4.7.2.stable.official.ed1daf0bf
+
+BASIS-IMPORT
+  $G --headless --path . --import
+  -> exit 0, 0 SCRIPT ERROR / Parse Error / ERROR
+
+SKILLTREE
+  $G --headless --path . --script tools/generate_skilltree.gd --quit-after 5
+  -> [SKILLTREE] res://data/skilltrees/oak.tres | Knoten=24 | err=0
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  phase0   3 OK   0 FEHLER
+  phase1  26 OK   0 FEHLER
+  phase2  25 OK   0 FEHLER
+  rev1    32 OK   0 FEHLER
+  rev2    27 OK   0 FEHLER
+  p3      56 OK   0 FEHLER
+  rev3    20 OK   0 FEHLER
+  rev4    32 OK   0 FEHLER
+  phase4  63 OK   0 FEHLER
+  phase5  58 OK   0 FEHLER
+  rev5    35 OK   0 FEHLER
+  rev6    34 OK   0 FEHLER
+  rev7    51 OK   0 FEHLER
+  rev8    59 OK   0 FEHLER   (NEU)
+  ------------------------------------------------
+  14/14 Smokes, TOTAL_OK = 521, BAD = 0, SCRIPT ERROR = 0
+  Bestaetigt in DREI kompletten Laeufen mit unterschiedlichen Zufalls-Seeds,
+  jeweils 521 OK / 0 FEHLER / 0 Render-Fehler.
+
+REVISION-8-SMOKE ABDECKUNG (59 Checks)
+  1) GEMEINSAMER GLUCOSE-POOL
+     - 3 Baeume (0 / 0 / 40 Glucose): Pool = 40.0, pool_trees = 3
+     - Alle drei gehoeren zur selben Art, Skilltree-Art = "oak"
+     - can_unlock("root_efficiency") trotz 0 Glucose am Ankerbaum = true
+     - can_unlock(..., null) OHNE ausgewaehlten Baum = true
+     - Skilltree-UI zeigt "Glucose gesamt (alle Eichen) 40.0"
+     - unlock(..., null) erfolgreich, Kosten 10.0 exakt aus dem Pool
+     - Summe der drei Baum-Guthaben = 30.0, kein Baum negativ
+     - Effekt root_water = 1.25 auf A, B und C wirksam
+     - NEU spawnender Baum erhaelt denselben Effekt (tree_spawned)
+     - Save/Load stellt Skilltree-Zustand + Effekte auf allen Baeumen wieder her
+  2) EICHEL UNTER EINEM BAUM
+     - Baum ueberdeckt die Klickposition (find_tree_at != null)
+     - Eichel per debug_spawn_seed_at(0.0, false) direkt am Stammfuss
+     - has_collectible_at() erkennt sie ohne Seiteneffekt
+     - debug_click_world_full() bildet den ECHTEN Mauspfad nach:
+       Inventar +1, KEIN Drag gestartet, collected markiert, Sprite weg
+     - Zweite Eichel unter demselben Baum ebenfalls einsammelbar
+  3) ABSTANDSREGEL WELTWEIT / OFF-SCREEN
+     - Pruefpunkt x=5008 liegt >1000 px ausserhalb der Kamera
+     - Off-screen Baum wird von nearest_tree_distance() gefunden (0.0 px)
+     - Gleicher Platz blockiert, 32 px blockiert, 48 px erlaubt,
+       400 px erlaubt; MIN_TREE_SPACING = 48 px
+     - Baum ohne Nachbarn waechst voll aus (>= 20 Stamm)
+     - Zweiter Baum am SELBEN Platz: tree_id unterschiedlich,
+       neighbor_shade > 0.90 (d==0 => MAXIMALER Schatten),
+       Gegenseitigkeit, Licht < 0.45, Wuchsgrenze gestutzt,
+       waechst nicht voll aus
+     - debug_force_germination: Keimung am selben Platz off-screen
+       BLOCKIERT, Eichel bleibt einsammelbar liegen;
+       Keimung 400 px entfernt funktioniert
+  4) ROBUSTHEIT (zusaetzlicher Fix)
+     - Wurm-Rotation folgt jetzt der DOMINANTEN Grabrichtung: die 4px-
+       Stufenspruenge der Gelaendekante kippen eine waagerechte Bewegung
+       nicht mehr schraeg. Damit ist der frueher gelegentlich flakey
+       REVISION-6-Check "Wurm graebt waagerecht" deterministisch gruen.
+  5) REGRESSION
+     - 24 Knoten / 23 Linien, AUTO aus, Save v6, GLUCOSE_PACE 0.2,
+       21 Pixelart-Slots, 16x16-RootSegment-Hitbox
+
+F5-LAUF
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/f.png --quit-after 25 \
+    -- --seed=20261105 --windowed --rev8-shot-<preset>
+  Presets: pool, acorn, spacing
+  Ergebnis: screenshots/rev8_{pool,acorn,spacing}.png
+
+VISUELLE PRUEFUNG
+  - pool: Skilltree zeigt "Glucose gesamt (alle Eichen) 400.0" bei drei
+    Baeumen mit 90 / 130 / 180 Glucose
+  - acorn: Eichel liegt sichtbar direkt am Stammfuss, Hinweis-Toast aktiv
+  - spacing: grosser + deutlich kleinerer Baum, HUD "Licht 53%",
+    Toast zur Abstandsregel
+
+LIEFERUNG
+  Vollstaendiger Stand inkl. deliverables/waldspiel-REVISION8.zip
+  (Komplett-Paket, project.godot im ZIP-Root, .godot ausgeschlossen,
+  CRC geprueft, frischer Extrakt mit Import + 14/14 Smokes geprueft).
+  Als EIN Commit auf main gepusht (Nachfolger von 50979d5, REVISION 7).
+  Remote-Verifikation: git ls-remote / API-HEAD / Tree / Raw / ZIP-HEAD.
+  Keine Credentials in Commit, Remote-URL, Git-Config oder Repo-Dateien.

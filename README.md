@@ -1,11 +1,23 @@
-# Wald-Regeneration — REVISION 7 (auf GitHub)
+# Wald-Regeneration — REVISION 8 (auf GitHub)
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 24 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · **REVISION 6 ✅ · REVISION 7 ✅ auf GitHub (13/13 Smokes OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · **REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ auf GitHub (14/14 Smokes OK)**
 
-**Wichtig:** REVISION 7 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `bcbd1ba`, REVISION 6). `deliverables/waldspiel-REVISION7.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `REVISION7-ERGEBNIS.md` / `.html`, `REVISION7-TESTPROTOKOLL.txt`, `DECISIONS.md` §73.
+**Wichtig:** REVISION 8 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `50979d5`, REVISION 7). `deliverables/waldspiel-REVISION8.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `REVISION8-ERGEBNIS.md` / `.html`, `REVISION8-TESTPROTOKOLL.txt`, `DECISIONS.md` §74.
+
+---
+
+## REVISION 8 — Glucose-Pool, Eichel-Vorrang, Abstand weltweit
+
+**User-Auftrag:** Skilltree-Glucose aus allen Bäumen zusammensetzen und für alle Bäume dieser Art anwenden; Eicheln direkt unter einem Baum aufsammelbar machen; die Regel gegen ineinander wachsende Bäume darf nicht nur für sichtbare Bäume gelten.
+
+1. **Gemeinsamer Glucose-Pool.** `SkillTree.pooled_glucose()` summiert über **alle Bäume derselben Art** im SceneTree. `can_unlock()`/`unlock()` prüfen und bezahlen aus diesem Pool — auch **ohne ausgewählten Baum**. `spend_pooled()` bucht anteilig und exakt ab. Effekte gelten für **alle** Bäume der Art, inklusive neu keimender (`tree_spawned`). Das Skilltree-UI zeigt „Glucose gesamt (alle Eichen)". Normale Wachstumskosten bleiben pro Baum.
+2. **Eicheln unter Bäumen.** `has_collectible_at()` (rein lesend) gibt einer Eichel in `_unhandled_input` Vorrang vor `_drag_candidate()`; in `_left_click()` steht `collect_at()` jetzt vor Tier, Parasit, Wurzel und Baum. Damit startet kein Baum-Drag mehr, der den Klick schluckt.
+3. **Abstand weltweit.** `neighbor_shade()` übersprang `d < 1.0` — Bäume auf dem **exakt gleichen** 16px-Slot beschatteten sich gar nicht und wuchsen voll aus, typischerweise bei off-screen Keimung. Jetzt bedeutet `d == 0` **maximalen Schatten**; nur ein Duplikat mit derselben `tree_id` wird ignoriert. Zusätzlich verhindert `MIN_TREE_SPACING = 48 px` beim Pflanzen und bei der Keimung, dass überhaupt zwei Bäume auf einem Fleck entstehen. Die Prüfung nutzt **nur den SceneTree**, keine Kamera / keinen Viewport / keine Chunks.
+
+Siehe `REVISION8-ERGEBNIS.html` / `.md`, `REVISION8-TESTPROTOKOLL.txt` und `DECISIONS.md` §74. Abnahme: **14/14 Smokes · 521 OK · 0 Fehler** (neu: `--rev8-smoke`, 59 Checks), Import 0, Skillgen 24/err=0, F5 180/0, 3×25 Render-Frames 0.
 
 ---
 

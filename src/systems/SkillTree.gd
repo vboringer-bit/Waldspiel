@@ -1,15 +1,21 @@
 class_name SkillTree
 extends Node
 ## PHASE 4 (Master-Punkt 6): Skilltree PRO BAUMART, global synchron.
+## REVISION 8: GEMEINSAMER GLUCOSE-POOL PRO BAUMART.
 ##
 ## * `data/skilltrees/oak.tres` enthaelt 24 SkillNodeData-Knoten (15 MVP +
 ##   3 "Dichte Krone" aus R6 + 6 Licht-/Jahreszeit-Mutationen aus R7).
 ##   Jeder Knoten hat Glucose-Kosten, Vorbedingungen und echte Effekte.
-## * Der Freischalt-Zustand liegt NUR hier. Alle Eichen-Instanzen teilen ihn;
-##   beim Freischalten wird `apply_effect(tree_instance)` auf JEDEN Baum
+## * Der Freischalt-Zustand liegt NUR hier. Alle Baeume DERSELBEN ART teilen
+##   ihn; beim Freischalten wird `apply_effect()` auf JEDEN Baum dieser Art
 ##   angewandt (und auf neu spawnende Baeume automatisch).
-## * Glucose bleibt laut Master-Punkt 4.2 PRO BAUMINSTANZ. Die Kosten werden
-##   deshalb vom aktuell ausgewaehlten Baum bezahlt (siehe DECISIONS §64).
+## * Die Glucose fuer den Skilltree ist die SUMME ueber ALLE Baeume dieser
+##   Art - nicht mehr nur der ausgewaehlte Baum. Die Kosten werden anteilig
+##   aus diesem Pool bezahlt, und die gekauften Effekte gelten fuer ALLE
+##   Baeume dieser Art. Ohne Auswahl ist der Kauf trotzdem moeglich, solange
+##   mindestens ein Baum der Art existiert.
+## * Normale Wachstumskosten (Wurzel/Stamm/Blatt/Ziehen) bleiben weiterhin
+##   pro Baum - nur der Skilltree nutzt den gemeinsamen Pool.
 ## * Resistenz-Effekte (Parasiten / Krankheit / Sturm) sind bereits als echte
 ##   Zahlenwerte im Baum gespeichert; die zugehoerige Ereignis-Simulation
 ##   bleibt bewusst PHASE 5.
@@ -40,7 +46,98 @@ func _ready() -> void:
 
 
 func _on_tree_spawned(tree: Node) -> void:
-	_apply_all(tree)
+	if _matches_species(tree):
+		_apply_all(tree)
+
+
+# --------------------------------------------------------------------------- #
+# REVISION 8: Baumart + gemeinsamer Glucose-Pool
+# --------------------------------------------------------------------------- #
+## "oak.tres" -> "oak", damit der Vergleich mit SkillTreeData.species_id
+## ("oak") exakt ist. Ohne Ressourcenpfad (zur Laufzeit erzeugte Resource)
+## wird der Artname als Fallback benutzt.
+func species_key(tree: Node) -> String:
+	if not (tree is BaseTree):
+		return ""
+	var sp := (tree as BaseTree).species
+	if sp == null:
+		return ""
+	var rp := String(sp.resource_path)
+	if rp != "":
+		return rp.get_file().get_basename().to_lower()
+	return String(sp.species_name).to_lower()
+
+
+func skilltree_species_key() -> String:
+	return String(data.species_id).to_lower() if data != null else "oak"
+
+
+func _matches_species(tree: Node) -> bool:
+	var key := species_key(tree)
+	var sid := skilltree_species_key()
+	if key.is_empty():
+		return false
+	if key == sid:
+		return true
+	# Fallback: Artname ("eiche") statt Dateiname ("oak").
+	return sid == "oak" and (key.contains("eich") or key.contains("oak"))
+
+
+func all_trees() -> Array[BaseTree]:
+	var out: Array[BaseTree] = []
+	for n in get_tree().get_nodes_in_group("trees"):
+		if n is BaseTree and is_instance_valid(n):
+			out.append(n as BaseTree)
+	return out
+
+
+## Alle Baeume, deren Art zum Skilltree passt. `payer` ist nur ein Anker:
+## bei null wird automatisch die Art des Skilltrees verwendet. Es werden
+## ALLE Instanzen im SceneTree betrachtet - auch weit ausserhalb des
+## sichtbaren Kameraausschnitts und ausserhalb geladener Chunks.
+func pool_trees(payer: BaseTree = null) -> Array[BaseTree]:
+	var wanted := species_key(payer) if payer != null else ""
+	if wanted.is_empty():
+		wanted = skilltree_species_key()
+	var out: Array[BaseTree] = []
+	for t in all_trees():
+		var key := species_key(t)
+		if key == wanted or (wanted == "oak" and _matches_species(t)):
+			out.append(t)
+	return out
+
+
+## Die im Skilltree verfuegbare Glucose = Summe aller Baeume dieser Art.
+func pooled_glucose(payer: BaseTree = null) -> float:
+	var total := 0.0
+	for t in pool_trees(payer):
+		total += maxf(t.glucose, 0.0)
+	return total
+
+
+func debug_pool_size(payer: BaseTree = null) -> int:
+	return pool_trees(payer).size()
+
+
+## Kosten ANTEILIG aus dem Pool bezahlen. Der letzte Baum traegt den
+## Rundungsrest; damit ist die abgebuchte Summe exakt `cost` und kein Baum
+## wird negativ. Jeder betroffene Baum meldet seine neue Glucose.
+func spend_pooled(payer: BaseTree, cost: float) -> void:
+	var members := pool_trees(payer)
+	var total := pooled_glucose(payer)
+	if members.is_empty() or total <= 0.0:
+		return
+	var budget := minf(maxf(cost, 0.0), total)
+	var paid := 0.0
+	for i in range(members.size()):
+		var t := members[i]
+		var g := maxf(t.glucose, 0.0)
+		var share := budget * (g / total) if i < members.size() - 1 \
+			else budget - paid
+		share = clampf(share, 0.0, g)
+		t.glucose = maxf(0.0, t.glucose - share)
+		paid += share
+		EventBus.glucose_changed.emit(t, t.glucose)
 
 
 # --------------------------------------------------------------------------- #
@@ -76,12 +173,13 @@ func is_available(id: String) -> bool:
 	return true
 
 
-## Master-Punkt 6: `can_unlock()` prueft Kosten + Vorbedingung.
-func can_unlock(id: String, payer: BaseTree) -> bool:
-	if unlocked.has(id) or not is_available(id) or payer == null:
+## REVISION 8: Kosten gegen den GEMEINSAMEN Pool pruefen. Ein ausgewaehlter
+## Baum ist nicht mehr noetig - es genuegt, dass Baeume dieser Art existieren.
+func can_unlock(id: String, payer: BaseTree = null) -> bool:
+	if unlocked.has(id) or not is_available(id):
 		return false
 	var nd := node_data(id)
-	return nd != null and payer.glucose >= nd.cost
+	return nd != null and pooled_glucose(payer) >= nd.cost
 
 
 func cost_of(id: String) -> float:
@@ -124,11 +222,11 @@ func resistance(key: String) -> float:
 	return modifier(key)
 
 
-## Master-Punkt 6: wendet den Effekt eines Knotens auf EINE Baum-Instanz an.
-## Da der Skilltree global synchron ist, werden alle Instanzen auf denselben
-## Stand gebracht; neue Baeume bekommen ihn ueber `tree_spawned` automatisch.
+## Wendet den Gesamtzustand auf EINE Baum-Instanz an. Da der Skilltree
+## global synchron ist, werden alle Instanzen DERSELBEN ART auf denselben
+## Stand gebracht; neue Baeume bekommen ihn ueber `tree_spawned`.
 func apply_effect(_node_id: String, tree_instance: Node) -> void:
-	if not (tree_instance is BaseTree):
+	if not (tree_instance is BaseTree) or not _matches_species(tree_instance):
 		return
 	var t := tree_instance as BaseTree
 	t.skill_glucose_mult = modifier("glucose")
@@ -144,8 +242,6 @@ func apply_effect(_node_id: String, tree_instance: Node) -> void:
 	# PHASE 5: Pilz-Knoten gibt echte Naehrstoffe (+15 % Fotosynthese).
 	t.nutrient_mult = modifier("nutrients")
 	# PHASE-4-FIX: "Kronenwuchs" schenkt die +2 Blaetter sofort sichtbar.
-	# Idempotent, weil apply_effect() bei jedem Refresh / Spielstand-Laden
-	# erneut auf allen Baeumen laeuft.
 	t.apply_skill_leaf_grants(int(roundf(bonus("grant_leaves"))))
 
 
@@ -154,29 +250,30 @@ func _apply_all(tree: Node) -> void:
 		apply_effect(String(id), tree)
 
 
+## REVISION 8: NUR Baeume dieser Art, aber alle - auch off-screen.
 func _apply_to_all() -> void:
-	for tree in get_tree().get_nodes_in_group("trees"):
-		_apply_all(tree)
+	for tree in all_trees():
+		if _matches_species(tree):
+			_apply_all(tree)
 
 
 # --------------------------------------------------------------------------- #
 # Freischalten
 # --------------------------------------------------------------------------- #
-func unlock(id: String, payer: BaseTree) -> bool:
+func unlock(id: String, payer: BaseTree = null) -> bool:
 	if not can_unlock(id, payer):
 		if not is_available(id):
 			EventBus.toast.emit(tr("MSG_SKILL_PREREQ"))
-		elif payer == null:
+		elif pool_trees(payer).is_empty():
 			EventBus.toast.emit(tr("MSG_SKILL_NO_TREE"))
 		else:
 			EventBus.toast.emit(tr("MSG_SKILL_NO_GLUCOSE"))
 		return false
 	var nd := node_data(id)
-	payer.glucose -= nd.cost
+	spend_pooled(payer, nd.cost)
 	unlocked[id] = true
 	_recompute_mods()
-	_apply_to_all()
-	EventBus.glucose_changed.emit(payer, payer.glucose)
+	_apply_to_all()                     # ALLE Baeume dieser Art
 	EventBus.skill_unlocked.emit(id)
 	EventBus.skilltree_changed.emit()
 	EventBus.toast.emit(tr("MSG_SKILL_UNLOCKED") % tr(nd.title_key))

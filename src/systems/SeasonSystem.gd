@@ -46,6 +46,8 @@ var spread_bonus: float = 0.0          # PHASE 4: Skill "Verbreitung"
 ## REVISION 7: Skill "Waldrand" erhoeht die Keimchance zusaetzlich.
 var germination_mult: float = 1.0
 var debug_no_germination: bool = false # Smoke-Test: Eicheln bleiben liegen
+## REVISION 8: Keimung im Smoke deterministisch erzwingen.
+var debug_force_germination: bool = false
 
 var _rng := RandomNumberGenerator.new()
 var _drop_timer := 0.0
@@ -213,6 +215,19 @@ func _hit_rect(e: Dictionary) -> Rect2:
 		float(e.get("y", 0.0)) - 24.0), HIT_SIZE)
 
 
+## REVISION 8: reine Abfrage OHNE Seiteneffekt. Damit kann der
+## InteractionController einer Eichel Vorrang vor Drag/Wurzel/Baum geben,
+## bevor der Klick von einem darueberstehenden Baum geschluckt wird.
+func has_collectible_at(world_pos: Vector2) -> bool:
+	for id in seeds.keys():
+		var e: Dictionary = seeds[id]
+		if bool(e.get("buried", false)):
+			continue
+		if _hit_rect(e).has_point(world_pos):
+			return true
+	return false
+
+
 ## Linksklick: frei liegende Eichel einsammeln. Liefert true bei Treffer.
 func collect_at(world_pos: Vector2) -> bool:
 	for id in seeds.keys():
@@ -350,11 +365,21 @@ func _land(rec: Dictionary) -> void:
 	var sunlight := time_manager.sunlight_factor() if time_manager != null else 1.0
 	var chance := GERMINATION_CHANCE * Global.difficulty_factor("germination") \
 		* (1.0 + spread_bonus) * germination_mult
+	if debug_force_germination:
+		chance = 1.0
 	var can_germinate := (sunlight > 0.4
 		and (time_manager == null or not time_manager.is_winter())
 		and get_tree().get_nodes_in_group("trees").size() < MAX_TREES)
-	if can_germinate and not debug_no_germination and _rng.randf() < chance:
-		interaction.spawn_tree_at(Vector2(x, ground_y), {})
+	# REVISION 8: Kein zweiter Baum auf demselben Fleck - WELTWEIT. Die
+	# Pruefung gilt auch fuer Eicheln ausserhalb des sichtbaren Ausschnitts
+	# (Herbstfall eines off-screen Baums). Bei zu engem Stand bleibt die
+	# Eichel stattdessen als einsammelbares Boden-Item liegen (fallthrough).
+	var spawn_pos := Vector2(x, ground_y)
+	var spacing_ok := interaction == null \
+		or interaction.can_spawn_tree_at(spawn_pos)
+	if can_germinate and spacing_ok and not debug_no_germination \
+			and _rng.randf() < chance:
+		interaction.spawn_tree_at(spawn_pos, {})
 		return
 	# Sonst bleibt die Eichel als einsammelbares Boden-Item liegen.
 	var chunk_idx := int(floor(x / float(WorldGenerator.CHUNK_WIDTH_PX)))
@@ -497,6 +522,16 @@ func debug_drop_acorns(count: int, instant: bool = true) -> void:
 			x = t.global_position.x + float(i * 26 - count * 13)
 			y = t.global_position.y - 48.0
 		spawn_falling_acorn(x, y, instant)
+
+
+## REVISION 8: eine Eichel deterministisch landen lassen (ohne Tween).
+## Liefert true, wenn daraus ein Baum geworden ist. Damit ist pruefbar,
+## dass die Abstandsregel auch bei off-screen Keimung greift.
+func debug_land_at(world_x: float) -> bool:
+	var before := get_tree().get_nodes_in_group("trees").size()
+	_land({"x": world_x,
+		"ground_y": generator.height_smooth_at(world_x)})
+	return get_tree().get_nodes_in_group("trees").size() > before
 
 
 func debug_force_buried_collection() -> int:

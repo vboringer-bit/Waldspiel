@@ -271,6 +271,8 @@ func _on_unlock_pressed(id: String) -> void:
 	var st := SkillTree.instance
 	if st == null or interaction == null:
 		return
+	# REVISION 8: kein ausgewaehlter Baum mehr noetig - der gemeinsame
+	# Pool aller Baeume dieser Art bezahlt den Knoten.
 	if st.unlock(id, interaction.selected_tree):
 		refresh()
 
@@ -300,9 +302,11 @@ func refresh() -> void:
 	var st := SkillTree.instance
 	if st == null:
 		return
+	# REVISION 8: angezeigte Glucose = Summe ALLER Baeume dieser Art.
 	var tree: BaseTree = interaction.selected_tree if interaction != null else null
-	if tree != null:
-		_glucose.text = "%s  %.1f" % [tr("SKILL_UI_GLUCOSE"), tree.glucose]
+	if st.debug_pool_size(tree) > 0:
+		_glucose.text = "%s  %.1f" % [tr("SKILL_UI_GLUCOSE"),
+			st.pooled_glucose(tree)]
 	else:
 		_glucose.text = tr("SKILL_UI_NO_TREE")
 	_count.text = tr("SKILL_UI_COUNT") % st.unlocked_count()
@@ -326,7 +330,7 @@ func refresh() -> void:
 			btn.disabled = true
 			gn.modulate = Color(0.62, 0.64, 0.64)
 		else:
-			var enough := tree != null and tree.glucose >= nd.cost
+			var enough := st.can_unlock(nd.id, tree)
 			state.text = tr("SKILL_UI_AVAILABLE")
 			state.label_settings.font_color = Color(0.90, 0.86, 0.62)
 			btn.text = tr("SKILL_UI_UNLOCK") % int(nd.cost)
@@ -337,6 +341,10 @@ func refresh() -> void:
 # --------------------------------------------------------------------------- #
 # Debug-Hooks (Smoke-Test / Screenshots)
 # --------------------------------------------------------------------------- #
+func debug_glucose_text() -> String:
+	return _glucose.text if _glucose != null else ""
+
+
 func debug_node_count() -> int:
 	var n := 0
 	for c in _graph.get_children():

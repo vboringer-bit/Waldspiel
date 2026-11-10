@@ -118,11 +118,11 @@ SKILL_MUSHROOM_DESC,+10 % Glucose und +15 % Naehrstoffe durch Pilz-Symbiose (PHA
 SKILL_WINTER_TITLE,Winterhaerte,Winter hardiness
 SKILL_WINTER_DESC,+30 % Wasseraufnahme im Winter. Die Winterruhe bleibt bestehen.,+30 % water uptake in winter. Winter dormancy stays in place.
 SKILL_UI_TITLE,SKILLTREE · EICHE,SKILL TREE · OAK
-SKILL_UI_SUBTITLE,24 Mutationen · global fuer alle Eichen · Freischalten kostet Glucose des ausgewaehlten Baums,24 mutations · shared by all oaks · unlocking costs glucose of the selected tree
+SKILL_UI_SUBTITLE,24 Mutationen · fuer alle Eichen · gemeinsamer Glucose-Pool aller Baeume,24 mutations · shared by all oaks · pooled glucose from every tree
 SKILL_UI_CLOSE,Schliessen (T),Close (T)
-SKILL_UI_GLUCOSE,Glucose des ausgewaehlten Baums,Glucose of selected tree
+SKILL_UI_GLUCOSE,Glucose gesamt (alle Eichen),Total glucose (all oaks)
 SKILL_UI_HINT,Mittlere Maustaste = Graph verschieben · Mausrad / +/- = Zoom · Knoten anklicken zum Freischalten,Middle mouse = pan graph · wheel / +/- = zoom · click a node to unlock
-SKILL_UI_NO_TREE,Kein Baum ausgewaehlt - bitte erst einen Baum anklicken.,No tree selected - click a tree first.
+SKILL_UI_NO_TREE,Noch kein Baum vorhanden.,No trees growing yet.
 SKILL_UI_UNLOCK,Freischalten · %d Glucose,Unlock · %d glucose
 SKILL_UI_UNLOCKED,✓ Freigeschaltet,✓ Unlocked
 SKILL_UI_LOCKED,Gesperrt (Vorbedingung),Locked (prerequisite)
@@ -139,7 +139,9 @@ SKILL_UI_BRANCH_SYMBIOSIS,Symbiose,Symbiosis
 MSG_SKILL_UNLOCKED,Mutation freigeschaltet: %s,Mutation unlocked: %s
 MSG_SKILL_NO_GLUCOSE,Nicht genug Glucose fuer diese Mutation.,Not enough glucose for this mutation.
 MSG_SKILL_PREREQ,Erst die Vorbedingungen freischalten.,Unlock the prerequisites first.
-MSG_SKILL_NO_TREE,Waehle erst einen Baum aus.,Select a tree first.
+MSG_SKILL_NO_TREE,Es waechst noch kein Baum - pflanze zuerst eine Eichel.,No tree growing yet - plant an acorn first.
+MSG_TREE_TOO_CLOSE,Hier steht schon ein Baum - zu wenig Platz fuer einen zweiten.,A tree already grows here - not enough space for another one.
+MSG_ACORN_UNDER_TREE,Eicheln direkt unter einem Baum lassen sich jetzt anklicken.,Acorns directly under a tree can now be clicked.
 MSG_SNOW,Es schneit,It is snowing
 MSG_SNOW_STOP,Der Schneefall laesst nach,The snowfall is easing off
 MSG_SNOW_REFILL,Es schneit – die Wasserreservoirs fuellen sich langsam wieder auf.,It is snowing – the water reservoirs are slowly refilling.

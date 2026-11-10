@@ -131,6 +131,12 @@ func _ready() -> void:
 		smoke_r7.setup(_interaction, _skill_tree, _skill_ui, _wildlife,
 			_chunk_manager, _hud, _save, _growth, _water, _time, _season)
 		add_child(smoke_r7)
+	elif args.has("--rev8-smoke"):
+		var smoke_r8 = preload("res://tests/Revision8Smoke.gd").new()
+		smoke_r8.setup(_interaction, _skill_tree, _skill_ui, _wildlife,
+			_chunk_manager, _hud, _save, _growth, _water, _time, _season,
+			_camera)
+		add_child(smoke_r8)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -399,6 +405,43 @@ func _apply_presets(args: PackedStringArray) -> void:
 			_skill_tree.debug_unlock(id)
 		_skill_ui.open()
 		_hud.refresh()
+	elif args.has("--rev8-shot-pool"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(0.85)
+		_camera.teleport_to(Vector2(0.0, 380.0))
+		var pool_a := _rev5_grow_tree(-160.0, 10, 6, 6)
+		var pool_b := _rev5_grow_tree(0.0, 8, 5, 5)
+		var pool_c := _rev5_grow_tree(160.0, 12, 7, 7)
+		pool_a.glucose = 90.0
+		pool_b.glucose = 130.0
+		pool_c.glucose = 180.0
+		_interaction.select_tree(pool_b)
+		_skill_ui.open()
+		_hud.refresh()
+	elif args.has("--rev8-shot-acorn"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.5)
+		_camera.teleport_to(Vector2(0.0, 380.0))
+		var acorn_tree := _rev5_grow_tree(0.0, 6, 4, 4)
+		_season.debug_spawn_seed_at(0.0, false)
+		_interaction.select_tree(acorn_tree)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_ACORN_UNDER_TREE"))
+	elif args.has("--rev8-shot-spacing"):
+		_p5_reset_world()
+		_camera.set_zoom_immediate(1.15)
+		_camera.teleport_to(Vector2(0.0, 400.0))
+		var spacing_big := _rev5_grow_tree(-40.0, 28, 24, 12)
+		var spacing_small := _rev5_grow_tree(20.0, 2, 1, 2)
+		for _i in 40:
+			if not spacing_small.add_trunk_tile():
+				break
+		for _i in 40:
+			if not spacing_small.add_leaf():
+				break
+		_interaction.select_tree(spacing_small)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_TREE_TOO_CLOSE"))
 	elif args.has("--rev7-shot-crowding"):
 		_p5_reset_world()
 		_camera.set_zoom_immediate(1.15)

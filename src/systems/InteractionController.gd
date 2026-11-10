@@ -11,6 +11,10 @@ extends Node
 ## ganz normal per Linksklick eingesammelt.
 const STARTING_SEEDS := 0
 const MAX_TREES := 100
+## REVISION 8: Mindestabstand zwischen zwei Baeumen (3 Tiles). Die Pruefung
+## laeuft ueber ALLE Baeume im SceneTree, also auch weit ausserhalb des
+## sichtbaren Kameraausschnitts und ausserhalb geladener Chunks.
+const MIN_TREE_SPACING := 48.0
 const ACORN_PATH := PixelArt.ACORN
 
 var seed_count: int = STARTING_SEEDS
@@ -115,6 +119,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	var world_pos := camera.get_global_mouse_position()
 	if mb.button_index == MOUSE_BUTTON_LEFT:
 		if mb.pressed:
+			# REVISION 8: Eine Eichel hat IMMER Vorrang - auch wenn ein Baum
+			# darueber steht. Sonst startet `_drag_candidate()` einen Zug am
+			# Stamm und `_left_click()` (mit collect_at) wird nie erreicht.
+			if not carrying and season_system != null \
+					and season_system.has_collectible_at(world_pos):
+				_left_click(world_pos)
+				get_viewport().set_input_as_handled()
+				return
 			if _pending_active:
 				_reset_drag()
 			var candidate := _drag_candidate(world_pos)
@@ -149,15 +161,16 @@ func _left_click(pos: Vector2) -> void:
 		_place_carried(pos)
 		get_viewport().set_input_as_handled()
 		return
+	# REVISION 8: Eicheln ZUERST - auch unter einem Baum, einem Tier oder
+	# einem Pilz. Erst danach kommen die anderen interaktiven Objekte.
+	if season_system != null and season_system.collect_at(pos):
+		get_viewport().set_input_as_handled()
+		return
 	# PHASE 5: Tiere / Ameisenhuegel / Parasiten / Pilze sind interaktiv.
 	if wildlife != null and wildlife.click_at(pos):
 		get_viewport().set_input_as_handled()
 		return
 	if parasite_system != null and parasite_system.click_at(pos):
-		get_viewport().set_input_as_handled()
-		return
-	# PHASE 3: eine herumliegende Eichel aufsammeln (Samen finden).
-	if season_system != null and season_system.collect_at(pos):
 		get_viewport().set_input_as_handled()
 		return
 	# PHASE 2: im MANUELL-Modus hat ein Wurzelklick Vorrang vor der Baum-Auswahl.
@@ -210,6 +223,13 @@ func _right_click(pos: Vector2) -> void:
 # --------------------------------------------------------------------------- #
 func plant_seed_at(pos: Vector2, instant: bool = false,
 		already_paid: bool = false) -> bool:
+	# REVISION 8: Ab 2. Eichel wuerde hier ein Baum entstehen. Steht schon
+	# einer zu nah, wird die Eichel GAR NICHT verbraucht (kein Geister-Samen).
+	# Der 1. Samen gehoert weiterhin dem Vogel-Event.
+	if first_seed_eaten and trees_root.get_child_count() < MAX_TREES \
+			and not can_spawn_tree_at(pos):
+		EventBus.toast.emit(tr("MSG_TREE_TOO_CLOSE"))
+		return false
 	if not already_paid:
 		if seed_count <= 0:
 			return false
@@ -235,6 +255,33 @@ func plant_seed_at(pos: Vector2, instant: bool = false,
 	select_tree(tree)
 	EventBus.toast.emit(tr("MSG_GERMINATED"))
 	return true
+
+
+## REVISION 8: Abstandspruefung gegen ALLE Baeume der Welt. Es wird KEIN
+## Viewport / keine Kamera / kein Chunk benutzt - off-screen Baeume zaehlen
+## genauso wie sichtbare. `pos.x` wird wie beim echten Spawnen auf 16px
+## gerastet, damit die Pruefung exakt dieselbe Position vergleicht.
+func nearest_tree_distance(world_x: float, exclude: BaseTree = null) -> float:
+	var best := 1.0e9
+	for n in get_tree().get_nodes_in_group("trees"):
+		if n == exclude or not (n is BaseTree) or not is_instance_valid(n):
+			continue
+		best = minf(best, absf((n as BaseTree).global_position.x - world_x))
+	return best
+
+
+func can_spawn_tree_at(pos: Vector2, exclude: BaseTree = null) -> bool:
+	var sx := roundf(pos.x / float(WorldGenerator.TILE_SIZE)) \
+		* float(WorldGenerator.TILE_SIZE)
+	return nearest_tree_distance(sx, exclude) >= MIN_TREE_SPACING
+
+
+func debug_nearest_tree_distance(world_x: float) -> float:
+	return nearest_tree_distance(world_x)
+
+
+func debug_min_tree_spacing() -> float:
+	return MIN_TREE_SPACING
 
 
 func spawn_tree_at(pos: Vector2, data: Dictionary) -> BaseTree:
@@ -675,6 +722,26 @@ func clear_trees() -> void:
 ## Debug-Hook: denselben Pfad wie ein echter Linksklick in der Welt testen.
 func debug_click_world(pos: Vector2) -> void:
 	_left_click(pos)
+
+
+## REVISION 8: bildet den ECHTEN Mauspfad aus `_unhandled_input` nach
+## (inkl. Eichel-Vorrang und Drag-Kandidat). Nur fuer Headless-Smokes.
+func debug_click_world_full(pos: Vector2) -> void:
+	if not carrying and season_system != null \
+			and season_system.has_collectible_at(pos):
+		_left_click(pos)
+		return
+	var candidate := _drag_candidate(pos)
+	if not candidate.is_empty():
+		_begin_drag(candidate, pos)
+		_end_drag(pos)
+		_reset_drag()
+		return
+	_left_click(pos)
+
+
+func debug_drag_pending() -> bool:
+	return _pending_active
 
 
 func debug_plant_twice() -> void:

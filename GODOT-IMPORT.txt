@@ -1,11 +1,13 @@
-WALD-REGENERATION — REVISION 7 (auf GitHub) — Godot 4.7.2 stable
+WALD-REGENERATION — REVISION 8 (auf GitHub) — Godot 4.7.2 stable
 ======================================================================
 
 HINWEIS: Dieses Paket enthaelt den vollstaendigen REVISION-7-Stand (ortsfester
 Wurm-Gang, dunklere Würmer, bodenfeste Ameisenhuegel, 24 Skilltree-Knoten,
-Lichtkonkurrenz bei dichtem Stand). R7 ist als vollstaendiger Stand auf
-GitHub gepusht (Nachfolger von bcbd1ba, REVISION 6) und zusaetzlich als
-deliverables/waldspiel-REVISION7.zip eingefroren. Zum Import entweder den
+Lichtkonkurrenz bei dichtem Stand) sowie REVISION 8 (gemeinsamer
+Glucose-Pool, Eicheln unter Baeumen anklickbar, Abstandsregel weltweit).
+R8 ist als vollstaendiger Stand auf GitHub gepusht (Nachfolger von
+50979d5, REVISION 7) und zusaetzlich als
+deliverables/waldspiel-REVISION8.zip eingefroren. Zum Import entweder den
 Repo-Root direkt in Godot oeffnen oder diese ZIP entpacken
 (project.godot liegt jeweils im Root).
 
