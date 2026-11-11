@@ -1,15 +1,29 @@
-# Wald-Regeneration — REVISION 8 (auf GitHub)
+# Wald-Regeneration — PHASE 6 (auf GitHub)
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 24 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · **REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ auf GitHub (14/14 Smokes OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · **PHASE 6 ✅ auf GitHub (15/15 Smokes · 653 OK)**
 
-**Wichtig:** REVISION 8 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `50979d5`, REVISION 7). `deliverables/waldspiel-REVISION8.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `REVISION8-ERGEBNIS.md` / `.html`, `REVISION8-TESTPROTOKOLL.txt`, `DECISIONS.md` §74.
+**Wichtig:** PHASE 6 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `3de6561`, REVISION 8). `deliverables/waldspiel-PHASE6.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE6-ERGEBNIS.md` / `.html`, `PHASE6-TESTPROTOKOLL.txt`, `DECISIONS.md` §75. Die R8-Korrekturen bleiben vollständig gültig.
 
 ---
 
-## REVISION 8 — Glucose-Pool, Eichel-Vorrang, Abstand weltweit
+## PHASE 6 — Bodenchemie, Mykorrhiza, Katastrophen
+
+**User-Auftrag:** „Beginne mit der nächsten Phase und arbeite sie sauber durch". Da §10 des Master-Prompts nur PHASE 0–5 definiert, ist P6 gemäß §13 die dokumentierte Ausarbeitung der Schwierigkeitsgrade aus §4.2 (siehe `DECISIONS.md` §75). Drei Biome, fünf Tierarten, 40–60 Skillnodes, Berge und SFX bleiben bewusst vorbereitete Kandidaten, nicht P6-Scope.
+
+1. **Bodenchemie.** `SoilChemistry.gd` erzeugt pro 64px-Region seed-deterministisch pH 4.2–7.8 und N/P/K. Eine pH-Glocke um 6.0 plus Liebigs Minimum bestimmt die Verfügbarkeit, die bei **SCHWER** als echter Faktor in `BaseTree.environment_parts()` wirkt. Wachstum verbraucht N/P/K, Regen/Humus regenerieren sie; Rechtsklick und HUD zeigen pH/N/P/K/Verfügbarkeit. LEICHT/NORMAL bleiben exakt bei Faktor 1.0.
+2. **Mykorrhiza.** `symbiosis` verbindet alle Bäume innerhalb von 280px **weltweit** (auch off-screen) mit einem ortsfesten Pilznetz. Bei SCHWER ist das Netz nötig: ohne Symbiose 0.55 Nährstofffaktor, mit Netz gradabhängig bis 1.40. Bei LEICHT/NORMAL bleibt der Faktor 1.0.
+3. **Katastrophen.** `DisasterSystem.gd` liefert Dürre, Sturm und Borkenkäfer mit echten Wasser-/Gesundheits-/Glucose-Effekten, skillbasierter Resistenz, Pause/Time-Scale und 300s Grace. NORMAL: seltene Stürme/Käfer; SCHWER: häufige Ereignisse inklusive Dürre; LEICHT: keine. HUD, Toast und prozeduraler Overlay zeigen aktive Ereignisse.
+4. **Speichern & Regression.** `FORMAT_VERSION` bleibt **6**; `soil` / `disasters` / `mycorrhiza` sind optionale Schlüssel. AUTO bleibt aus, `GLUCOSE_PACE` 0.2, 21 Pixelart-Slots, 24/23 Skillnodes, 16px-Hitbox und alle R0–R8-Smokes bleiben grün. Ein seltener Zufalls-Seed-Flake in `Revision1Smoke` wurde durch das robuste −64..64-Höhlenfenster behoben.
+
+Siehe `PHASE6-ERGEBNIS.html` / `.md`, `PHASE6-TESTPROTOKOLL.txt` und `DECISIONS.md` §75. Abnahme: **drei komplette Läufe je 15/15 Smokes · 653 OK · 0 Fehler** (neu: `--p6-smoke`, 132 Checks), Import 0, Skillgen 24/err=0, F5 180/0, 3×25 Render-Frames 0.
+
+---
+
+## REVISION 8 — Glucose-Pool, Eichel-Vorrang, Abstand weltweit (vorheriger Stand)
+
 
 **User-Auftrag:** Skilltree-Glucose aus allen Bäumen zusammensetzen und für alle Bäume dieser Art anwenden; Eicheln direkt unter einem Baum aufsammelbar machen; die Regel gegen ineinander wachsende Bäume darf nicht nur für sichtbare Bäume gelten.
 

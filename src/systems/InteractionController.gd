@@ -207,6 +207,12 @@ func _right_click(pos: Vector2) -> void:
 		select_tree(tree)
 		EventBus.toast.emit(tree.get_info_text())
 		return
+	EventBus.toast.emit(debug_soil_info_at(pos))
+
+
+## PHASE 6: unveraenderte Bodeninfo plus pH/N-P-K/Verfuegbarkeit bei SCHWER.
+## Reine Abfrage ohne Seiteneffekt, damit der Smoke sie direkt pruefen kann.
+func debug_soil_info_at(pos: Vector2) -> String:
 	var gx := int(floor(pos.x / float(WorldGenerator.TILE_SIZE)))
 	var ty := int(floor(pos.y / float(WorldGenerator.TILE_SIZE)))
 	var kind := generator.material_at(gx, ty)
@@ -214,8 +220,19 @@ func _right_click(pos: Vector2) -> void:
 	var cost := GrowthCost.for_tile(generator, gx, ty,
 		Global.difficulty_factor("growth_cost")
 		* (SkillTree.instance.modifier("growth_cost") if SkillTree.instance != null else 1.0))
-	EventBus.toast.emit(tr("MSG_SOIL_INFO") % [
-		GrowthCost.material_name(kind), depth, cost, Global.world_seed])
+	var text := tr("MSG_SOIL_INFO") % [
+		GrowthCost.material_name(kind), depth, cost, Global.world_seed]
+	var chem := SoilChemistry.instance
+	if chem == null:
+		return text
+	if chem.is_active():
+		var npk := chem.npk_at(pos.x)
+		text += " · " + tr("MSG_SOIL_CHEM") % [
+			chem.ph_at(pos.x), int(roundf(npk.x)), int(roundf(npk.y)),
+			int(roundf(npk.z)), chem.availability_at(pos.x)]
+	else:
+		text += " · " + tr("MSG_SOIL_CHEM_OFF")
+	return text
 
 
 # --------------------------------------------------------------------------- #

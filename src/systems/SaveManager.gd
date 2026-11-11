@@ -11,7 +11,8 @@ extends Node
 ## pro Baumart. v4/v3/v2/v1 bleiben lesbar (fehlende Felder = Defaults).
 ## PHASE-4-FIX: fehlt auto_mode, wird MANUELL (false) angenommen.
 ## PHASE 5: Format v6 speichert zusaetzlich Tiere/Futter/Huegel und Parasiten.
-## v5/v4/v3/v2/v1 bleiben lesbar (fehlende Felder = Defaults).
+## PHASE 6: Format bleibt v6; "soil" / "disasters" / "mycorrhiza" sind
+## OPTIONALE Schluessel. v5/v4/v3/v2/v1 bleiben lesbar (Defaults).
 
 const SAVE_PATH := "user://savegame.json"
 const FORMAT_VERSION := 6
@@ -59,6 +60,10 @@ func save_game() -> bool:
 		"skills": SkillTree.instance.to_dict() if SkillTree.instance != null else {},
 		"wildlife": wildlife.to_dict() if wildlife != null else {},
 		"parasites": parasite_system.to_dict() if parasite_system != null else {},
+		# PHASE 6: optionale Zustaende, kein Versionssprung (siehe DECISIONS §75).
+		"soil": SoilChemistry.instance.to_dict() if SoilChemistry.instance != null else {},
+		"disasters": DisasterSystem.instance.to_dict() if DisasterSystem.instance != null else {},
+		"mycorrhiza": Mycorrhiza.instance.to_dict() if Mycorrhiza.instance != null else {},
 		"trees": trees,
 		"world_state": world_state.to_dict() if world_state != null else {},
 	}
@@ -107,6 +112,14 @@ func load_game() -> bool:
 	# damit apply_effect() sofort auf die geladenen Instanzen wirkt.
 	if SkillTree.instance != null:
 		SkillTree.instance.from_dict(data.get("skills", {}))
+	# PHASE 6: optionale Zustaende VOR dem Neuaufbau der Baeume laden.
+	# Fehlende Schluessel = frischer Default, alte v6-Saves bleiben lesbar.
+	if SoilChemistry.instance != null:
+		SoilChemistry.instance.from_dict(data.get("soil", {}))
+	if DisasterSystem.instance != null:
+		DisasterSystem.instance.from_dict(data.get("disasters", {}))
+	if Mycorrhiza.instance != null:
+		Mycorrhiza.instance.from_dict(data.get("mycorrhiza", {}))
 
 	interaction.clear_carrying(false)
 	interaction.clear_trees()

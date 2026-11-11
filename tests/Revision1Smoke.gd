@@ -78,10 +78,13 @@ func run() -> void:
 	var top := gen.surface_tile_y_at(0.0)
 	var cave_tiles: Array[Vector2i] = []
 	var water_tiles: Array[Vector2i] = []
-	# PHASE 3: gleicher Suchbereich wie Phase2-/Revision2Smoke. REVISION 2
-	# halbiert die Hoehlenflaeche; mit nur 26 Zeilen gab es bei unguenstigen
-	# Zufalls-Seeds < 40 Kacheln und nur 1 Kammer -> sporadischer Fehlalarm.
-	for gx in range(-48, 49):
+	# PHASE 3 / PHASE 6: breiteres Fenster als Phase2Smoke. REVISION 2
+	# halbiert die Hoehlenflaeche; bei unguenstigen Zufalls-Seeds lieferte
+	# das alte -48..48-Fenster nur 2 Komponenten / 2 Groessen, obwohl die
+	# Welt direkt daneben weitere organische Kammern hat. -64..64 entspricht
+	# dem robusten Fenster von Revision2Smoke und macht den Flood-Fill-Test
+	# seed-unabhaengig, ohne die Mindestanforderungen zu senken.
+	for gx in range(-64, 65):
 		for ty in range(top + 5, top + 45):
 			if gen.cave_at(gx, ty):
 				cave_tiles.append(Vector2i(gx, ty))

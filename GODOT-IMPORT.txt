@@ -1,13 +1,12 @@
-WALD-REGENERATION — REVISION 8 (auf GitHub) — Godot 4.7.2 stable
+WALD-REGENERATION — PHASE 6 (auf GitHub) — Godot 4.7.2 stable
 ======================================================================
 
-HINWEIS: Dieses Paket enthaelt den vollstaendigen REVISION-7-Stand (ortsfester
-Wurm-Gang, dunklere Würmer, bodenfeste Ameisenhuegel, 24 Skilltree-Knoten,
-Lichtkonkurrenz bei dichtem Stand) sowie REVISION 8 (gemeinsamer
-Glucose-Pool, Eicheln unter Baeumen anklickbar, Abstandsregel weltweit).
-R8 ist als vollstaendiger Stand auf GitHub gepusht (Nachfolger von
-50979d5, REVISION 7) und zusaetzlich als
-deliverables/waldspiel-REVISION8.zip eingefroren. Zum Import entweder den
+HINWEIS: Dieses Paket enthaelt den vollstaendigen REVISION-8-Stand
+(Glucose-Pool, Eichel-Vorrang, weltweite Abstandsregel) sowie PHASE 6:
+pH-/N-P-K-Bodenchemie, Mykorrhiza-Netz und Duerre/Sturm/Borkenkaefer.
+PHASE 6 ist als vollstaendiger Stand auf GitHub gepusht (Nachfolger von
+3de6561, REVISION 8) und zusaetzlich als
+deliverables/waldspiel-PHASE6.zip eingefroren. Zum Import entweder den
 Repo-Root direkt in Godot oeffnen oder diese ZIP entpacken
 (project.godot liegt jeweils im Root).
 
@@ -175,7 +174,9 @@ Reproduzierbare Screenshots (Godot + Xvfb, --seed=20261105 --windowed,
   --rev4-shot-start / -carry / -stages / -water
   --p3-debug-sizes                      (Viewport-/Skalierungs-Debug)
 
-Dokumente: README.md, DECISIONS.md (Abschnitte 1–71),
+Dokumente: README.md, DECISIONS.md (Abschnitte 1–75),
+PHASE6-ERGEBNIS.html/.md, PHASE6-TESTPROTOKOLL.txt,
+REVISION8-ERGEBNIS.html/.md, REVISION8-TESTPROTOKOLL.txt,
 REVISION5-ERGEBNIS.html/.md, REVISION5-TESTPROTOKOLL.txt,
 PHASE5-ERGEBNIS.html/.md (vorheriger Stand), PHASE5-TESTPROTOKOLL.txt
 sowie die historischen
@@ -185,7 +186,8 @@ funktionieren offline.
 
 Hinweis: user://savegame.json liegt NICHT im ZIP, sondern im
 Godot-Benutzerdatenordner und wird beim ersten Speichern angelegt.
-REVISION 5 ist abgeschlossen; PHASE 5 bleibt als vorheriger Stand erhalten.
-Sturm-/Duerr-/Borkenkaefer-Ereignisse sowie
-pH-/N-P-K-/Mykorrhiza-Simulation bleiben der spaeteren "vollen Simulation"
-(Master-Punkt 4.2) vorbehalten; es wurde keine PHASE 6 begonnen.
+REVISION 8 ist abgeschlossen; alle frueheren Staende bleiben erhalten.
+PHASE 6 implementiert jetzt die "volle Simulation" aus Master-Punkt 4.2:
+LEICHT vereinfacht, NORMAL mit seltenen Ereignissen, SCHWER mit pH/N-P-K,
+Mykorrhiza und haeufigen Katastrophen. Details: DECISIONS.md §75 und
+PHASE6-TESTPROTOKOLL.txt.

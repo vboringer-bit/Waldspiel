@@ -70,6 +70,11 @@ var _p5_parasites: Label
 var _p5_supply: Label
 ## REVISION 7: echtes Licht aus der Nachbarschaft (Lichtkonkurrenz).
 var _p7_light: Label
+## PHASE 6: Bodenzeile (pH/N-P-K/Netz) + aktives Katastrophen-Ereignis.
+## Bewusst als EIGENE Zeilen: "Versorgung" (R5) und "Licht" (R7) bleiben
+## unveraendert erhalten und werden nicht verdrängt.
+var _p6_soil: Label
+var _p6_event: Label
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
@@ -232,6 +237,12 @@ func _build_widgets() -> void:
 	_p5_supply.modulate = Color(0.74, 0.88, 0.70, 1.0)
 	_p7_light = _label("", _small)
 	_p7_light.modulate = Color(0.90, 0.84, 0.58, 1.0)
+	_p6_soil = _label("", _small)
+	_p6_soil.name = "Phase6Soil"
+	_p6_soil.modulate = Color(0.76, 0.88, 0.68, 1.0)
+	_p6_event = _label("", _small)
+	_p6_event.name = "Phase6Event"
+	_p6_event.modulate = Color(0.92, 0.78, 0.62, 1.0)
 
 	_hint = _label("", _small)
 	_toast_label = _label("", _settings)
@@ -369,6 +380,11 @@ func _connect() -> void:
 	EventBus.fungus_patch_spawned.connect(func(_v): refresh())
 	EventBus.seed_planted_remote.connect(func(_v): refresh())
 	EventBus.game_loaded.connect(func(): refresh())
+	# PHASE 6: Boden / Netz / Ereignisse aktualisieren die zwei neuen Zeilen.
+	EventBus.soil_changed.connect(func(_r): refresh())
+	EventBus.mycorrhiza_changed.connect(func(_n): refresh())
+	EventBus.disaster_started.connect(func(_k, _d): refresh())
+	EventBus.disaster_ended.connect(func(_k): refresh())
 
 
 # --------------------------------------------------------------------------- #
@@ -423,22 +439,27 @@ func _layout() -> void:
 	_season_bar.size = Vector2(300.0, 16.0)
 
 	_p5_panel.position = Vector2(20.0, 24.0)
-	_p5_panel.size = Vector2(310.0, 198.0)
+	_p5_panel.size = Vector2(360.0, 250.0)
 	_p5_title.position = Vector2(36.0, 30.0)
 	_p5_health.position = Vector2(36.0, 58.0)
 	_p5_health_bar.position = Vector2(36.0, 82.0)
-	_p5_health_bar.size = Vector2(278.0, 10.0)
+	_p5_health_bar.size = Vector2(328.0, 10.0)
 	_p5_food.position = Vector2(36.0, 100.0)
-	_p5_wildlife.position = Vector2(170.0, 100.0)
+	_p5_wildlife.position = Vector2(200.0, 100.0)
 	_p5_parasites.position = Vector2(36.0, 122.0)
 	_p5_supply.position = Vector2(36.0, 146.0)
 	_p7_light.position = Vector2(36.0, 168.0)
+	# PHASE 6: zwei neue Zeilen, ohne die R5/R7-Zeilen zu verschieben.
+	_p6_soil.position = Vector2(36.0, 192.0)
+	_p6_soil.size = Vector2(330.0, 22.0)
+	_p6_event.position = Vector2(36.0, 216.0)
+	_p6_event.size = Vector2(330.0, 22.0)
 
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
 	_hint.position = Vector2(24.0, y - 30.0)
-	# PHASE 5: Toast unter das neue Oekologie-Panel legen.
-	_toast_label.position = Vector2(0.0, 214.0)
+	# PHASE 6: Toast unter das erweiterte Oekologie-Panel legen.
+	_toast_label.position = Vector2(0.0, 282.0)
 	_toast_label.size = Vector2(vp.x, 44.0)
 
 
@@ -453,7 +474,7 @@ func refresh_texts() -> void:
 		_seed_icon.tooltip_text = tr("HUD_ACORN_TIP")
 	_skill_button.text = tr("HUD_SKILLTREE")
 	if _p5_title != null:
-		_p5_title.text = tr("HUD_PHASE5")
+		_p5_title.text = tr("HUD_PHASE6")
 	_save_button.text = tr("UI_SAVE")
 	_load_button.text = tr("UI_LOAD")
 	_water_caption.text = tr("HUD_WATER")
@@ -492,6 +513,7 @@ func refresh() -> void:
 	_lang_button.text = Global.locale.to_upper()
 	_refresh_reservoir_label(tree)
 	_refresh_p5_panel()
+	_refresh_p6_panel()
 
 
 func _refresh_p5_panel() -> void:
@@ -549,6 +571,59 @@ func _refresh_p5_panel() -> void:
 		var light_state := "LIGHT_LIMIT_OK" if light_pct >= 99 \
 			else "LIGHT_LIMIT_CROWD"
 		_p7_light.text = tr("HUD_LIGHT") % [light_pct, tr(light_state)]
+
+
+## PHASE 6: Welche Welt-X-Position zeigt die Bodenzeile? Bevorzugt der
+## ausgewaehlte Baum, sonst die Kameramitte. Reine Abfrage, kein Seiteneffekt.
+func _p6_probe_x() -> float:
+	if interaction != null and interaction.selected_tree != null:
+		return interaction.selected_tree.global_position.x
+	var cam := get_viewport().get_camera_2d()
+	if cam != null:
+		return cam.global_position.x
+	return 0.0
+
+
+func _refresh_p6_panel() -> void:
+	if _p6_soil == null:
+		return
+	var chem := SoilChemistry.instance
+	var net := Mycorrhiza.instance
+	var dis := DisasterSystem.instance
+	var net_key := "MYCORRHIZA_OFF"
+	if net != null and net.symbiosis_active():
+		net_key = "MYCORRHIZA_ON"
+	if chem != null and chem.is_active():
+		var wx := _p6_probe_x()
+		var npk := chem.npk_at(wx)
+		_p6_soil.text = tr("HUD_SOIL_FULL") % [
+			chem.ph_at(wx), int(roundf(npk.x)), int(roundf(npk.y)),
+			int(roundf(npk.z)), tr(net_key)]
+	else:
+		# LEICHT/NORMAL: bewusst KEINE erfundenen pH-Werte (Master 4.2).
+		_p6_soil.text = tr("HUD_SOIL_SIMPLE") % [
+			tr("MSG_SOIL_CHEM_OFF"), tr(net_key)]
+	var ev := tr("HUD_EVENT_QUIET")
+	if dis != null and dis.active_kind != DisasterSystem.Kind.NONE:
+		var name_key := "DISASTER_DROUGHT"
+		match dis.active_kind:
+			DisasterSystem.Kind.STORM: name_key = "DISASTER_STORM"
+			DisasterSystem.Kind.BEETLE: name_key = "DISASTER_BEETLE"
+		ev = tr("HUD_EVENT_ACTIVE") % [tr(name_key),
+			int(ceilf(dis.time_left))]
+	_p6_event.text = tr("HUD_EVENT") % [ev]
+
+
+func debug_soil_text() -> String:
+	return _p6_soil.text if _p6_soil != null else ""
+
+
+func debug_event_text() -> String:
+	return _p6_event.text if _p6_event != null else ""
+
+
+func debug_phase6_title() -> String:
+	return _p5_title.text if _p5_title != null else ""
 
 
 func debug_supply_text() -> String:

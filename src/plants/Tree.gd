@@ -337,13 +337,32 @@ func grow_part(part: String) -> bool:
 	if not can_grow(part):
 		return false
 	# PHASE-4-FIX: nur bei ECHTEM Zuwachs true zurueckgeben.
+	var ok := false
 	if part == "root":
-		return add_root()
-	if part == "leaf":
-		return add_leaf()
-	if part == "trunk":
-		return add_trunk_tile()
-	return false
+		ok = add_root()
+	elif part == "leaf":
+		ok = add_leaf()
+	elif part == "trunk":
+		ok = add_trunk_tile()
+	if ok:
+		_consume_soil(part)
+	return ok
+
+
+## PHASE 6: echtes Wachstum entzieht der Region der Wurzelspitze N/P/K.
+## Bei LEICHT/NORMAL ist SoilChemistry.consume() ein No-Op -> R0-R8 bleibt
+## bitgenau unveraendert. from_dict()/Skill-Blattgrants rufen add_* direkt
+## auf und verbrauchen deshalb beim Laden absichtlich nichts.
+func _consume_soil(part: String) -> void:
+	var chem := SoilChemistry.instance
+	if chem == null or not chem.is_active():
+		return
+	var wx := global_position.x
+	if part == "root" and not root_segments.is_empty():
+		var seg = root_segments[root_segments.size() - 1]
+		wx = seg.world_pos().x
+	var amount := 0.90 if part == "root" else (0.55 if part == "leaf" else 0.45)
+	chem.consume(wx, amount)
 
 
 ## PHASE-4-FIX: "Kronenwuchs" gibt die +2 Blaetter SOFORT sichtbar.
@@ -1070,11 +1089,23 @@ func environment_parts(p_sunlight: float = -1.0) -> Dictionary:
 	var sun := p_sunlight if p_sunlight >= 0.0 else last_sunlight
 	var w := clampf((water - 8.0) / 72.0, 0.0, 1.0)
 	var s := clampf(sun, 0.0, 1.25)
-	var n := clampf(soil_fertility() * nutrient_mult, 0.15, 1.35)
+	# PHASE 6: Bei LEICHT/NORMAL sind beide Faktoren EXAKT 1.0. Nur SCHWER
+	# blendet pH/N-P-K (soil_factor_at) und das Mykorrhiza-Netz ein.
+	var soil_factor := 1.0
+	var myco_factor := 1.0
+	var chem := SoilChemistry.instance
+	if chem != null:
+		soil_factor = chem.soil_factor_at(global_position.x)
+	var net := Mycorrhiza.instance
+	if net != null:
+		myco_factor = net.nutrient_bonus(self)
+	var n := clampf(soil_fertility() * nutrient_mult * soil_factor
+		* myco_factor, 0.15, 1.35)
 	# Quadratische Wurzelkurve: 1 Wurzel = 0.24, 18 Wurzeln = 1.0.
 	var r := clampf(sqrt(float(maxi(root_count, 1)) / 18.0), 0.12, 1.0)
 	return {
 		"water": w, "sun": s, "nutrients": n, "roots": r,
+		"soil": soil_factor, "mycorrhiza": myco_factor,
 		"total": clampf(w * s * n * r, 0.0, 1.30),
 	}
 
@@ -1083,12 +1114,24 @@ func environment_factor(p_sunlight: float = -1.0) -> float:
 	return float(environment_parts(p_sunlight)["total"])
 
 
+## PHASE-6-Debug: Rohfaktoren der neuen Bodensimulation.
+func debug_soil_factor() -> float:
+	return float(environment_parts()["soil"])
+
+
+func debug_mycorrhiza_factor() -> float:
+	return float(environment_parts()["mycorrhiza"])
+
+
 # --------------------------------------------------------------------------- #
 # Simulation
 # --------------------------------------------------------------------------- #
-## REVISION 5: glucose += leaves * efficiency * growth * difficulty * skill
-##   * GLUCOSE_PACE * environment_factor(sunlight) * dt
-## Sonne, Wasser, Naehrstoffe und Wurzelmasse wirken jetzt MULTIPLIKATIV.
+## REVISION 5 / PHASE 6: glucose += leaves * efficiency * growth
+##   * difficulty * skill * GLUCOSE_PACE * environment_factor(sunlight) * dt
+## Die Stöchiometrie 6CO2 + 6H2O -> C6H12O6 + 6O2 bleibt bewusst als
+## vereinfachter Faktor in photosynth. efficiency + environment_factor()
+## zusammengefasst; Sonne, Wasser, pH/N-P-K, Mykorrhiza und Wurzelmasse
+## wirken MULTIPLIKATIV. Kein Tag/Nacht-Zyklus (Master-Punkt 5).
 ## Ein Baum mit einer winzigen Wurzel produziert nur noch ~1/4 der Glucose
 ## eines gut durchwurzelten Baums; zusaetzlich ist das Grundtempo 5x langsamer.
 func photosynthesize(dt: float, sunlight: float = 1.0,

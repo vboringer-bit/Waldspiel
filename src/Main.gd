@@ -25,6 +25,9 @@ extends Node2D
 @onready var _forest_health: ForestHealth = $Systems/ForestHealth
 @onready var _wildlife: WildlifeSystem = $World/Wildlife
 @onready var _parasites: ParasiteSystem = $World/Parasites
+@onready var _mycorrhiza: Mycorrhiza = $World/Mycorrhiza
+@onready var _soil: SoilChemistry = $Systems/SoilChemistry
+@onready var _disasters: DisasterSystem = $Systems/DisasterSystem
 
 var _last_fit: Vector2i = Vector2i.ZERO
 
@@ -45,6 +48,10 @@ func _ready() -> void:
 	var state := _chunk_manager.world_state
 	_growth.setup(_chunk_manager.generator, _time)
 	_water.setup(state, _chunk_manager.generator, _time)
+	# PHASE 6: Bodenchemie, Mykorrhiza-Netz und Katastrophen.
+	_soil.setup(_chunk_manager.generator, _time, Global.world_seed)
+	_mycorrhiza.setup(_chunk_manager.generator, _time, _skill_tree)
+	_disasters.setup(_time, _water, _skill_tree, _soil)
 	_forest_health.setup(_wildlife, _parasites, _skill_tree)
 	_wildlife.setup(_chunk_manager.generator, _trees, _camera, _time,
 		_season, _interaction, _skill_tree, _forest_health, _parasites)
@@ -137,6 +144,12 @@ func _ready() -> void:
 			_chunk_manager, _hud, _save, _growth, _water, _time, _season,
 			_camera)
 		add_child(smoke_r8)
+	elif args.has("--p6-smoke"):
+		var smoke6 = preload("res://tests/Phase6Smoke.gd").new()
+		smoke6.setup(_interaction, _chunk_manager, _hud, _save, _growth,
+			_water, _time, _season, _wildlife, _skill_tree, _soil,
+			_mycorrhiza, _disasters, _camera)
+		add_child(smoke6)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -216,6 +229,57 @@ func _apply_presets(args: PackedStringArray) -> void:
 			" scale=", get_tree().root.content_scale_factor,
 			" mode=", get_tree().root.content_scale_mode,
 			" aspect=", get_tree().root.content_scale_aspect)
+
+	# --- PHASE 6: Bodenchemie, Pilznetz, Katastrophen --------------------------
+	if args.has("--p6-shot-chemistry"):
+		_p5_reset_world()
+		Global.set_difficulty(Global.Difficulty.SCHWER)
+		_soil.reset(Global.world_seed)
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 500.0))
+		_soil.debug_set_all(-192.0, 6.0, 92.0, 88.0, 90.0)
+		_soil.debug_set_all(192.0, 4.4, 22.0, 18.0, 20.0)
+		var chem_tree := _rev5_grow_tree(-192.0, 16, 18, 8)
+		_interaction.select_tree(chem_tree)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_SOIL_CHEM") % [
+			_soil.debug_ph(-192.0), int(_soil.debug_npk(-192.0).x),
+			int(_soil.debug_npk(-192.0).y), int(_soil.debug_npk(-192.0).z),
+			_soil.debug_availability(-192.0)])
+	elif args.has("--p6-shot-myco"):
+		_p5_reset_world()
+		Global.set_difficulty(Global.Difficulty.SCHWER)
+		_soil.reset(Global.world_seed)
+		_camera.set_zoom_immediate(1.05)
+		_camera.teleport_to(Vector2(0.0, 470.0))
+		var myco_a := _rev5_grow_tree(-200.0, 14, 16, 7)
+		var myco_b := _rev5_grow_tree(0.0, 14, 16, 7)
+		var myco_c := _rev5_grow_tree(200.0, 12, 14, 6)
+		_skill_tree.debug_unlock("root_efficiency")
+		_skill_tree.debug_unlock("leaf_efficiency")
+		_skill_tree.debug_unlock("symbiosis")
+		_skill_tree.debug_unlock("mushroom_node")
+		_skill_tree.debug_unlock("humus_net")
+		_mycorrhiza.debug_force_rebuild()
+		_interaction.select_tree(myco_b)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_MYCORRHIZA_ACTIVE"))
+	elif args.has("--p6-shot-disaster"):
+		_p5_reset_world()
+		Global.set_difficulty(Global.Difficulty.SCHWER)
+		_soil.reset(Global.world_seed)
+		_time.set_paused(false)
+		_time.set_time_scale(1.0)
+		_camera.set_zoom_immediate(1.0)
+		_camera.teleport_to(Vector2(0.0, 380.0))
+		var dis_a := _rev5_grow_tree(-220.0, 16, 14, 8)
+		var dis_b := _rev5_grow_tree(0.0, 18, 16, 9)
+		var dis_c := _rev5_grow_tree(220.0, 14, 12, 7)
+		_disasters.debug_force(DisasterSystem.Kind.STORM)
+		_disasters.debug_tick(2.0)
+		_interaction.select_tree(dis_b)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_DISASTER_STORM"))
 	# --- PHASE 5: Tiere, Symbiose, Parasiten ---------------------------------
 	if args.has("--phase5-shot-wildlife"):
 		_p5_reset_world()
@@ -708,6 +772,9 @@ func _p5_freeze() -> void:
 	_wildlife.set_process(false)
 	_parasites.set_process(false)
 	_parasites.debug_set_spawns_frozen(true)
+	_soil.set_process(false)
+	_mycorrhiza.set_process(false)
+	_disasters.set_process(false)
 
 
 func _p5_reset_world() -> void:
@@ -722,6 +789,9 @@ func _p5_reset_world() -> void:
 	_parasites.debug_sync_fungi()
 	_time.debug_set_season(TimeManager.Season.SPRING, 1, 0.20)
 	_forest_health.recompute()
+	_soil.reset(Global.world_seed)
+	_disasters.from_dict({})
+	_mycorrhiza.debug_force_rebuild()
 	_hud.refresh()
 
 

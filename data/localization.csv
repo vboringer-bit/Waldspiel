@@ -205,3 +205,21 @@ HUD_LIGHT,Licht %d%% · %s,Light %d%% · %s
 LIGHT_LIMIT_CROWD,Nachbarbaum beschattet,Shaded by a neighbour
 LIGHT_LIMIT_OK,volles Licht,Full light
 MSG_CROWD_BLOCKED,Zu wenig Licht: ein Nachbarbaum beschattet diesen Baum.,Not enough light: a neighbouring tree shades it.
+HUD_SOIL_FULL,pH %.1f · N %d · P %d · K %d · %s,pH %.1f · N %d · P %d · K %d · %s
+HUD_SOIL_SIMPLE,Boden einfach · %s · %s,Simple soil · %s · %s
+HUD_EVENT,Ereignis: %s,Event: %s
+HUD_EVENT_QUIET,keines,none
+HUD_EVENT_ACTIVE,%s (%d s),%s (%d s)
+MYCORRHIZA_ON,Netz an,Net on
+MYCORRHIZA_OFF,Netz aus,Net off
+DISASTER_DROUGHT,Duerre,Drought
+DISASTER_STORM,Sturm,Storm
+DISASTER_BEETLE,Borkenkaefer,Bark beetles
+MSG_DISASTER_DROUGHT,Duerre! Der Boden trocknet aus und die Baeume verlieren Wasser.,Drought! The soil dries out and trees lose water.
+MSG_DISASTER_STORM,Sturm! Aeste und Staemme verlieren Gesundheit.,Storm! Branches and trunks lose health.
+MSG_DISASTER_BEETLE,Borkenkaefer! Sie entziehen den Baeumen Glucose.,Bark beetles! They drain glucose from the trees.
+MSG_DISASTER_OVER,Das Ereignis ist vorbei.,The event is over.
+MSG_SOIL_CHEM,pH %.1f · N %d · P %d · K %d · Verfuegbarkeit %.2f,pH %.1f · N %d · P %d · K %d · availability %.2f
+MSG_SOIL_CHEM_OFF,Bodenchemie: nur bei SCHWER aktiv,Soil chemistry: active on hard only
+MSG_MYCORRHIZA_ACTIVE,Pilznetz aktiv: verbundene Baeume teilen Naehrstoffe.,Fungal network active: linked trees share nutrients.
+HUD_PHASE6,PHASE 6 · Boden & Klima,PHASE 6 · Soil & Climate

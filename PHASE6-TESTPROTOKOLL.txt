@@ -1,0 +1,109 @@
+WALD-REGENERATION — PHASE 6: BODENCHEMIE, MYKORRHIZA, KATASTROPHEN
+Godot 4.7.2 stable · 2026-11-11 · Nachfolger von 3de6561 (REVISION 8)
+======================================================================
+
+SCOPE (dokumentierte Annahme nach Master-Punkt §13; DECISIONS.md §75)
+  Der Master-Prompt definiert in §10 nur PHASE 0-5. PHASE 6 ist die bisher
+  zurueckgestellte volle Simulation der Schwierigkeitsgrade aus §4.2:
+  LEICHT vereinfacht, NORMAL halb-realistisch, SCHWER mit pH/N-P-K,
+  Mykorrhiza und haeufigen Katastrophen. Nicht im Scope: 3 Biome, 5 Tierarten,
+  40-60 Skillnodes, begehbare Berge, Tag/Nacht, SFX.
+
+NEUE QUELLEN
+  src/systems/SoilChemistry.gd   pH/N-P-K, 64px-Regionen, Verbrauch/Regeneration,
+                                  ortsfester Boden-Overlay, Debug-Hooks
+  src/systems/Mycorrhiza.gd      weltweites Pilznetz (280px, top_level z=38),
+                                  0.55 Malus ohne Netz bei SCHWER, Bonus mit Netz
+  src/systems/DisasterSystem.gd  Duerre/Sturm/Borkenkaefer, Grace 300s,
+                                  Skill-Resistenz, Pause/TimeScale, Overlay
+  src/autoload/EventBus.gd       soil_changed / mycorrhiza_changed /
+                                  disaster_started / disaster_ended
+  src/Main.tscn / src/Main.gd    drei Nodes, Setup, Freeze/Reset, --p6-smoke,
+                                  Presets --p6-shot-chemistry|myco|disaster
+  src/plants/Tree.gd             soil_factor/myco_factor in environment_parts(),
+                                  _consume_soil() bei echtem grow_part()
+  src/systems/InteractionController.gd  debug_soil_info_at() im Rechtsklick
+  src/ui/HUD.gd                 Panel "PHASE 6 · Boden & Klima", Bodenzeile,
+                                  Ereigniszeile, DE/EN, Debug-Hooks
+  src/systems/SaveManager.gd     optionale Schluessel soil/disasters/mycorrhiza
+                                  in FORMAT_VERSION 6 (alte Saves lesbar)
+  src/autoload/Global.gd         nur Kommentare; Faktoren/Schalter unveraendert
+  data/localization.csv          225 Zeilen inkl. 18 P6-Schluesseln
+  tests/Phase6Smoke.gd           132 Checks
+  tests/Revision1Smoke.gd        robustes Hoehlenfenster -64..64 (Flake-Fix)
+  tools/build_phase6_report.py   selbst enthaltener MD/HTML-Bericht
+
+IMPORT / GENERATOR
+  $G --headless --path . --import
+  -> exit 0, 0 SCRIPT ERROR / Parse Error / ERROR
+  $G --headless --path . --script tools/generate_skilltree.gd --quit-after 5
+  -> [SKILLTREE] res://data/skilltrees/oak.tres | Knoten=24 | err=0
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  Fuer reproduzierbare Laeufe: --seed=20261105 / 20261106 / 20261107.
+  Ausnahme phase1: OHNE --seed, weil Phase1Smoke bewusst einen zufaelligen
+  Neustart-Seed verlangt. Drei komplette Final-Laeufe:
+    phase0   3 OK     phase1  26 OK    phase2  25 OK
+    rev1    32 OK     rev2    27 OK    p3      56 OK
+    rev3    20 OK     rev4    32 OK    phase4  63 OK
+    phase5  58 OK     rev5    35 OK    rev6    34 OK
+    rev7    51 OK     rev8    59 OK    p6     132 OK
+    --------------------------------------------------
+    TOTAL  653 OK / 0 FEHLER / BAD=0 je Lauf (A, B, C)
+
+  P6-SMOKE SCHWERPUNKTE
+    1) LEICHT ohne pH/Katastrophen, NORMAL nur Sturm/Kaefer,
+       SCHWER alle Schalter + disaster_rate 2.0
+    2) pH-Glocke um 6.0, Liebigs Minimum, seed-deterministische Regionen
+    3) N/P/K-Verbrauch bei echtem Wachstum NUR bei SCHWER,
+       Humus-/Regen-Regeneration, Rechtsklick-Bodeninfo
+    4) Symbiose-Skill, 2 Netzverbindungen bei 3 Baeumen,
+       off-screen Verbindung bei x=5008/5200, Malus/Bonus in environment_parts
+    5) Sturm/Duerre/Borkenkaefer mit echten Wasser-/Health-/Glucose-Effekten,
+       Holz-Haerte/Parasiten-Resistenz halbieren den Schaden,
+       Grace, Pause, HUD, DE/EN
+    6) Save/Load v6 mit optionalen P6-Schluesseln, alte Defaults lesbar
+    7) Regression: AUTO aus, Save v6, GLUCOSE_PACE 0.2, 21 Pixelart-Slots,
+       24/23 Skillnodes, 16x16-Hitbox, drei modulare P6-Dateien
+
+  ROBUSTHEIT
+    Zufalls-Seed 1722408048 fand im alten Revision1Smoke-Fenster -48..48 nur
+    2 Hoehlen-Komponenten/2 Groessen. Neues Fenster -64..64 (wie R2-Smoke)
+    liefert 15/8; Mindestanforderungen >=3 bleiben unveraendert, kein
+    Eingriff in WorldGenerator. Vier Seeds einzeln gegenentestet: 32/32 OK.
+
+F5-LAUF
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/f.png --quit-after 25 \
+    -- --seed=20261105 --windowed --p6-shot-<preset>
+  Presets: chemistry, myco, disaster
+  Ergebnis: screenshots/p6_{chemistry,myco,disaster}.png
+
+VISUELLE PRUEFUNG
+  - chemistry: eine Eiche, Bodenbaender sichtbar, HUD "pH 6.0 · N 92 ·
+    P 88 · K 90 · Netz aus", Toast mit Verfuegbarkeit 1.20
+  - myco: drei Eichen, tan-farbene Hyphen verbinden die Stammbasen,
+    HUD "Netz an", Toast "Pilznetz aktiv"
+  - disaster: drei Eichen, Sturm-Toast, HUD "Ereignis: Sturm (22 s)",
+    dezenter Overlay; Skill-Resistenz im Smoke messbar
+
+BERICHT
+  python3 tools/build_phase6_report.py
+  -> [P6-REPORT] md + html | Bilder: 3 | Snippets: 11 | Checks: 12
+  PHASE6-ERGEBNIS.html/.md: 3 Data-URI-Bilder, 0 externe Referenzen
+
+LIEFERUNG
+  python3 tools/build_zip.py PHASE6
+  -> deliverables/waldspiel-PHASE6.zip, project.godot im ZIP-Root,
+     .godot / ZIPs / Credentials ausgeschlossen, CRC-Test OK
+  Frischer ZIP-Extrakt: --headless --import (0 Fehler) + 15/15 Smokes.
+  Entsprechend der fortgeltenden Freigabe "Ja, alles inkl. GitHub-Push"
+  als EIN Commit auf main gepusht. PAT liegt ausserhalb des Repos in
+  /home/user/.waldspiel_github_pat (600); Askpass in
+  /home/user/.waldspiel_askpass.sh (700). Kein Token in Commit,
+  Remote-URL, Git-Config, gestagtem Diff oder Projektdatei.

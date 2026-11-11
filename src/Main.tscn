@@ -21,6 +21,9 @@
 [ext_resource type="Script" path="res://src/systems/ForestHealth.gd" id="19"]
 [ext_resource type="Script" path="res://src/systems/WildlifeSystem.gd" id="20"]
 [ext_resource type="Script" path="res://src/systems/ParasiteSystem.gd" id="21"]
+[ext_resource type="Script" path="res://src/systems/SoilChemistry.gd" id="22"]
+[ext_resource type="Script" path="res://src/systems/Mycorrhiza.gd" id="23"]
+[ext_resource type="Script" path="res://src/systems/DisasterSystem.gd" id="24"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -59,6 +62,12 @@ script = ExtResource("20")
 z_index = 45
 script = ExtResource("21")
 
+[node name="Mycorrhiza" type="Node2D" parent="World"]
+top_level = true
+z_index = 38
+z_as_relative = false
+script = ExtResource("23")
+
 [node name="WorldCamera" type="Camera2D" parent="World"]
 position = Vector2(0, 300)
 script = ExtResource("5")
@@ -85,6 +94,12 @@ script = ExtResource("17")
 
 [node name="ForestHealth" type="Node" parent="Systems"]
 script = ExtResource("19")
+
+[node name="SoilChemistry" type="Node2D" parent="Systems"]
+script = ExtResource("22")
+
+[node name="DisasterSystem" type="Node2D" parent="Systems"]
+script = ExtResource("24")
 
 [node name="Interaction" type="Node" parent="."]
 script = ExtResource("11")

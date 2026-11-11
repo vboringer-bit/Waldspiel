@@ -70,3 +70,9 @@ signal parasite_removed(tree: Node, kind: int, by: String)
 signal fungus_patch_spawned(tree: Node)
 signal seed_carried(from_pos: Vector2, to_pos: Vector2)
 signal seed_planted_remote(position: Vector2)
+
+# --- PHASE 6: Bodenchemie, Mykorrhiza, Katastrophen --------------------------
+signal soil_changed(region: int)
+signal mycorrhiza_changed(links: int)
+signal disaster_started(kind: int, duration: float)
+signal disaster_ended(kind: int)

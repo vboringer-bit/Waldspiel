@@ -61,10 +61,10 @@ func _resolve_seed() -> void:
 
 ## PHASE 3: alle Schwierigkeits-Modifikatoren an EINEM Ort. NORMAL ist
 ## bewusst die Referenz (1.0), damit P0/P1/P2-Smokes unveraendert bleiben.
-## pH-Wert / N-P-K / Mykorrhiza / Katastrophen gehoeren laut Master-Punkt 4.2
-## zur "vollen Simulation" und bleiben einer spaeteren Ausbaustufe vorbehalten.
-## PHASE 5 nutzt hiervon bereits `parasites` / `disaster_rate` fuer echte
-## Parasiten-Spawns (siehe DECISIONS §70).
+## PHASE 6 nutzt diese Werte jetzt fuer die volle Simulation: SCHWER aktiviert
+## pH/N-P-K (SoilChemistry), Mykorrhiza und haeufige Katastrophen (DECISIONS §75).
+## LEICHT/NORMAL behalten exakt ihre Referenzwerte. PHASE 5 nutzt hiervon
+## bereits `parasites` / `disaster_rate` fuer echte Parasiten-Spawns (§70).
 func difficulty_factor(key: String) -> float:
 	match difficulty:
 		Difficulty.LEICHT:
@@ -101,10 +101,10 @@ func difficulty_factor(key: String) -> float:
 
 
 ## PHASE 3 legt die Schalter fest. PHASE 5 nutzt `parasites` und
-## `disaster_rate` fuer echte Parasiten-Spawns; pH-Wert / N-P-K / Mykorrhiza /
-## Duerrre-Sturm-Borkenkaefer bleiben der spaeteren vollen Simulation
-## vorbehalten. LEICHT: keine Katastrophen, kein pH. NORMAL: Parasiten.
-## SCHWER: alle Schalter an (Ereignis-Simulation spaeter).
+## `disaster_rate` fuer echte Parasiten-Spawns. PHASE 6 verbindet
+## `ph` / `nutrients` / `mycorrhiza` / `disasters` mit echten Systemen.
+## LEICHT: keine Katastrophen, kein pH. NORMAL: seltene Stuerme/Parasiten,
+## noch keine N-P-K-Simulation. SCHWER: alle Schalter an.
 func difficulty_toggle(key: String) -> bool:
 	match difficulty:
 		Difficulty.LEICHT:
