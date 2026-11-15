@@ -30,6 +30,8 @@ func _ready() -> void:
 
 	get_viewport().size_changed.connect(refresh_layout)
 	refresh_layout()
+	# PHASE 7: Himmelston folgt dem aktuellen Biom (sandig / moosig).
+	EventBus.biome_changed.connect(_on_biome_changed)
 
 
 func refresh_layout() -> void:
@@ -40,3 +42,16 @@ func refresh_layout() -> void:
 	_sky_rect.size = size
 	_haze.size = Vector2(720.0, 720.0)
 	_haze.position = Vector2(size.x * 0.72 - 360.0, -180.0)
+
+
+func _on_biome_changed(kind: int, blend: float) -> void:
+	if _sky_rect == null:
+		return
+	var target := Color(1.0, 1.0, 1.0)
+	match kind:
+		WorldGenerator.BiomeKind.TROCKEN:
+			target = Color(1.0, 0.95, 0.84)
+		WorldGenerator.BiomeKind.FEUCHT:
+			target = Color(0.82, 0.91, 0.89)
+	_sky_rect.modulate = Color(1.0, 1.0, 1.0).lerp(target,
+		clampf(maxf(blend, 0.35) if kind != WorldGenerator.BiomeKind.TEMPERIERT else 0.0, 0.0, 1.0))

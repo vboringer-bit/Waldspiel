@@ -153,9 +153,27 @@ func _draw() -> void:
 	_erase_structure_tiles(self)
 	_draw_layers(self)
 	_draw_blobs(self, cave_tiles, 11.0, false)
+	_draw_biome_tint(self)
 
 
 ## DYNAMISCH: vom Kind aufgerufen, nur Wasser.
+## PHASE 7: sandig-heller bzw. moosig-dunkler Bodenquerschnitt.
+## 32 Streifen pro Chunk statt 512 Einzel-Rects. Im temperierten Kern hat
+## biome_tint_at() Alpha 0 -> es wird KEIN einziger Draw-Befehl erzeugt,
+## damit Revision4Smoke.debug_static_draws unveraendert bleibt.
+func _draw_biome_tint(ci: CanvasItem) -> void:
+	const STRIPES := 32
+	var sw := CHUNK_W / float(STRIPES)
+	var bottom := float(WorldGenerator.BOTTOM_TILE_Y * WorldGenerator.TILE_SIZE)
+	for i in range(STRIPES):
+		var wx := float(index) * CHUNK_W + (float(i) + 0.5) * sw
+		var tint := generator.biome_tint_at(wx)
+		if tint.a <= 0.002:
+			continue
+		var top := generator.height_smooth_at(float(index) * CHUNK_W + float(i) * sw)
+		ci.draw_rect(Rect2(float(i) * sw, top, sw + 1.0, bottom - top), tint)
+
+
 func paint_water(ci: CanvasItem) -> void:
 	if generator == null:
 		return

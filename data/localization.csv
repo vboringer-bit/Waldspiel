@@ -223,3 +223,17 @@ MSG_SOIL_CHEM,pH %.1f · N %d · P %d · K %d · Verfuegbarkeit %.2f,pH %.1f · 
 MSG_SOIL_CHEM_OFF,Bodenchemie: nur bei SCHWER aktiv,Soil chemistry: active on hard only
 MSG_MYCORRHIZA_ACTIVE,Pilznetz aktiv: verbundene Baeume teilen Naehrstoffe.,Fungal network active: linked trees share nutrients.
 HUD_PHASE6,PHASE 6 · Boden & Klima,PHASE 6 · Soil & Climate
+HUD_PHASE7,PHASE 7 · Welt & Biome,PHASE 7 · World & Biomes
+HUD_BIOME,Biom: %s · Feuchte %d%%,Biome: %s · moisture %d%%
+BIOME_TROCKEN,Trocken,Dry
+BIOME_TEMPERIERT,Temperiert,Temperate
+BIOME_FEUCHT,Feucht,Wet
+BIOME_TRANSITION,Biom: %s -> %s (%d%%),Biome: %s -> %s (%d%%)
+BIOME_HINT_LEFT,Links: trocken · Rechts: feucht,Left: dry · Right: wet
+MSG_BIOME_DRY,Duerre-Biom: sandiger Boden, weniger Reservoirs und langsamere Bodenwasseraufnahme.,Dry biome: sandy soil, fewer reservoirs and slower soil water uptake.
+MSG_BIOME_WET,Feucht-Biom: moosiger Boden, viele Reservoirs und schnellere Regeneration.,Wet biome: mossy soil, many reservoirs and faster regeneration.
+MSG_BIOME_TEMPERATE,Temperiertes Biom: ausgeglichener Startwald.,Temperate biome: balanced starting forest.
+MSG_BIOME_DISCOVERED,Neues Biom entdeckt: %s,New biome discovered: %s
+MSG_SOIL_BIOME,Biom: %s · Feuchte %d%% · Kosten x%.2f,Biome: %s · moisture %d%% · cost x%.2f
+HUD_BIOME_VISITS,Biom-Wechsel: %d,Biome visits: %d
+MSG_BIOME_EDGES,Drei Biome: links trocken, Mitte temperiert, rechts feucht.,Three biomes: dry on the left, temperate in the middle, wet on the right.

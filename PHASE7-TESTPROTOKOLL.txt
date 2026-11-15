@@ -1,0 +1,118 @@
+WALD-REGENERATION — PHASE 7: DREI BIOME, WELTZONEN, BIOM-FAKTOREN
+Godot 4.7.2 stable · 2026-11-15 · Nachfolger von d0c719c (PHASE 6)
+======================================================================
+
+SCOPE (dokumentierte Annahme nach Master-Punkt §13; DECISIONS.md §76)
+  Der Master-Prompt definiert in §10 nur PHASE 0-5. PHASE 7 ist der erste
+  der in §75 vorbereiteten Kandidaten: die drei Biome aus §3.1 — links
+  TROCKEN, Mitte TEMPERIERT, rechts FEUCHT, Blende ueber 2-3 Chunks.
+  Gemaess §1 ("Baue NICHT alles auf einmal") bleibt es EIN Meilenstein.
+  Nicht im Scope: 5 Tierarten, 40-60 Skillnodes, begehbare Berge,
+  Tag/Nacht (zusaetzlich durch §5/§12 ausgeschlossen), SFX.
+
+NEUE / GEENDERTE QUELLEN
+  src/world/WorldGenerator.gd   BiomeKind bereits vorhanden; neu:
+                                  BIOME_CORE_PX 2048 / BLEND 4096 / FULL 6144,
+                                  biome_blend_at() (Smoothstep + Seed-Noise),
+                                  biome_at(), biome_target_at() und 8 Faktoren
+                                  (Feuchte, Wasser, Kosten, Reservoir-Dichte,
+                                  Kapazitaet, Regeneration, Tint, Namen).
+                                  _raw_reservoir() und reservoir_capacity_at()
+                                  lesen die Biom-Faktoren. Hoehenlinie,
+                                  Hoehlen, 16px-Raster UNVERANDERT.
+  src/systems/BiomeSystem.gd    NEU: Kamera-Tracking weltweit, Signale
+                                  biome_changed / biome_discovered,
+                                  Entdeckungen, Besuche, HUD-Text, Toast,
+                                  DE/EN, optionaler Save-Key.
+  src/systems/GrowthCost.gd     for_tile() * biome_cost_factor_at()
+  src/systems/WaterSystem.gd    rate * biome_moisture_factor_at()
+  src/systems/SoilChemistry.gd  regenerate() pro Region * biome_regen_factor
+  src/systems/SaveManager.gd    optionaler Key "biomes" in FORMAT_VERSION 6
+  src/systems/InteractionController.gd  debug_soil_info_at() nennt Biom,
+                                  Feuchte und Kostenmultiplikator
+  src/ui/HUD.gd                 Panel "PHASE 7 · Welt & Biome", neue
+                                  Biom-Zeile, breiteres Layout, DE/EN
+  src/world/TerrainContours.gd  32 halbtransparente Biom-Streifen / Chunk
+  src/world/TerrainSurface.gd   Oberkanten-Toenung
+  src/background/SkyBackground.gd  Himmel-Toenung ueber modulate
+  src/autoload/EventBus.gd      biome_changed / biome_discovered
+  src/Main.tscn / src/Main.gd   Node Systems/BiomeSystem, setup, --p7-smoke,
+                                  Presets --p7-shot-dry|temperate|wet
+  data/localization.csv          239 Zeilen inkl. 14 P7-Schluesseln
+  tests/Phase7Smoke.gd           130 Checks
+  tools/build_phase7_report.py   selbst enthaltener MD/HTML-Bericht
+
+ZENTRALE INVARIANTE
+  Fuer |x| <= 2048px sind Blende = 0.0 und ALLE Faktoren = 1.0.
+  Der Seed-Noise verformt multiplikativ nur den Uebergang, nie den Kern
+  und nie die voll ausgepraegten Endzonen. Damit bleiben alle R0-R8-/P6-
+  Smokes (Arbeitsbereich |x| <= 1024px) bitgenau unveraendert.
+
+IMPORT / GENERATOR
+  $G --headless --path . --import
+  -> exit 0, 0 SCRIPT ERROR / Parse Error / ERROR
+  $G --headless --path . --script tools/generate_skilltree.gd --quit-after 5
+  -> [SKILLTREE] res://data/skilltrees/oak.tres | Knoten=24 | err=0
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  Fuer reproduzierbare Laeufe: --seed=20261105 / 20261106 / 20261107.
+  Ausnahme phase1: OHNE --seed (Phase1Smoke verlangt Zufalls-Start-Seed).
+  Drei komplette Final-Laeufe:
+    phase0   3 OK     phase1  26 OK    phase2  25 OK
+    rev1    32 OK     rev2    27 OK    p3      56 OK
+    rev3    20 OK     rev4    32 OK    phase4  63 OK
+    phase5  58 OK     rev5    35 OK    rev6    34 OK
+    rev7    51 OK     rev8    59 OK    p6     132 OK
+    p7     130 OK
+    --------------------------------------------------
+    TOTAL  783 OK / 0 FEHLER / BAD=0 je Lauf (A, B, C)
+
+  P7-SMOKE SCHWERPUNKTE (130 Checks)
+    1) Zonen, Grenzen, Smoothstep-Blende, Seed-Determinismus, Symmetrie
+    2) Feuchte 0.15/0.50/0.85 und die fuenf messbaren Faktoren
+    3) Geometrie bitgenau: Hoehen/Hoehlen/Reservoirs/Atlas/Material im
+       Fenster -64..64 Tiles gegen einen zweiten Generator gleichen Seeds;
+       Wurzel kostet im Kern weiter exakt 10 Glucose
+    4) Echte Kosten-, Kapazitaets- und Regenerations-Unterschiede
+    5) Rechtsklick, HUD, Uebergangszonen, Entdeckungen, DE/EN
+    6) Save v6 mit optionalem "biomes"-Key, alte Defaults lesbar
+    7) EventBus-Signal-Integration, stetige Interpolation, Regression:
+       AUTO aus, Save v6, GLUCOSE_PACE 0.2, 21 Slots, 24/23 Skillnodes,
+       16x16-Hitbox, P6-Konstanten, R5/R7-HUD-Zeilen
+
+F5-LAUF
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/frame.png --quit-after 25 \
+    -- --seed=20261105 --windowed --p7-shot-<preset>
+  Presets: dry (x=-8192), temperate (x=0), wet (x=+8192)
+  Ergebnis: screenshots/p7_{dry,temperate,wet}.png
+
+VISUELLE PRUEFUNG
+  - dry: sandig-beiger Himmel und Boden, HUD "Biom: Trocken · Feuchte 15%",
+    Toast "Duerre-Biom: sandiger Boden", drei Eichen
+  - temperate: ausgeglichener Startwald, HUD "Biom: Temperiert · Feuchte 50%"
+  - wet: kuehl-grauer Himmel, moosig-gruene Oberkante, mehr blaue
+    Reservoirs, HUD "Biom: Feucht · Feuchte 85%"
+  Alle drei zeigen "PHASE 7 · Welt & Biome" sowie die erhaltenen R5/R7- und
+  P6-Zeilen (Versorgung, Licht, Boden, Ereignis).
+
+BERICHT
+  python3 tools/build_phase7_report.py
+  -> [P7-REPORT] md + html | Bilder: 3 | Snippets: 12 | Checks: 15
+  PHASE7-ERGEBNIS.html/.md: 3 Data-URI-Bilder, 0 externe Referenzen
+
+LIEFERUNG
+  python3 tools/build_zip.py PHASE7
+  -> deliverables/waldspiel-PHASE7.zip, project.godot im ZIP-Root,
+     .godot / ZIPs / Credentials ausgeschlossen, CRC-Test OK
+  Frischer ZIP-Extrakt: --headless --import (0 Fehler) + 16/16 Smokes.
+  Entsprechend der fortgeltenden Freigabe "Ja, alles inkl. GitHub-Push"
+  als EIN Commit auf main gepusht. PAT liegt ausserhalb des Repos in
+  /home/user/.waldspiel_github_pat (600); Askpass in
+  /home/user/.waldspiel_askpass.sh (700). Kein Token in Commit,
+  Remote-URL, Git-Config, gestagtem Diff oder Projektdatei.

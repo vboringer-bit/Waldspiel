@@ -139,18 +139,138 @@ func depth_px_at(global_tile_x: int, tile_y: int) -> float:
 
 
 # --------------------------------------------------------------------------- #
-# Biome (PHASE 0-2: exakt 1 Biom, aber API + Noise fuer 3 Biome vorbereitet)
+# PHASE 7: drei Biome (Master 3.1) - links TROCKEN, rechts FEUCHT.
+#
+# Der Startbereich |x| <= BIOME_CORE_PX bleibt EXAKT temperiert (blend = 0),
+# damit alle R0-R8-/P6-Smokes, die bei |x| <= 1024 px arbeiten, bitgenau
+# unveraendert bleiben. Ueber BIOME_BLEND_PX (2 Chunks) blendet das Ziel-Biom
+# mit Smoothstep ein; ab 3 Chunks ist es voll ausgepraegt. Der vorbereitete
+# _biome_noise verformt NUR die Blende (multiplikativ), nie den Kern.
 # --------------------------------------------------------------------------- #
-func biome_at(_world_x: float) -> BiomeKind:
-	return BiomeKind.TEMPERIERT
-
-
-func biome_moisture_at(_world_x: float) -> float:
-	return 0.5
+const BIOME_CORE_PX := 2048.0        # 1 Chunk: temperierter Startwald
+const BIOME_BLEND_PX := 4096.0       # 2 Chunks: weiche Blende
+const BIOME_FULL_PX := 6144.0        # 3 Chunks: volles Ziel-Biom
+const BIOME_RES_DENSITY := 34        # Referenzwert des bisherigen _blob_field
+const BIOME_MOISTURE_DRY := 0.15
+const BIOME_MOISTURE_TEMPERATE := 0.50
+const BIOME_MOISTURE_WET := 0.85
 
 
 func biome_noise_at(world_x: float) -> float:
 	return _biome_noise.get_noise_1d(world_x / 6000.0)
+
+
+## 0.0 = temperierter Kern, 1.0 = volles Ziel-Biom. Seed-abhaengige, aber
+## deterministische Verformung der Blende; im Kern IMMER exakt 0.0.
+func biome_blend_at(world_x: float) -> float:
+	var d := absf(world_x)
+	if d <= BIOME_CORE_PX:
+		return 0.0
+	# Ab der dritten Chunk-Grenze ist das Biom VOLL ausgepraegt: der
+	# seed-basierte Noise verformt nur den Uebergang, nie die Endzonen.
+	if d >= BIOME_FULL_PX:
+		return 1.0
+	var t := clampf((d - BIOME_CORE_PX) / BIOME_BLEND_PX, 0.0, 1.0)
+	var smooth := t * t * (3.0 - 2.0 * t)
+	var wobble := clampf(1.0 + biome_noise_at(world_x) * 0.15, 0.85, 1.15)
+	return clampf(smooth * wobble, 0.0, 1.0)
+
+
+## Welches Biom liegt in dieser Richtung? Der Kern ist temperiert.
+func biome_target_at(world_x: float) -> BiomeKind:
+	if world_x < -BIOME_CORE_PX:
+		return BiomeKind.TROCKEN
+	if world_x > BIOME_CORE_PX:
+		return BiomeKind.FEUCHT
+	return BiomeKind.TEMPERIERT
+
+
+## Dominantes Biom: bis zur Blend-Mitte noch TEMPERIERT, danach das Ziel.
+func biome_at(world_x: float) -> BiomeKind:
+	if biome_blend_at(world_x) < 0.5:
+		return BiomeKind.TEMPERIERT
+	return biome_target_at(world_x)
+
+
+func biome_moisture_at(world_x: float) -> float:
+	var b := biome_blend_at(world_x)
+	var target := BIOME_MOISTURE_TEMPERATE
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: target = BIOME_MOISTURE_DRY
+		BiomeKind.FEUCHT: target = BIOME_MOISTURE_WET
+	return lerpf(BIOME_MOISTURE_TEMPERATE, target, b)
+
+
+## Bodenwasser-Aufnahme: duerr = 0.65, feucht = 1.35, Kern = exakt 1.0.
+func biome_moisture_factor_at(world_x: float) -> float:
+	var b := biome_blend_at(world_x)
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: return lerpf(1.0, 0.65, b)
+		BiomeKind.FEUCHT: return lerpf(1.0, 1.35, b)
+	return 1.0
+
+
+## Wurzel-Kosten: sandiger, harter Boden ist teurer; moosiger ist weicher.
+func biome_cost_factor_at(world_x: float) -> float:
+	var b := biome_blend_at(world_x)
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: return lerpf(1.0, 1.30, b)
+		BiomeKind.FEUCHT: return lerpf(1.0, 0.85, b)
+	return 1.0
+
+
+## Blob-Zellwahrscheinlichkeit der Wasserlinsen (Referenz 34).
+func biome_reservoir_density_at(world_x: float) -> int:
+	var b := biome_blend_at(world_x)
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN:
+			return int(round(lerpf(float(BIOME_RES_DENSITY), 18.0, b)))
+		BiomeKind.FEUCHT:
+			return int(round(lerpf(float(BIOME_RES_DENSITY), 52.0, b)))
+	return BIOME_RES_DENSITY
+
+
+func biome_capacity_factor_at(world_x: float) -> float:
+	var b := biome_blend_at(world_x)
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: return lerpf(1.0, 0.70, b)
+		BiomeKind.FEUCHT: return lerpf(1.0, 1.40, b)
+	return 1.0
+
+
+func biome_regen_factor_at(world_x: float) -> float:
+	var b := biome_blend_at(world_x)
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: return lerpf(1.0, 0.70, b)
+		BiomeKind.FEUCHT: return lerpf(1.0, 1.40, b)
+	return 1.0
+
+
+## Sandig-hell bzw. moosig-dunkel. Alpha = 0 im Kern => KEIN zusaetzlicher Draw.
+func biome_tint_at(world_x: float) -> Color:
+	var b := biome_blend_at(world_x)
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: return Color(0.86, 0.73, 0.47, b * 0.20)
+		BiomeKind.FEUCHT: return Color(0.18, 0.36, 0.26, b * 0.22)
+	return Color(1.0, 1.0, 1.0, 0.0)
+
+
+func biome_name_key(world_x: float) -> String:
+	match biome_at(world_x):
+		BiomeKind.TROCKEN: return "BIOME_TROCKEN"
+		BiomeKind.FEUCHT: return "BIOME_FEUCHT"
+	return "BIOME_TEMPERIERT"
+
+
+func biome_target_name_key(world_x: float) -> String:
+	match biome_target_at(world_x):
+		BiomeKind.TROCKEN: return "BIOME_TROCKEN"
+		BiomeKind.FEUCHT: return "BIOME_FEUCHT"
+	return "BIOME_TEMPERIERT"
+
+
+func biome_label(world_x: float) -> String:
+	return TranslationServer.translate(biome_name_key(world_x))
 
 
 # --------------------------------------------------------------------------- #
@@ -254,7 +374,9 @@ func _raw_reservoir(gx: int, ty: int) -> bool:
 	var d := depth_tiles_at(gx, ty)
 	if d < 7 or d > 36 or ty > BOTTOM_TILE_Y:
 		return false
-	return _blob_field(gx, ty, 71, 19, 13, 34, 1.6, 3.6, 0.50, false)
+	# PHASE 7: im Kern exakt 34 (bitgenau wie P0-P6), ausserhalb biom-abhaengig.
+	var density := biome_reservoir_density_at(float(gx * TILE_SIZE))
+	return _blob_field(gx, ty, 71, 19, 13, density, 1.6, 3.6, 0.50, false)
 
 
 ## REVISION 2: 1-Tile-Dilatation. Ein Erd-Tile mit mindestens zwei nassen
@@ -301,7 +423,9 @@ func edge_wobble_at(world_x: float, world_y: float, salt: float) -> float:
 ## Start-Kapazitaet eines Reservoirs in Wasser-Einheiten (2.0/s Verbrauch).
 func reservoir_capacity_at(gx: int, ty: int) -> float:
 	var h := ("%d_res_%d_%d" % [world_seed, gx, ty]).hash() & 0x7fffffff
-	return 60.0 + float(h % 61)   # 60 .. 120
+	# PHASE 7: feuchte Biome speichern mehr, trockene weniger. Kern = 1.0.
+	return (60.0 + float(h % 61)) \
+		* biome_capacity_factor_at(float(gx * TILE_SIZE))
 
 
 # --------------------------------------------------------------------------- #

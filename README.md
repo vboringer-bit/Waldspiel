@@ -1,11 +1,24 @@
-# Wald-Regeneration — PHASE 6 (auf GitHub)
+# Wald-Regeneration — PHASE 7 (auf GitHub)
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 24 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · **PHASE 6 ✅ auf GitHub (15/15 Smokes · 653 OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · PHASE 6 ✅ auf GitHub · **PHASE 7 ✅ auf GitHub (16/16 Smokes · 783 OK)**
 
-**Wichtig:** PHASE 6 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `3de6561`, REVISION 8). `deliverables/waldspiel-PHASE6.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE6-ERGEBNIS.md` / `.html`, `PHASE6-TESTPROTOKOLL.txt`, `DECISIONS.md` §75. Die R8-Korrekturen bleiben vollständig gültig.
+**Wichtig:** PHASE 7 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `d0c719c`, PHASE 6). `deliverables/waldspiel-PHASE7.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE7-ERGEBNIS.md` / `.html`, `PHASE7-TESTPROTOKOLL.txt`, `DECISIONS.md` §76. Alle R0–R8- und P6-Korrekturen bleiben vollständig gültig.
+
+---
+
+## PHASE 7 — Drei Biome, Weltzonen, Biom-Faktoren
+
+**User-Auftrag:** „Bearbeite jetzt gründlich Phase 7". Da §10 des Master-Prompts nur PHASE 0–5 definiert, ist P7 gemäß §13 die dokumentierte Ausarbeitung des **ersten** in §75 vorbereiteten Kandidaten: die drei Biome aus §3.1 (siehe `DECISIONS.md` §76). Fünf Tierarten, 40–60 Skillnodes, begehbare Berge, Tag/Nacht und SFX bleiben bewusst außen vor.
+
+1. **Drei Zonen mit weicher Blende.** Links **TROCKEN**, Mitte **TEMPERIERT** (Start), rechts **FEUCHT**. Ein Chunk (2048px) Kern, zwei Chunks (4096px) Smoothstep-Blende, ab drei Chunks (6144px) volle Ausprägung. `biome_noise_at()` verformt seed-deterministisch nur den Übergang; Höhenlinie, Höhlen und das 16px-Raster bleiben unangetastet.
+2. **Echte Simulation.** Fünf messbare Faktoren — Bodenwasser (`0,65/1,00/1,35`), Wurzel-Kosten (`1,30/1,00/0,85`), Reservoir-Dichte (`18/34/52`), Reservoir-Kapazität (`0,70/1,00/1,40`) und N/P/K-Regeneration (`0,70/1,00/1,40`). Im Kern sind alle exakt `1,0`, damit alle alten Regressionen bitgenau bleiben.
+3. **Sichtbare Welt.** Bodenquerschnitt, Oberkante und Himmel werden sandig-hell bzw. moosig-dunkel getönt — prozedural, ohne neue Assets und ohne zusätzlichen Draw-Befehl im Kern. HUD, Toast, Rechtsklick und DE/EN zeigen Biom, Feuchte und Kosten.
+4. **Speichern & Regression.** `FORMAT_VERSION` bleibt **6**; `biomes` ist ein optionaler Schlüssel. AUTO bleibt aus, 21 Pixelart-Slots, 24/23 Skillnodes, 16px-Hitbox, R8-Pool/Eichel/Abstand und alle P6-Systeme bleiben grün.
+
+Siehe `PHASE7-ERGEBNIS.html` / `.md`, `PHASE7-TESTPROTOKOLL.txt` und `DECISIONS.md` §76. Abnahme: **drei komplette Läufe je 16/16 Smokes · 783 OK · 0 Fehler** (neu: `--p7-smoke`, 130 Checks), Import 0, Skillgen 24/err=0, F5 180/0, 3×25 Render-Frames 0.
 
 ---
 

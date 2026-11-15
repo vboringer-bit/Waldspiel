@@ -12,7 +12,8 @@ extends Node
 ## PHASE-4-FIX: fehlt auto_mode, wird MANUELL (false) angenommen.
 ## PHASE 5: Format v6 speichert zusaetzlich Tiere/Futter/Huegel und Parasiten.
 ## PHASE 6: Format bleibt v6; "soil" / "disasters" / "mycorrhiza" sind
-## OPTIONALE Schluessel. v5/v4/v3/v2/v1 bleiben lesbar (Defaults).
+## OPTIONALE Schluessel. PHASE 7 ergaenzt "biomes" ebenso optional.
+## v5/v4/v3/v2/v1 bleiben lesbar (Defaults).
 
 const SAVE_PATH := "user://savegame.json"
 const FORMAT_VERSION := 6
@@ -64,6 +65,7 @@ func save_game() -> bool:
 		"soil": SoilChemistry.instance.to_dict() if SoilChemistry.instance != null else {},
 		"disasters": DisasterSystem.instance.to_dict() if DisasterSystem.instance != null else {},
 		"mycorrhiza": Mycorrhiza.instance.to_dict() if Mycorrhiza.instance != null else {},
+		"biomes": BiomeSystem.instance.to_dict() if BiomeSystem.instance != null else {},
 		"trees": trees,
 		"world_state": world_state.to_dict() if world_state != null else {},
 	}
@@ -120,6 +122,8 @@ func load_game() -> bool:
 		DisasterSystem.instance.from_dict(data.get("disasters", {}))
 	if Mycorrhiza.instance != null:
 		Mycorrhiza.instance.from_dict(data.get("mycorrhiza", {}))
+	if BiomeSystem.instance != null:
+		BiomeSystem.instance.from_dict(data.get("biomes", {}))
 
 	interaction.clear_carrying(false)
 	interaction.clear_trees()

@@ -75,6 +75,8 @@ var _p7_light: Label
 ## unveraendert erhalten und werden nicht verdrängt.
 var _p6_soil: Label
 var _p6_event: Label
+## PHASE 7: Biom-Zeile (Name, Feuchte, Uebergang, Entdeckungen).
+var _p7_biome: Label
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
@@ -239,10 +241,14 @@ func _build_widgets() -> void:
 	_p7_light.modulate = Color(0.90, 0.84, 0.58, 1.0)
 	_p6_soil = _label("", _small)
 	_p6_soil.name = "Phase6Soil"
+	_p6_soil.clip_text = true
 	_p6_soil.modulate = Color(0.76, 0.88, 0.68, 1.0)
 	_p6_event = _label("", _small)
 	_p6_event.name = "Phase6Event"
 	_p6_event.modulate = Color(0.92, 0.78, 0.62, 1.0)
+	_p7_biome = _label("", _small)
+	_p7_biome.name = "Phase7Biome"
+	_p7_biome.modulate = Color(0.70, 0.86, 0.90, 1.0)
 
 	_hint = _label("", _small)
 	_toast_label = _label("", _settings)
@@ -385,6 +391,9 @@ func _connect() -> void:
 	EventBus.mycorrhiza_changed.connect(func(_n): refresh())
 	EventBus.disaster_started.connect(func(_k, _d): refresh())
 	EventBus.disaster_ended.connect(func(_k): refresh())
+	# PHASE 7: Biom-Wechsel aktualisieren die neue Zeile.
+	EventBus.biome_changed.connect(func(_k, _b): refresh())
+	EventBus.biome_discovered.connect(func(_k): refresh())
 
 
 # --------------------------------------------------------------------------- #
@@ -439,27 +448,29 @@ func _layout() -> void:
 	_season_bar.size = Vector2(300.0, 16.0)
 
 	_p5_panel.position = Vector2(20.0, 24.0)
-	_p5_panel.size = Vector2(360.0, 250.0)
+	_p5_panel.size = Vector2(480.0, 276.0)
 	_p5_title.position = Vector2(36.0, 30.0)
 	_p5_health.position = Vector2(36.0, 58.0)
 	_p5_health_bar.position = Vector2(36.0, 82.0)
-	_p5_health_bar.size = Vector2(328.0, 10.0)
+	_p5_health_bar.size = Vector2(440.0, 10.0)
 	_p5_food.position = Vector2(36.0, 100.0)
-	_p5_wildlife.position = Vector2(200.0, 100.0)
+	_p5_wildlife.position = Vector2(260.0, 100.0)
 	_p5_parasites.position = Vector2(36.0, 122.0)
 	_p5_supply.position = Vector2(36.0, 146.0)
 	_p7_light.position = Vector2(36.0, 168.0)
 	# PHASE 6: zwei neue Zeilen, ohne die R5/R7-Zeilen zu verschieben.
 	_p6_soil.position = Vector2(36.0, 192.0)
-	_p6_soil.size = Vector2(330.0, 22.0)
+	_p6_soil.size = Vector2(440.0, 22.0)
 	_p6_event.position = Vector2(36.0, 216.0)
-	_p6_event.size = Vector2(330.0, 22.0)
+	_p6_event.size = Vector2(440.0, 22.0)
+	_p7_biome.position = Vector2(36.0, 240.0)
+	_p7_biome.size = Vector2(440.0, 22.0)
 
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
 	_hint.position = Vector2(24.0, y - 30.0)
 	# PHASE 6: Toast unter das erweiterte Oekologie-Panel legen.
-	_toast_label.position = Vector2(0.0, 282.0)
+	_toast_label.position = Vector2(0.0, 308.0)
 	_toast_label.size = Vector2(vp.x, 44.0)
 
 
@@ -474,7 +485,7 @@ func refresh_texts() -> void:
 		_seed_icon.tooltip_text = tr("HUD_ACORN_TIP")
 	_skill_button.text = tr("HUD_SKILLTREE")
 	if _p5_title != null:
-		_p5_title.text = tr("HUD_PHASE6")
+		_p5_title.text = tr("HUD_PHASE7")
 	_save_button.text = tr("UI_SAVE")
 	_load_button.text = tr("UI_LOAD")
 	_water_caption.text = tr("HUD_WATER")
@@ -514,6 +525,7 @@ func refresh() -> void:
 	_refresh_reservoir_label(tree)
 	_refresh_p5_panel()
 	_refresh_p6_panel()
+	_refresh_p7_biome()
 
 
 func _refresh_p5_panel() -> void:
@@ -612,6 +624,22 @@ func _refresh_p6_panel() -> void:
 		ev = tr("HUD_EVENT_ACTIVE") % [tr(name_key),
 			int(ceilf(dis.time_left))]
 	_p6_event.text = tr("HUD_EVENT") % [ev]
+
+
+## PHASE 7: Biom-Zeile. Bleibt leer, solange BiomeSystem nicht initialisiert
+## ist -> keine Seiteneffekte in den aelteren Headless-Smokes.
+func _refresh_p7_biome() -> void:
+	if _p7_biome == null:
+		return
+	var bs := BiomeSystem.instance
+	if bs == null:
+		_p7_biome.text = ""
+		return
+	_p7_biome.text = bs.display_text()
+
+
+func debug_biome_text() -> String:
+	return _p7_biome.text if _p7_biome != null else ""
 
 
 func debug_soil_text() -> String:

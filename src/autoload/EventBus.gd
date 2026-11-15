@@ -76,3 +76,7 @@ signal soil_changed(region: int)
 signal mycorrhiza_changed(links: int)
 signal disaster_started(kind: int, duration: float)
 signal disaster_ended(kind: int)
+
+# --- PHASE 7: drei Biome -----------------------------------------------------
+signal biome_changed(kind: int, blend: float)
+signal biome_discovered(kind: int)

@@ -6,7 +6,7 @@ HINWEIS: Dieses Paket enthaelt den vollstaendigen REVISION-8-Stand
 pH-/N-P-K-Bodenchemie, Mykorrhiza-Netz und Duerre/Sturm/Borkenkaefer.
 PHASE 6 ist als vollstaendiger Stand auf GitHub gepusht (Nachfolger von
 3de6561, REVISION 8) und zusaetzlich als
-deliverables/waldspiel-PHASE6.zip eingefroren. Zum Import entweder den
+deliverables/waldspiel-PHASE7.zip eingefroren. Zum Import entweder den
 Repo-Root direkt in Godot oeffnen oder diese ZIP entpacken
 (project.godot liegt jeweils im Root).
 
@@ -189,5 +189,7 @@ Godot-Benutzerdatenordner und wird beim ersten Speichern angelegt.
 REVISION 8 ist abgeschlossen; alle frueheren Staende bleiben erhalten.
 PHASE 6 implementiert jetzt die "volle Simulation" aus Master-Punkt 4.2:
 LEICHT vereinfacht, NORMAL mit seltenen Ereignissen, SCHWER mit pH/N-P-K,
-Mykorrhiza und haeufigen Katastrophen. Details: DECISIONS.md §75 und
+Mykorrhiza und haeufigen Katastrophen. PHASE 7 ergaenzt drei Biome
+(links trocken, Mitte temperiert, rechts feucht) mit weicher Blende und
+echten Biom-Faktoren. Details: DECISIONS.md §75/§76 und
 PHASE6-TESTPROTOKOLL.txt.

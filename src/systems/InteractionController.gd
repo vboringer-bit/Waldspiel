@@ -232,6 +232,11 @@ func debug_soil_info_at(pos: Vector2) -> String:
 			int(roundf(npk.z)), chem.availability_at(pos.x)]
 	else:
 		text += " · " + tr("MSG_SOIL_CHEM_OFF")
+	# PHASE 7: Biom, Feuchte und Kostenmultiplikator derselben Position.
+	text += " · " + tr("MSG_SOIL_BIOME") % [
+		generator.biome_label(pos.x),
+		int(roundf(generator.biome_moisture_at(pos.x) * 100.0)),
+		generator.biome_cost_factor_at(pos.x)]
 	return text
 
 

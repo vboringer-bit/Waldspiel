@@ -26,7 +26,11 @@ static func multiplier(kind: int) -> float:
 ## alle P0/P1/P2-Smokes bei NORMAL unveraendert.
 static func for_tile(generator: WorldGenerator, global_tile_x: int, tile_y: int,
 		scale: float = 1.0) -> float:
-	return BASE * multiplier(generator.material_at(global_tile_x, tile_y)) * scale
+	# PHASE 7: Biom-Kostenmultiplikator. Im temperierten Kern exakt 1.0 =>
+	# alle P0-P6-Smokes (for_tile(gen, 0, ...) == 10.0) bleiben bitgenau.
+	return BASE * multiplier(generator.material_at(global_tile_x, tile_y)) \
+		* scale * generator.biome_cost_factor_at(
+			float(global_tile_x * WorldGenerator.TILE_SIZE))
 
 
 ## Kosten des naechsten Wurzelschritts (Ghost-Preview + Kauf identisch).

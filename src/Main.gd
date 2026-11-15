@@ -28,6 +28,7 @@ extends Node2D
 @onready var _mycorrhiza: Mycorrhiza = $World/Mycorrhiza
 @onready var _soil: SoilChemistry = $Systems/SoilChemistry
 @onready var _disasters: DisasterSystem = $Systems/DisasterSystem
+@onready var _biomes: BiomeSystem = $Systems/BiomeSystem
 
 var _last_fit: Vector2i = Vector2i.ZERO
 
@@ -52,6 +53,8 @@ func _ready() -> void:
 	_soil.setup(_chunk_manager.generator, _time, Global.world_seed)
 	_mycorrhiza.setup(_chunk_manager.generator, _time, _skill_tree)
 	_disasters.setup(_time, _water, _skill_tree, _soil)
+	# PHASE 7: drei Biome verfolgen die Kamera weltweit.
+	_biomes.setup(_chunk_manager.generator, _camera)
 	_forest_health.setup(_wildlife, _parasites, _skill_tree)
 	_wildlife.setup(_chunk_manager.generator, _trees, _camera, _time,
 		_season, _interaction, _skill_tree, _forest_health, _parasites)
@@ -150,6 +153,11 @@ func _ready() -> void:
 			_water, _time, _season, _wildlife, _skill_tree, _soil,
 			_mycorrhiza, _disasters, _camera)
 		add_child(smoke6)
+	elif args.has("--p7-smoke"):
+		var smoke7 = preload("res://tests/Phase7Smoke.gd").new()
+		smoke7.setup(_interaction, _chunk_manager, _hud, _save, _growth,
+			_water, _time, _season, _soil, _biomes, _camera)
+		add_child(smoke7)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -229,6 +237,14 @@ func _apply_presets(args: PackedStringArray) -> void:
 			" scale=", get_tree().root.content_scale_factor,
 			" mode=", get_tree().root.content_scale_mode,
 			" aspect=", get_tree().root.content_scale_aspect)
+
+	# --- PHASE 7: drei Biome ---------------------------------------------------
+	if args.has("--p7-shot-dry"):
+		_p7_shot(-8192.0, "MSG_BIOME_DRY")
+	elif args.has("--p7-shot-temperate"):
+		_p7_shot(0.0, "MSG_BIOME_TEMPERATE")
+	elif args.has("--p7-shot-wet"):
+		_p7_shot(8192.0, "MSG_BIOME_WET")
 
 	# --- PHASE 6: Bodenchemie, Pilznetz, Katastrophen --------------------------
 	if args.has("--p6-shot-chemistry"):
@@ -775,6 +791,7 @@ func _p5_freeze() -> void:
 	_soil.set_process(false)
 	_mycorrhiza.set_process(false)
 	_disasters.set_process(false)
+	_biomes.set_process(false)
 
 
 func _p5_reset_world() -> void:
@@ -793,6 +810,26 @@ func _p5_reset_world() -> void:
 	_disasters.from_dict({})
 	_mycorrhiza.debug_force_rebuild()
 	_hud.refresh()
+	_biomes.reset()
+
+
+## PHASE 7: Screenshot-Preset. Die Kamera steht MITTEN im Ziel-Biom,
+## _chunk_manager._refresh() laedt die umliegenden Chunks sofort, drei
+## gewachsene Eichen machen die Biom-Faktoren im HUD sichtbar.
+func _p7_shot(wx: float, toast_key: String) -> void:
+	_p5_reset_world()
+	Global.set_difficulty(Global.Difficulty.NORMAL)
+	_camera.set_zoom_immediate(1.0)
+	_camera.teleport_to(Vector2(wx, 420.0))
+	_chunk_manager._refresh()
+	_biomes.debug_force_at(wx)
+	var b1 := _rev5_grow_tree(wx - 220.0, 16, 14, 8)
+	var b2 := _rev5_grow_tree(wx, 18, 16, 9)
+	var b3 := _rev5_grow_tree(wx + 220.0, 14, 12, 7)
+	_interaction.select_tree(b2)
+	_forest_health.recompute()
+	_hud.refresh()
+	EventBus.toast.emit(tr(toast_key))
 
 
 func _p5_grow_tree(p_x: float, leaves: int) -> BaseTree:

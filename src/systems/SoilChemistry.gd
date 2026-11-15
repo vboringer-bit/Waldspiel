@@ -177,10 +177,15 @@ func regenerate(dt: float) -> void:
 	if gain <= 0.0 or cells.is_empty():
 		return
 	for region in cells.keys():
+		# PHASE 7: pro Region, nicht global. Im Kern exakt 1.0 -> P6-Smoke
+		# (debug_regenerate bei x=1024) bleibt bitgenau unveraendert.
+		var f := generator.biome_regen_factor_at(
+			float(region) * REGION_PX) if generator != null else 1.0
+		var g := gain * f
 		var c: Dictionary = cells[region]
-		c["n"] = minf(NPK_MAX, float(c["n"]) + gain)
-		c["p"] = minf(NPK_MAX, float(c["p"]) + gain * 0.8)
-		c["k"] = minf(NPK_MAX, float(c["k"]) + gain * 0.9)
+		c["n"] = minf(NPK_MAX, float(c["n"]) + g)
+		c["p"] = minf(NPK_MAX, float(c["p"]) + g * 0.8)
+		c["k"] = minf(NPK_MAX, float(c["k"]) + g * 0.9)
 	queue_redraw()
 
 

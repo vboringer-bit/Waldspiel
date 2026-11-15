@@ -49,7 +49,14 @@ func _draw() -> void:
 	poly.append_array(top)
 	for i in range(bottom.size() - 1, -1, -1):
 		poly.append(bottom[i])
-	draw_colored_polygon(poly, BODY)
+	# PHASE 7: Oberkanten-Ton folgt dem Biom. Im Kern (Alpha 0) bleibt BODY
+	# exakt erhalten und es entsteht kein zusaetzlicher Draw-Aufruf.
+	var tint := generator.biome_tint_at(origin + WorldGenerator.CHUNK_WIDTH_PX * 0.5)
+	if tint.a > 0.002:
+		draw_colored_polygon(poly, BODY.lerp(Color(tint.r, tint.g, tint.b),
+			clampf(tint.a * 2.2, 0.0, 0.65)))
+	else:
+		draw_colored_polygon(poly, BODY)
 
 	# Verbrannte Oberkante + heller Aschesaum.
 	draw_polyline(top, RIM_DARK, 2.0)

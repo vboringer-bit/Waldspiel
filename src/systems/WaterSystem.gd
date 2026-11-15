@@ -78,6 +78,9 @@ func tick(delta: float) -> void:
 	for tree in get_tree().get_nodes_in_group("trees"):
 		var rate: float = tree.species.base_water_gain * float(tree.root_count) \
 			* soil_factor
+		# PHASE 7: Geo-Feuchte wirkt auf die Bodenwasseraufnahme. Im Kern 1.0.
+		if generator != null:
+			rate *= generator.biome_moisture_factor_at(tree.global_position.x)
 		if raining:
 			rate *= REGEN_FAKTOR * Global.difficulty_factor("rain_boost") \
 				* rain_mult
@@ -143,3 +146,10 @@ func _stop_rain() -> void:
 ## Dev-Hook (Taste R / CLI / Smoke-Test): Regen sofort ausloesen.
 func force_rain(duration: float = 30.0) -> void:
 	start_rain(duration)
+
+
+# --------------------------------------------------------------------------- #
+# PHASE 7 Debug-Hooks
+# --------------------------------------------------------------------------- #
+func debug_biome_factor_at(world_x: float) -> float:
+	return generator.biome_moisture_factor_at(world_x) if generator != null else 1.0
