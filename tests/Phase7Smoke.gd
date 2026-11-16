@@ -331,8 +331,10 @@ func run() -> void:
 	_check(hud.debug_biome_text().contains("Feucht")
 		and hud.debug_biome_text().contains("85%"),
 		"HUD zeigt Feucht mit 85% Feuchte")
-	_check(hud.debug_phase6_title() == "PHASE 7 · Welt & Biome",
-		"Oekologie-Panel heisst jetzt PHASE 7 · Welt & Biome")
+	# PHASE 8 hat den Meilenstein-Titel weitergerollt; die P7-Biom-Zeile
+	# selbst bleibt unveraendert (Erwartung erweitert, nicht aufgeweicht).
+	_check(hud.debug_phase6_title() == "PHASE 8 · Tierwelt & Progression",
+		"Oekologie-Panel traegt den aktuellen Meilenstein-Titel")
 	_check(hud.debug_supply_text().contains("Versorgung")
 		and hud.debug_light_text().contains("Licht"),
 		"R5-Versorgung und R7-Licht bleiben erhalten")

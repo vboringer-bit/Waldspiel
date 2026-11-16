@@ -1,11 +1,24 @@
-# Wald-Regeneration — PHASE 7 (auf GitHub)
+# Wald-Regeneration — PHASE 8 (auf GitHub)
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 24 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · PHASE 6 ✅ auf GitHub · **PHASE 7 ✅ auf GitHub (16/16 Smokes · 783 OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · PHASE 6 ✅ auf GitHub · PHASE 7 ✅ auf GitHub · **PHASE 8 ✅ auf GitHub (17/17 Smokes · 887 OK)**
 
-**Wichtig:** PHASE 7 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `d0c719c`, PHASE 6). `deliverables/waldspiel-PHASE7.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE7-ERGEBNIS.md` / `.html`, `PHASE7-TESTPROTOKOLL.txt`, `DECISIONS.md` §76. Alle R0–R8- und P6-Korrekturen bleiben vollständig gültig.
+**Wichtig:** PHASE 8 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `0b2f064`, PHASE 7). `deliverables/waldspiel-PHASE8.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE8-ERGEBNIS.md` / `.html`, `PHASE8-TESTPROTOKOLL.txt`, `DECISIONS.md` §77. Alle R0–R8-, P6- und P7-Korrekturen bleiben vollständig gültig.
+
+---
+
+## PHASE 8 — Fünf Tierarten, Vogel-Progression
+
+**User-Auftrag:** „Mache jetzt sorgfältig mit den nächsten Schritten weiter". Da §10 nur PHASE 0–5 definiert, ist P8 gemäß §13 der nächste offene Kandidat aus §7: die **fünfte Tierart** (siehe `DECISIONS.md` §77). 40–60 Skillnodes, begehbare Berge und Ambient-SFX sind die darauffolgenden Schritte; Tag/Nacht bleibt ausgeschlossen.
+
+1. **Progression statt Test-Bruch.** `ADVANCED` und `_sync_advanced()` bleiben unverändert. Der Vogel siedelt sich erst an, wenn der Wald gesund ist **und** alle drei Biome aus P7 entdeckt sind — in keinem alten Smoke ist das der Fall, daher bleiben alle Tierarten-Checks grün.
+2. **Echtes Verhalten.** Eigener Flug-Pfad 96px über dem Gelände, Sinus-Schwingen, vorhandene StateMachine, Klick/Info, und Samen-Transport **nach links** mit einem echten neuen Baum am Ziel (Eichhörnchen weiterhin nach rechts).
+3. **Keine neuen Assets / kein neuer Save-Key.** Der Vogel nutzt den vorhandenen `PixelArt.BIRD`-Slot (21 Slots bleiben), und `wildlife.to_dict()` speichert die Species generisch — `FORMAT_VERSION` bleibt 6.
+4. **HUD.** Vierte Panel-Zeile `Arten: n/5` mit Fortschritt, Titel „PHASE 8 · Tierwelt & Progression", DE/EN, alle P6/P7-Zeilen erhalten.
+
+Siehe `PHASE8-ERGEBNIS.html` / `.md`, `PHASE8-TESTPROTOKOLL.txt` und `DECISIONS.md` §77. Abnahme: **drei komplette Läufe je 17/17 Smokes · 887 OK · 0 Fehler** (neu: `--p8-smoke`, 104 Checks), Import 0, Skillgen 24/err=0, F5 180/0, 3×25 Render-Frames 0.
 
 ---
 

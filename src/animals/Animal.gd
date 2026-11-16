@@ -33,13 +33,17 @@ const SPEED := {
 	"ant": 26.0,
 	"woodpecker": 240.0,
 	"squirrel": 210.0,
+	"bird": 190.0,
 }
 const RANGE := {
 	"worm": 34.0,
 	"ant": 110.0,
 	"woodpecker": 360.0,
 	"squirrel": 420.0,
+	"bird": 520.0,
 }
+## PHASE 8: der Vogel fliegt ueber der Geländekante statt auf ihr zu stehen.
+const BIRD_HEIGHT := 96.0
 const FOOD_TIME := 2.4
 
 const WORM_DEPTH_MIN := 20.0
@@ -54,6 +58,7 @@ const BODY_SPAN := {
 	"ant": 9.0,
 	"woodpecker": 40.0,
 	"squirrel": 40.0,
+	"bird": 34.0,
 }
 
 var species: String = "worm"
@@ -117,8 +122,13 @@ func reseat(p_x: float, p_depth: float = -1.0) -> void:
 	else:
 		burrow_depth = 0.0
 		burrow_target = 0.0
-		# REVISION 6/7: Ameisen stehen mit den Fuessen AUF der sichtbaren Kante.
-		base_y = surface_y - (1.0 if species == "ant" else 4.0)
+		# PHASE 8: Vogel fliegt; alle anderen stehen auf der Kante.
+		if species == "bird":
+			base_y = surface_y - BIRD_HEIGHT
+		else:
+			# REVISION 6/7: Ameisen stehen mit den Fuessen AUF der sichtbaren
+			# Kante (4px-profilgenau), Specht/Eichhoernchen leicht darueber.
+			base_y = surface_y - (1.0 if species == "ant" else 4.0)
 	position.y = base_y
 	target_x = p_x
 	_burrow_center = Vector2(p_x, base_y)
@@ -161,7 +171,8 @@ func _publish_trail() -> void:
 
 
 func _ensure_body_sprite() -> void:
-	if species != "worm" and species != "ant":
+	# PHASE 8: der Vogel nutzt den bereits vorhandenen PixelArt.BIRD-Slot.
+	if species != "worm" and species != "ant" and species != "bird":
 		return
 	if _body_sprite == null or not is_instance_valid(_body_sprite):
 		_body_sprite = Sprite2D.new()
@@ -169,7 +180,12 @@ func _ensure_body_sprite() -> void:
 		_body_sprite.centered = true
 		_body_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		add_child(_body_sprite)
-	_body_sprite.texture = load(PixelArt.WORM if species == "worm" else PixelArt.ANT)
+	var tex := PixelArt.WORM
+	if species == "ant":
+		tex = PixelArt.ANT
+	elif species == "bird":
+		tex = PixelArt.BIRD
+	_body_sprite.texture = load(tex)
 	_body_sprite.position = Vector2(0.0, -3.0) if species == "ant" else Vector2.ZERO
 	_body_sprite.visible = true
 
@@ -184,6 +200,12 @@ func _update_body_sprite() -> void:
 		_body_sprite.rotation = 0.0
 		var flip := 1.0 if facing >= 0 else -1.0
 		_body_sprite.scale = Vector2(0.56 * flip, 0.56)
+	elif species == "bird":
+		# Fluegelschlag: leichtes Kippen + vertikales Zusammenziehen.
+		var flip2 := 1.0 if facing >= 0 else -1.0
+		_body_sprite.rotation = sin(phase * 7.0) * 0.09
+		_body_sprite.scale = Vector2(0.82 * flip2,
+			0.82 + sin(phase * 7.0) * 0.10)
 
 
 func _set_state(new_state: int) -> void:
@@ -228,6 +250,11 @@ func speed() -> float:
 func tick(dt: float) -> void:
 	phase += dt
 	timer -= dt
+	# PHASE 8: komplett eigener Flug-Pfad. Frueher Return, damit KEIN einziger
+	# bestehender Wurm-/Ameisen-/Specht-/Eichhoernchen-Zweig veraendert wird.
+	if species == "bird":
+		_tick_bird(dt)
+		return
 	# REVISION 7 Debug: Tier laeuft weiter durch die Simulation, bewegt sich
 	# aber NICHT. Damit ist pruefbar, dass der Tunnel auch bei laufenden
 	# Ticks keinen einzigen neuen Punkt / kein Wackeln erzeugt.
@@ -278,6 +305,42 @@ func tick(dt: float) -> void:
 
 ## REVISION 6: nur noch TIEFE aktualisieren. Die Gang-Spur wird aus der
 ## stabilen Mittellinie gebildet, NICHT aus der animierten Koerperposition.
+## PHASE 8: Vogel-StateMachine. Fliegt ueber dem Gelaende, wandert, frisst
+## und traegt Eicheln. Keine Baum-Kollision (Voegel fliegen darueber hinweg).
+func _tick_bird(dt: float) -> void:
+	if generator != null:
+		surface_y = generator.ground_y_at(position.x)
+		base_y = surface_y - BIRD_HEIGHT
+	position.y = base_y + sin(phase * 2.2) * 9.0
+	var before_x := position.x
+	match state:
+		State.IDLE:
+			if timer <= 0.0:
+				_idle_count += 1
+				_set_state(State.EAT if _idle_count % 3 == 1 else State.WANDER)
+		State.WANDER:
+			position.x = move_toward(position.x, target_x, speed() * dt)
+			if absf(position.x - target_x) < 6.0:
+				_set_state(State.IDLE)
+		State.EAT:
+			if timer <= 0.0:
+				_eat()
+		State.CARRY:
+			position.x = move_toward(position.x, target_x, 260.0 * dt)
+			if absf(position.x - target_x) < 18.0:
+				if wildlife != null and wildlife.has_method("on_bird_seed_delivered"):
+					wildlife.on_bird_seed_delivered(self)
+				carrying_seed = false
+				position.x = home_x
+				_set_state(State.IDLE)
+		State.HELP_TREE:
+			_set_state(State.IDLE)
+	if absf(position.x - before_x) > 0.5:
+		facing = 1 if position.x > before_x else -1
+	_update_body_sprite()
+	queue_redraw()
+
+
 func _tick_burrow(dt: float) -> void:
 	burrow_depth = move_toward(burrow_depth, burrow_target,
 		WORM_BURROW_SPEED * 0.5 * dt)
@@ -447,6 +510,8 @@ func hit_rect() -> Rect2:
 		return Rect2(global_position + Vector2(-7.0, -6.0), Vector2(14.0, 12.0))
 	if species == "ant":
 		return Rect2(global_position + Vector2(-6.0, -8.0), Vector2(12.0, 10.0))
+	if species == "bird":
+		return Rect2(global_position + Vector2(-20.0, -20.0), Vector2(40.0, 36.0))
 	return Rect2(global_position + Vector2(-18.0, -30.0), Vector2(36.0, 34.0))
 
 

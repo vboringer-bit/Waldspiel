@@ -77,6 +77,8 @@ var _p6_soil: Label
 var _p6_event: Label
 ## PHASE 7: Biom-Zeile (Name, Feuchte, Uebergang, Entdeckungen).
 var _p7_biome: Label
+## PHASE 8: Artenzaehler (5 Tierarten) + Progression-Hinweis.
+var _p8_species: Label
 
 
 func setup(p_interaction: InteractionController, p_growth: GrowthSystem,
@@ -249,6 +251,9 @@ func _build_widgets() -> void:
 	_p7_biome = _label("", _small)
 	_p7_biome.name = "Phase7Biome"
 	_p7_biome.modulate = Color(0.70, 0.86, 0.90, 1.0)
+	_p8_species = _label("", _small)
+	_p8_species.name = "Phase8Species"
+	_p8_species.modulate = Color(0.88, 0.82, 0.64, 1.0)
 
 	_hint = _label("", _small)
 	_toast_label = _label("", _settings)
@@ -448,7 +453,7 @@ func _layout() -> void:
 	_season_bar.size = Vector2(300.0, 16.0)
 
 	_p5_panel.position = Vector2(20.0, 24.0)
-	_p5_panel.size = Vector2(480.0, 276.0)
+	_p5_panel.size = Vector2(480.0, 300.0)
 	_p5_title.position = Vector2(36.0, 30.0)
 	_p5_health.position = Vector2(36.0, 58.0)
 	_p5_health_bar.position = Vector2(36.0, 82.0)
@@ -465,12 +470,14 @@ func _layout() -> void:
 	_p6_event.size = Vector2(440.0, 22.0)
 	_p7_biome.position = Vector2(36.0, 240.0)
 	_p7_biome.size = Vector2(440.0, 22.0)
+	_p8_species.position = Vector2(36.0, 264.0)
+	_p8_species.size = Vector2(440.0, 22.0)
 
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
 	_hint.position = Vector2(24.0, y - 30.0)
 	# PHASE 6: Toast unter das erweiterte Oekologie-Panel legen.
-	_toast_label.position = Vector2(0.0, 308.0)
+	_toast_label.position = Vector2(0.0, 334.0)
 	_toast_label.size = Vector2(vp.x, 44.0)
 
 
@@ -485,7 +492,7 @@ func refresh_texts() -> void:
 		_seed_icon.tooltip_text = tr("HUD_ACORN_TIP")
 	_skill_button.text = tr("HUD_SKILLTREE")
 	if _p5_title != null:
-		_p5_title.text = tr("HUD_PHASE7")
+		_p5_title.text = tr("HUD_PHASE8")
 	_save_button.text = tr("UI_SAVE")
 	_load_button.text = tr("UI_LOAD")
 	_water_caption.text = tr("HUD_WATER")
@@ -526,6 +533,7 @@ func refresh() -> void:
 	_refresh_p5_panel()
 	_refresh_p6_panel()
 	_refresh_p7_biome()
+	_refresh_p8_species()
 
 
 func _refresh_p5_panel() -> void:
@@ -636,6 +644,25 @@ func _refresh_p7_biome() -> void:
 		_p7_biome.text = ""
 		return
 	_p7_biome.text = bs.display_text()
+
+
+## PHASE 8: Arten x/5 und wie viele noch fehlen. wildlife wird bereits
+## per setup() uebergeben; ohne System bleibt die Zeile leer.
+func _refresh_p8_species() -> void:
+	if _p8_species == null:
+		return
+	if wildlife == null:
+		_p8_species.text = ""
+		return
+	var n: int = wildlife.species_count()
+	var target: int = WildlifeSystem.SPECIES_TARGET
+	var status := tr("SPECIES_ALL") if n >= target \
+		else tr("SPECIES_WAITING") % (target - n)
+	_p8_species.text = tr("HUD_SPECIES") % [mini(n, target), status]
+
+
+func debug_species_text() -> String:
+	return _p8_species.text if _p8_species != null else ""
 
 
 func debug_biome_text() -> String:

@@ -1,0 +1,117 @@
+WALD-REGENERATION — PHASE 8: FÜNF TIERARTEN, VOGEL-PROGRESSION
+Godot 4.7.2 stable · 2026-11-15 · Nachfolger von 0b2f064 (PHASE 7)
+======================================================================
+
+SCOPE (dokumentierte Annahme nach Master-Punkt §13; DECISIONS.md §77)
+  Der User bat wörtlich: „Mache jetzt sorgfältig mit den nächsten Schritten
+  weiter". §10 definiert nur PHASE 0-5. P8 ist der NAECHSTE offene Kandidat
+  aus §7: die fünfte Tierart. Vorher: Wurm, Ameise, Specht, Eichhoernchen
+  (4 Arten); der Vogel existierte nur als Tutorial-Event. Gemaess §1 bleibt
+  es EIN Meilenstein. 40-60 Skillnodes, begehbare Berge und Ambient-SFX
+  sind die DARAUFFOLGENDEN Schritte; Tag/Nacht bleibt durch §5/§12 aus-
+  geschlossen.
+
+ZENTRALE INVARIANTE / REGRESSION
+  ADVANCED bleibt ["woodpecker","squirrel"]; _sync_advanced() unveraendert.
+  Der Vogel hat eine eigene PROGRESSION ["bird"] und erscheint nur bei
+  health > 50 % UND allen drei entdeckten Biomen aus P7. In allen
+  R0-R8-/P6-/P7-Smokes ist nur 1 Biom entdeckt -> kein Vogel -> alle
+  alten Tierarten-Checks bleiben gruen. Einzige Anpassung: der reine
+  Titel-String in Phase7Smoke (erweitert, nicht gesenkt).
+
+NEUE / GEENDERTE QUELLEN
+  src/animals/Animal.gd        SPEED/RANGE/BODY_SPAN um "bird",
+                                BIRD_HEIGHT 96px, reseat()-Flugzweig,
+                                _ensure_body_sprite() nutzt PixelArt.BIRD,
+                                _update_body_sprite() Fluegelschlag,
+                                eigener _tick_bird(dt) mit fruehem Return,
+                                eigene Hitbox 40x36. Kein bestehender
+                                Wurm-/Ameisen-/Specht-/Eichhoernchen-Pfad
+                                wurde veraendert.
+  src/systems/WildlifeSystem.gd  PROGRESSION/BIRD_CARRY_INTERVAL,
+                                progression_ready(), _sync_progression(),
+                                biome_discovered-Signal, Vogel-Carry-Takt
+                                nach links, on_bird_seed_delivered(),
+                                5 P8-Debug-Hooks.
+  src/ui/HUD.gd                vierte Panel-Zeile "Arten: n/5", Titel
+                                "PHASE 8 · Tierwelt & Progression", DE/EN
+  src/Main.gd                  --p8-smoke, --p8-shot-before|bird|carry,
+                                _p8_shot()
+  src/autoload/Global.gd       unveraendert
+  data/localization.csv        248 Zeilen inkl. 9 P8-Schluesseln
+  tests/Phase8Smoke.gd         104 Checks
+  tools/build_phase8_report.py  selbst enthaltener MD/HTML-Bericht
+  SaveManager.gd / FORMAT_VERSION  KEINE Aenderung: wildlife.to_dict()
+                                speichert die Species bereits generisch.
+
+IMPORT / GENERATOR
+  $G --headless --path . --import -> exit 0, 0 Fehler
+  $G --headless --path . --script tools/generate_skilltree.gd --quit-after 5
+  -> [SKILLTREE] res://data/skilltrees/oak.tres | Knoten=24 | err=0
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  --seed=20261105 / 20261106 / 20261107; phase1 OHNE --seed.
+  Drei komplette Final-Laeufe:
+    phase0   3 OK    phase1  26 OK    phase2  25 OK
+    rev1    32 OK    rev2    27 OK    p3      56 OK
+    rev3    20 OK    rev4    32 OK    phase4  63 OK
+    phase5  58 OK    rev5    35 OK    rev6    34 OK
+    rev7    51 OK    rev8    59 OK    p6     132 OK
+    p7     130 OK    p8     104 OK
+    --------------------------------------------------
+    TOTAL  887 OK / 0 FEHLER / BAD=0 je Lauf (A, B, C)
+
+  P8-SMOKE SCHWERPUNKTE (104 Checks)
+    1) P5-Regression: 4 Arten / 6 Tiere vor der Progression
+    2) 1 -> 2 -> 3 entdeckte Biome schalten den Vogel frei; 5/5, 7 Tiere,
+       Idempotenz, dauerhafte Freischaltung bei sinkender Gesundheit
+    3) Flughoehe, Geschwindigkeit, Hitbox, Info-Toast, Klick, BIRD-Slot,
+       alle drei Tier-Tabellen, ADVANCED vs. PROGRESSION
+    4) StateMachine IDLE/WANDER/EAT/CARRY, Flugbewegung, Futter
+    5) Samen-Transport nach links mit echtem neuem Baum und Signalen
+    6) DE/EN, Save v6 (Tierliste stellt den Vogel wieder her)
+    7) Regression: AUTO aus, GLUCOSE_PACE 0.2, 21 Slots, 24/23 Skills,
+       16x16-Hitbox, P6/P7-Konstanten, R5/R7-HUD-Zeilen, CSV >= 248
+
+  ROBUSTHEIT (Seed-Flake ohne Test-Aufweichung)
+    Seed 20261107 liess den Vogel nach dem Transport bereits in einen
+    Folgezustand wechseln. Der Check verlangte zu streng exakt IDLE.
+    Jetzt gilt "CARRY beendet und nicht mehr im CARRY-Zustand" — die
+    Anforderung bleibt gleich streng, nur der Zufalls-Folgezustand wird
+    nicht mehr mitgeprueft. Alle drei Seeds danach erneut 887/887.
+
+F5-LAUF
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/frame.png --quit-after 25 \
+    -- --seed=20261105 --windowed --p8-shot-<preset>
+  Presets: before, bird, carry
+  Ergebnis: screenshots/p8_{before,bird,carry}.png
+
+VISUELLE PRUEFUNG
+  - before: "Tiere: 6", "Arten: 4/5 · noch 1 offen", Toast mit Bedingung
+  - bird:   "Tiere: 7", "Arten: 5/5 · alle da", Vogel fliegt ~96px ueber
+            dem Boden, Toast "Ein Vogel siedelt sich an ..."
+  - carry:  Vogel im CARRY-Zustand, Toast zum Samen-Transport
+  Alle drei: "PHASE 8 · Tierwelt & Progression", Biom-Zeile aus P7 sowie
+  die erhaltenen R5/R7- und P6-Zeilen.
+
+BERICHT
+  python3 tools/build_phase8_report.py
+  -> [P8-REPORT] md + html | Bilder: 3 | Snippets: 12 | Checks: 15
+  PHASE8-ERGEBNIS.html/.md: 3 Data-URI-Bilder, 0 externe Referenzen
+
+LIEFERUNG
+  python3 tools/build_zip.py PHASE8
+  -> deliverables/waldspiel-PHASE8.zip, project.godot im ZIP-Root,
+     .godot / ZIPs / Credentials ausgeschlossen, CRC-Test OK
+  Frischer ZIP-Extrakt: --headless --import (0 Fehler) + 17/17 Smokes.
+  Entsprechend der fortgeltenden Freigabe "Ja, alles inkl. GitHub-Push"
+  als EIN Commit auf main gepusht. PAT liegt ausserhalb des Repos in
+  /home/user/.waldspiel_github_pat (600); Askpass in
+  /home/user/.waldspiel_askpass.sh (700). Kein Token in Commit,
+  Remote-URL, Git-Config, gestagtem Diff oder Projektdatei.

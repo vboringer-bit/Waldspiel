@@ -158,6 +158,12 @@ func _ready() -> void:
 		smoke7.setup(_interaction, _chunk_manager, _hud, _save, _growth,
 			_water, _time, _season, _soil, _biomes, _camera)
 		add_child(smoke7)
+	elif args.has("--p8-smoke"):
+		var smoke8 = preload("res://tests/Phase8Smoke.gd").new()
+		smoke8.setup(_interaction, _chunk_manager, _hud, _save, _growth,
+			_water, _time, _season, _wildlife, _forest_health, _biomes,
+			_camera)
+		add_child(smoke8)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -237,6 +243,14 @@ func _apply_presets(args: PackedStringArray) -> void:
 			" scale=", get_tree().root.content_scale_factor,
 			" mode=", get_tree().root.content_scale_mode,
 			" aspect=", get_tree().root.content_scale_aspect)
+
+	# --- PHASE 8: fünfte Tierart / Vogel-Progression --------------------------
+	if args.has("--p8-shot-before"):
+		_p8_shot("before")
+	elif args.has("--p8-shot-bird"):
+		_p8_shot("bird")
+	elif args.has("--p8-shot-carry"):
+		_p8_shot("carry")
 
 	# --- PHASE 7: drei Biome ---------------------------------------------------
 	if args.has("--p7-shot-dry"):
@@ -830,6 +844,39 @@ func _p7_shot(wx: float, toast_key: String) -> void:
 	_forest_health.recompute()
 	_hud.refresh()
 	EventBus.toast.emit(tr(toast_key))
+
+
+## PHASE 8: Drei Zustände der Vogel-Progression. Die Biom-Entdeckungen
+## werden am Ende auf die Kameraposition zurueckgesetzt (nur Anzeige),
+## damit discovered == 3 bleibt und der Vogel sichtbar stehen bleibt.
+func _p8_shot(mode: String) -> void:
+	_p5_reset_world()
+	_biomes.reset()
+	Global.set_difficulty(Global.Difficulty.NORMAL)
+	_camera.set_zoom_immediate(1.0)
+	_camera.teleport_to(Vector2(0.0, 400.0))
+	_chunk_manager._refresh()
+	var a := _rev5_grow_tree(-220.0, 16, 14, 8)
+	var b := _rev5_grow_tree(0.0, 18, 16, 9)
+	var c := _rev5_grow_tree(220.0, 14, 12, 7)
+	_forest_health.debug_set_biodiversity(10)
+	_forest_health.recompute()
+	if mode != "before":
+		_biomes.debug_force_at(-8192.0)
+		_biomes.debug_force_at(8192.0)
+		_wildlife.debug_force_progression()
+		_biomes.debug_force_at(0.0)
+	_interaction.select_tree(b)
+	_hud.refresh()
+	if mode == "carry":
+		var bd := _wildlife.debug_animal("bird")
+		if bd != null:
+			bd.assign_carry(bd.home_x - 2304.0)
+		EventBus.toast.emit(tr("MSG_BIRD_CARRIED"))
+	elif mode == "bird":
+		EventBus.toast.emit(tr("MSG_BIRD_ARRIVED"))
+	else:
+		EventBus.toast.emit(tr("MSG_BIRD_REQUIRES"))
 
 
 func _p5_grow_tree(p_x: float, leaves: int) -> BaseTree:

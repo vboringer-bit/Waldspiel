@@ -237,3 +237,12 @@ MSG_BIOME_DISCOVERED,Neues Biom entdeckt: %s,New biome discovered: %s
 MSG_SOIL_BIOME,Biom: %s · Feuchte %d%% · Kosten x%.2f,Biome: %s · moisture %d%% · cost x%.2f
 HUD_BIOME_VISITS,Biom-Wechsel: %d,Biome visits: %d
 MSG_BIOME_EDGES,Drei Biome: links trocken, Mitte temperiert, rechts feucht.,Three biomes: dry on the left, temperate in the middle, wet on the right.
+HUD_PHASE8,PHASE 8 · Tierwelt & Progression,PHASE 8 · Wildlife & Progression
+ANIMAL_BIRD,Vogel,Bird
+HUD_SPECIES,Arten: %d/5 · %s,Species: %d/5 · %s
+SPECIES_ALL,alle da,all present
+SPECIES_WAITING,noch %d offen,%d still to come
+MSG_BIRD_ARRIVED,Ein Vogel siedelt sich an und traegt Eicheln nach links.,A bird settles in and carries acorns to the left.
+MSG_BIRD_LEFT,Der Vogel ist weitergezogen.,The bird has moved on.
+MSG_BIRD_CARRIED,Der Vogel traegt eine Eichel in ein anderes Biom.,The bird carries an acorn into another biome.
+MSG_BIRD_REQUIRES,Vogel erscheint ab 50% Wald-Gesundheit und allen drei Biomen.,Bird appears above 50% forest health and with all three biomes discovered.

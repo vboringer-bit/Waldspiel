@@ -19,6 +19,12 @@ const COLONY_INTERVAL := 10.0
 const CARRY_INTERVAL := 22.0
 const REMOTE_OFFSET := 2304.0
 const ADVANCED := ["woodpecker", "squirrel"]
+## PHASE 8: fuenfte Art. Bewusst NICHT in ADVANCED: _sync_advanced() und damit
+## alle R0-R8-Smokes (debug_species_count() == 4) bleiben unveraendert.
+const PROGRESSION := ["bird"]
+const PROGRESSION_BIRD_X := -460.0
+const BIRD_CARRY_INTERVAL := 30.0
+const SPECIES_TARGET := 5
 const BASELINE_WORM_X := [-260.0, -120.0]
 const BASELINE_ANT_X := [80.0, 220.0]
 const ADVANCED_WOODPECKER_X := -120.0
@@ -40,6 +46,7 @@ var food: int = 0
 var colony: int = 0
 var colony_timer: float = 0.0
 var carry_timer: float = 0.0
+var bird_carry_timer: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _connected: bool = false
 
@@ -74,10 +81,17 @@ func _connect() -> void:
 	EventBus.forest_health_changed.connect(_on_health_changed)
 	EventBus.parasite_spawned.connect(_on_parasite_spawned)
 	EventBus.game_loaded.connect(_on_game_loaded)
+	# PHASE 8: drittes entdecktes Biom stoesst die Vogel-Progression an.
+	EventBus.biome_discovered.connect(_on_biome_discovered)
 
 
 func _on_health_changed(value: float) -> void:
 	_sync_advanced(value)
+	_sync_progression()
+
+
+func _on_biome_discovered(_kind: int) -> void:
+	_sync_progression()
 
 
 func _on_parasite_spawned(tree: Node, _kind: int) -> void:
@@ -98,6 +112,7 @@ func reset() -> void:
 	colony = 0
 	colony_timer = 0.0
 	carry_timer = 0.0
+	bird_carry_timer = 0.0
 	for x in BASELINE_WORM_X:
 		_spawn_animal("worm", float(x), true)
 	for x in BASELINE_ANT_X:
@@ -108,6 +123,7 @@ func reset() -> void:
 	EventBus.wildlife_changed.emit()
 	if forest_health != null:
 		forest_health.recompute()
+	_sync_progression()
 
 
 func _clear() -> void:
@@ -196,6 +212,32 @@ func _sync_advanced(health: float) -> void:
 			EventBus.toast.emit(tr("MSG_WILDLIFE_LEFT"))
 
 
+## PHASE 8: Der Vogel siedelt sich NUR an, wenn der Wald gesund ist UND
+## alle drei Biome aus PHASE 7 entdeckt wurden. Entfernt wird er nur bei
+## sinkender Wald-Gesundheit - ein Save/Load mit noch nicht geladenem
+## BiomeSystem kann so keinen Vogel verlieren.
+func progression_ready() -> bool:
+	var healthy := forest_health != null \
+		and forest_health.value > ForestHealth.THRESHOLD
+	var all_biomes := BiomeSystem.instance != null \
+		and BiomeSystem.instance.debug_discovered() >= 3
+	return healthy and all_biomes
+
+
+func _sync_progression() -> void:
+	# PHASE 8: Die Ansiedlung ist eine DAUERHAFTE Freischaltung (Meilenstein),
+	# kein taegliches Kommen und Gehen. Nur reset()/_clear() setzt sie zurueck.
+	# Das macht Save/Load robust: wildlife.from_dict() stellt den Vogel aus der
+	# gespeicherten Tierliste wieder her, und ein anschliessendes
+	# forest_health.recompute() kann ihn nicht wieder entfernen.
+	if not progression_ready() or has_species("bird"):
+		return
+	_spawn_animal("bird", PROGRESSION_BIRD_X, true)
+	EventBus.animal_spawned.emit("bird")
+	EventBus.wildlife_changed.emit()
+	EventBus.toast.emit(tr("MSG_BIRD_ARRIVED"))
+
+
 func _assign_woodpecker(tree: Node) -> void:
 	if not (tree is BaseTree) or not has_species("woodpecker"):
 		return
@@ -240,6 +282,17 @@ func _tick(dt: float) -> void:
 		EventBus.toast.emit(tr("MSG_ANTHILL_GROWN"))
 		if colony >= 6 and anthills.size() < 3:
 			_spawn_anthill(180.0 + float(anthills.size()) * 420.0, colony)
+	# PHASE 8: Der Vogel traegt Eicheln nach LINKS (Eichhoernchen nach rechts).
+	bird_carry_timer += dt
+	if bird_carry_timer >= BIRD_CARRY_INTERVAL and has_species("bird"):
+		bird_carry_timer = 0.0
+		var bd := _first_animal("bird")
+		if bd != null and bd.state != Animal.State.CARRY:
+			var bx := bd.home_x
+			var btarget := bx - REMOTE_OFFSET
+			bd.assign_carry(btarget)
+			EventBus.seed_carried.emit(Vector2(bx, 0.0), Vector2(btarget, 0.0))
+			EventBus.toast.emit(tr("MSG_BIRD_CARRIED"))
 	carry_timer += dt
 	if carry_timer >= CARRY_INTERVAL and has_species("squirrel"):
 		carry_timer = 0.0
@@ -277,6 +330,18 @@ func on_woodpecker_help(a: Animal) -> int:
 
 func on_seed_delivered(_a: Animal) -> void:
 	debug_force_remote_seed()
+
+
+## PHASE 8: Der Vogel pflanzt am ENDE seines Fluges (links), nicht am
+# festen REMOTE_OFFSET des Eichhoernchens. Additiv: on_seed_delivered() und
+# debug_force_remote_seed() bleiben fuer alle alten Tests unveraendert.
+func on_bird_seed_delivered(a: Animal) -> void:
+	if a == null or interaction == null:
+		return
+	var x := a.target_x
+	var tree := interaction.spawn_tree_at(Vector2(x, 0.0), {})
+	if tree != null:
+		EventBus.seed_planted_remote.emit(Vector2(x, 0.0))
 
 
 func debug_force_remote_seed() -> BaseTree:
@@ -559,3 +624,31 @@ func debug_remote_positions() -> Array:
 		if t is BaseTree and (t as BaseTree).global_position.x > float(WorldGenerator.CHUNK_WIDTH_PX):
 			out.append((t as BaseTree).global_position)
 	return out
+
+
+# --------------------------------------------------------------------------- #
+# PHASE 8 Debug-Hooks
+# --------------------------------------------------------------------------- #
+func debug_species_target() -> int:
+	return SPECIES_TARGET
+
+
+func debug_progression_ready() -> bool:
+	return progression_ready()
+
+
+func debug_progression_health() -> float:
+	return forest_health.value if forest_health != null else 0.0
+
+
+func debug_progression_biomes() -> int:
+	return BiomeSystem.instance.debug_discovered() \
+		if BiomeSystem.instance != null else 0
+
+
+func debug_bird_carry_timer() -> float:
+	return bird_carry_timer
+
+
+func debug_force_progression() -> void:
+	_sync_progression()
