@@ -23,6 +23,12 @@ var visit_count: int = 0
 var discovered: Dictionary = {}
 
 var _acc: float = 0.0
+## KORREKTUR P8.1: Blend-Aenderungen wurden frueher mit 10 Hz emittiert und
+## loesten jedes Mal ein komplettes HUD.refresh() + eine Vollbild-Neutoenung
+## des Himmels aus -> Ruckler beim Biomwechsel. Jetzt mit Cooldown und
+## Mindestaenderung; echte Biom-Wechsel/Entdeckungen bleiben sofort.
+var _emit_cooldown: float = 0.0
+var _last_emitted_blend: float = 0.0
 
 
 func _enter_tree() -> void:
@@ -48,22 +54,26 @@ func _on_game_loaded() -> void:
 
 func _process(delta: float) -> void:
 	# 10 Hz reichen: Biom-Blenden aendern sich nur beim Kamera-Pan.
+	_emit_cooldown = maxf(_emit_cooldown - delta, 0.0)
 	_acc += delta
 	if _acc < 0.1:
 		return
 	_acc = 0.0
 	if camera != null:
-		_update_at(camera.global_position.x, true)
+		_update_at(camera.global_position.x, true, false)
 
 
-func _update_at(world_x: float, notify: bool) -> void:
+func _update_at(world_x: float, notify: bool, forced: bool = false) -> void:
 	if generator == null:
 		return
 	current_x = world_x
 	var kind := int(generator.biome_at(world_x))
 	var blend := generator.biome_blend_at(world_x)
 	var kind_changed := kind != current_kind
-	var blend_changed := absf(blend - current_blend) > 0.02
+	# Akkumuliere gegen den ZULETZT GESENDETEN Wert, nicht gegen den
+	# internen 10-Hz-Wert, damit kleine Schritte nicht verloren gehen.
+	var blend_changed := forced or (absf(blend - _last_emitted_blend) >= 0.05
+		and _emit_cooldown <= 0.0)
 	current_kind = kind
 	current_blend = blend
 	var key := str(kind)
@@ -74,6 +84,8 @@ func _update_at(world_x: float, notify: bool) -> void:
 		visit_count += 1
 	if kind_changed or blend_changed or first:
 		EventBus.biome_changed.emit(kind, blend)
+		_last_emitted_blend = blend
+		_emit_cooldown = 0.35
 	if first:
 		EventBus.biome_discovered.emit(kind)
 		if notify:
@@ -121,7 +133,9 @@ func reset() -> void:
 	visit_count = 0
 	discovered.clear()
 	_acc = 0.0
-	_update_at(0.0, false)
+	_emit_cooldown = 0.0
+	_last_emitted_blend = 0.0
+	_update_at(0.0, false, true)
 
 
 func to_dict() -> Dictionary:
@@ -152,7 +166,9 @@ func _event_refresh() -> void:
 # PHASE-7-Debug-Hooks (Smoke + Presets)
 # --------------------------------------------------------------------------- #
 func debug_force_at(world_x: float) -> void:
-	_update_at(world_x, true)
+	# Test-Hook: bewusst UNGEDROSSELT, damit P7-Smoke-Signalzaehler stabil
+	# bleiben und eine erzwungene Kameraposition sofort sichtbar wird.
+	_update_at(world_x, true, true)
 
 
 func debug_kind() -> int:
@@ -189,3 +205,12 @@ func debug_label_at(world_x: float) -> String:
 
 func debug_display() -> String:
 	return display_text()
+
+
+## KORREKTUR P8.1: Debug-Hooks fuer die gedrosselte Signal-Emission.
+func debug_emit_cooldown() -> float:
+	return _emit_cooldown
+
+
+func debug_last_emitted_blend() -> float:
+	return _last_emitted_blend

@@ -17,7 +17,8 @@ Vollständige, Godot-importierbare Projektstände (`project.godot` liegt jeweils
 | `waldspiel-REVISION6.zip` | REVISION 6 (auf GitHub, `bcbd1ba`) |
 | `waldspiel-REVISION7.zip` | REVISION 7 (auf GitHub, `50979d5`) |
 | `waldspiel-REVISION8.zip` | REVISION 8 — vorheriger Stand, auf GitHub |
-| `waldspiel-PHASE8.zip` | **PHASE 8 — aktueller Stand, auf GitHub** |
+| `waldspiel-PHASE8-FIX.zip` | **KORREKTURRUNDE P8.1 — aktueller Stand, auf GitHub** |
+| `waldspiel-PHASE8.zip` | PHASE 8 — fünfte Tierart (historisch) |
 | `waldspiel-PHASE7.zip` | PHASE 7 — drei Biome (historisch) |
 | `waldspiel-PHASE6.zip` | PHASE 6 — Bodenchemie, Mykorrhiza, Katastrophen (historisch) |
 
@@ -27,7 +28,9 @@ Der **aktuelle, lauffähige Projektstand** liegt direkt im Repo-Root (`project.g
 
 **REVISION 8.** Die Korrekturrunde (siehe `REVISION8-ERGEBNIS.html` / `.md`) ist als `waldspiel-REVISION8.zip` eingefroren und auf `main` gepusht (Nachfolger von `50979d5`). Sie bleibt als vorheriger Stand erhalten.
 
-**PHASE 8.** Der aktuelle Meilenstein (siehe `PHASE8-ERGEBNIS.html` / `.md`) ist als `waldspiel-PHASE8.zip` eingefroren und zusammen mit dem gesamten Quellstand auf `main` gepusht (Nachfolger von `0b2f064`). Fünf Tierarten mit Vogel-Progression; alle aelteren Regressionen bleiben gruen.
+**KORREKTURRUNDE P8.1.** Der aktuelle Stand (siehe `PHASE8-FIX-ERGEBNIS.html` / `.md`) ist als `waldspiel-PHASE8-FIX.zip` eingefroren und zusammen mit dem gesamten Quellstand auf `main` gepusht (Nachfolger von `a144657`). Neun gemeldete Fehler behoben: Eichhoernchen kleiner/bodengebunden/kletternd, Specht-Flug mit Frames und Sitzplatz, verstreute Eicheln mit 20% Keimung, Toast-Stack, keine Biom-/WASD-Ruckler, nahtlose Chunkgrenzen. Alle aelteren Regressionen bleiben gruen.
+
+**PHASE 8.** Der aktuelle Meilenstein (siehe `PHASE8-ERGEBNIS.html` / `.md`) ist als `waldspiel-PHASE8.zip` eingefroren und zusammen mit dem gesamten Quellstand auf `main` gepusht (Nachfolger von `0b2f064`). Dieses Paket ist historisch erhalten.
 
 **PHASE 7.** Der aktuelle Meilenstein (siehe `PHASE7-ERGEBNIS.html` / `.md`) ist als `waldspiel-PHASE7.zip` eingefroren und zusammen mit dem gesamten Quellstand auf `main` gepusht (Nachfolger von `d0c719c`). Dieses Paket ist historisch erhalten.
 

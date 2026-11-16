@@ -26,7 +26,9 @@ extends Node2D
 ##   * Wurm-Pixelart und gezeichnete Details sind deutlich dunkler/erdiger.
 ## Alle Tiere sind per Linksklick anwaehlbar (Info-Toast + EventBus-Signal).
 
-enum State { IDLE, WANDER, EAT, HELP_TREE, CARRY }
+## KORREKTUR P8.1: drei neue Zustaende AM ENDE, damit alle bestehenden
+## numerischen Zustandswerte und Savegames unveraendert bleiben.
+enum State { IDLE, WANDER, EAT, HELP_TREE, CARRY, FLY, PERCH, CLIMB }
 
 const SPEED := {
 	"worm": 8.0,
@@ -57,9 +59,22 @@ const BODY_SPAN := {
 	"worm": 12.0,
 	"ant": 9.0,
 	"woodpecker": 40.0,
-	"squirrel": 40.0,
+	"squirrel": 26.0,
 	"bird": 34.0,
 }
+
+# --------------------------------------------------------------------------- #
+# KORREKTUR P8.1: Eichhoernchen bodengebunden + kletternd, Specht fliegend
+# --------------------------------------------------------------------------- #
+const SQUIRREL_SCALE := 0.65          # 40px -> 26px Zeichnung
+const WOODPECKER_HEIGHT := 90.0       # Flughoehe ueber der Geländekante
+const WOODPECKER_FRAME_FPS := 9.0
+const PERCH_HEIGHT := 64.0            # Sitzplatz am Stamm
+const PERCH_TIME := 2.6
+const PECK_INTERVAL := 0.5
+const CLIMB_TOP := 72.0
+const CLIMB_DURATION := 3.4
+const CLIMB_SEARCH_RADIUS := 220.0
 
 var species: String = "worm"
 var state: int = State.IDLE
@@ -90,6 +105,16 @@ var _body_sprite: Sprite2D = null
 ## REVISION 7: ortsfester Tunnel ausserhalb des Tier-Transforms.
 var _trail_node: BurrowTrail = null
 var _debug_frozen: bool = false
+## KORREKTUR P8.1: vorab geladene Specht-Flug-Frames (kein load() pro Tick).
+var _flight_frames: Array[Texture2D] = []
+## Kletter-/Sitz-Zustand des Eichhoernchens bzw. Spechts.
+var climb_tree: BaseTree = null
+var climb_x: float = 0.0
+var climb_t: float = 0.0
+var perch_tree: BaseTree = null
+var perch_y: float = 0.0
+var perch_t: float = 0.0
+var peck_t: float = 0.0
 
 
 func setup(p_species: String, p_generator: WorldGenerator, p_x: float,
@@ -122,13 +147,15 @@ func reseat(p_x: float, p_depth: float = -1.0) -> void:
 	else:
 		burrow_depth = 0.0
 		burrow_target = 0.0
-		# PHASE 8: Vogel fliegt; alle anderen stehen auf der Kante.
+		# KORREKTUR P8.1: nur Vogel und Specht fliegen. Das Eichhoernchen
+		# steht jetzt genau wie die Ameise AUF der sichtbaren 4px-Kante
+		# und wird in jedem Tick per _follow_ground() nachgezogen.
 		if species == "bird":
 			base_y = surface_y - BIRD_HEIGHT
+		elif species == "woodpecker":
+			base_y = surface_y - WOODPECKER_HEIGHT
 		else:
-			# REVISION 6/7: Ameisen stehen mit den Fuessen AUF der sichtbaren
-			# Kante (4px-profilgenau), Specht/Eichhoernchen leicht darueber.
-			base_y = surface_y - (1.0 if species == "ant" else 4.0)
+			base_y = surface_y - 1.0
 	position.y = base_y
 	target_x = p_x
 	_burrow_center = Vector2(p_x, base_y)
@@ -172,7 +199,9 @@ func _publish_trail() -> void:
 
 func _ensure_body_sprite() -> void:
 	# PHASE 8: der Vogel nutzt den bereits vorhandenen PixelArt.BIRD-Slot.
-	if species != "worm" and species != "ant" and species != "bird":
+	# KORREKTUR P8.1: der Specht bekommt 4 echte Flug-Frames + Sitz-Frame.
+	if species != "worm" and species != "ant" and species != "bird" \
+			and species != "woodpecker":
 		return
 	if _body_sprite == null or not is_instance_valid(_body_sprite):
 		_body_sprite = Sprite2D.new()
@@ -185,8 +214,18 @@ func _ensure_body_sprite() -> void:
 		tex = PixelArt.ANT
 	elif species == "bird":
 		tex = PixelArt.BIRD
+	elif species == "woodpecker":
+		_flight_frames.clear()
+		for path in PixelArt.WOODPECKER_FRAMES:
+			_flight_frames.append(load(path) as Texture2D)
+		tex = PixelArt.WOODPECKER_FRAMES[0]
 	_body_sprite.texture = load(tex)
-	_body_sprite.position = Vector2(0.0, -3.0) if species == "ant" else Vector2.ZERO
+	if species == "ant":
+		_body_sprite.position = Vector2(0.0, -3.0)
+	elif species == "woodpecker":
+		_body_sprite.position = Vector2(0.0, -16.0)
+	else:
+		_body_sprite.position = Vector2.ZERO
 	_body_sprite.visible = true
 
 
@@ -206,6 +245,30 @@ func _update_body_sprite() -> void:
 		_body_sprite.rotation = sin(phase * 7.0) * 0.09
 		_body_sprite.scale = Vector2(0.82 * flip2,
 			0.82 + sin(phase * 7.0) * 0.10)
+	elif species == "woodpecker":
+		# KORREKTUR P8.1: echte Frame-Animation. Im Flug zyklisch durch
+		# f1..f4, beim Sitzen das eigene Perch-Frame, sonst langsam.
+		var idx := _woodpecker_frame_index()
+		if idx >= 0 and idx < _flight_frames.size() \
+				and _flight_frames[idx] != null:
+			_body_sprite.texture = _flight_frames[idx]
+		var flip3 := 1.0 if facing >= 0 else -1.0
+		_body_sprite.rotation = 0.0
+		if state == State.PERCH:
+			_body_sprite.scale = Vector2(0.90 * flip3, 0.90)
+		else:
+			_body_sprite.rotation = sin(phase * 5.0) * 0.06
+			_body_sprite.scale = Vector2(0.92 * flip3, 0.92)
+
+
+func _woodpecker_frame_index() -> int:
+	if state == State.PERCH:
+		return PixelArt.WOODPECKER_FLIGHT_FRAMES  # 5. Frame = Sitzplatz
+	if state == State.FLY or state == State.WANDER \
+			or state == State.HELP_TREE:
+		return int(phase * WOODPECKER_FRAME_FPS) \
+			% PixelArt.WOODPECKER_FLIGHT_FRAMES
+	return int(phase * 3.0) % 2
 
 
 func _set_state(new_state: int) -> void:
@@ -221,6 +284,15 @@ func _set_state(new_state: int) -> void:
 			timer = 0.0
 		State.CARRY:
 			timer = 0.0
+		State.FLY:
+			_pick_target()
+		State.PERCH:
+			timer = 0.0
+			perch_t = 0.0
+			peck_t = 0.0
+		State.CLIMB:
+			timer = 0.0
+			climb_t = 0.0
 	EventBus.animal_state_changed.emit(self, state)
 	queue_redraw()
 
@@ -254,6 +326,15 @@ func tick(dt: float) -> void:
 	# bestehender Wurm-/Ameisen-/Specht-/Eichhoernchen-Zweig veraendert wird.
 	if species == "bird":
 		_tick_bird(dt)
+		return
+	# KORREKTUR P8.1: eigene, bodengebundene bzw. fliegende Pfade. Frueher
+	# liefen beide Tiere mit einer beim Spawn eingefrorenen base_y durch
+	# den generischen Zweig und standen dadurch in der Luft.
+	if species == "squirrel":
+		_tick_squirrel(dt)
+		return
+	if species == "woodpecker":
+		_tick_woodpecker(dt)
 		return
 	# REVISION 7 Debug: Tier laeuft weiter durch die Simulation, bewegt sich
 	# aber NICHT. Damit ist pruefbar, dass der Tunnel auch bei laufenden
@@ -339,6 +420,147 @@ func _tick_bird(dt: float) -> void:
 		facing = 1 if position.x > before_x else -1
 	_update_body_sprite()
 	queue_redraw()
+
+
+## KORREKTUR P8.1: Eichhoernchen. Nach JEDER x-Bewegung wird die lokale
+## Gelaendekante neu abgefragt -> zu keiner Zeit Laufen in der Luft.
+## Zusaetzlich kann es an einem nahen Baum hoch- und wieder herunterklettern.
+func _tick_squirrel(dt: float) -> void:
+	if _debug_frozen:
+		_update_body_sprite()
+		queue_redraw()
+		return
+	var before_x := position.x
+	match state:
+		State.IDLE:
+			if timer <= 0.0:
+				_idle_count += 1
+				if _idle_count % 4 == 1 and _pick_climb_target():
+					_set_state(State.CLIMB)
+				elif _idle_count % 2 == 1:
+					_set_state(State.EAT)
+				else:
+					_set_state(State.WANDER)
+		State.WANDER:
+			_move_toward(target_x, speed() * dt)
+			if absf(position.x - target_x) < 4.0:
+				_set_state(State.IDLE)
+		State.EAT:
+			if timer <= 0.0:
+				_eat()
+		State.CARRY:
+			_move_toward(target_x, 260.0 * dt)
+			if absf(position.x - target_x) < 18.0:
+				if wildlife != null and wildlife.has_method("on_seed_delivered"):
+					wildlife.on_seed_delivered(self)
+				carrying_seed = false
+				position.x = home_x
+				_set_state(State.IDLE)
+		State.CLIMB:
+			_tick_climb(dt)
+		State.FLY, State.PERCH, State.HELP_TREE:
+			_set_state(State.IDLE)
+	# Waehrend des Kletterns ist das Tier AM STAMM, nicht in der Luft.
+	if state != State.CLIMB:
+		_follow_ground()
+	if absf(position.x - before_x) > 0.5:
+		facing = 1 if position.x > before_x else -1
+	_update_body_sprite()
+	queue_redraw()
+
+
+func _pick_climb_target() -> bool:
+	var best: BaseTree = null
+	var best_d := CLIMB_SEARCH_RADIUS
+	for n in get_tree().get_nodes_in_group("trees"):
+		if n is BaseTree and is_instance_valid(n):
+			var d := absf((n as BaseTree).global_position.x - position.x)
+			if d < best_d:
+				best_d = d
+				best = n as BaseTree
+	if best == null:
+		return false
+	climb_tree = best
+	climb_x = best.global_position.x \
+		+ 7.0 * (1.0 if facing >= 0 else -1.0)
+	climb_t = 0.0
+	return true
+
+
+func _tick_climb(dt: float) -> void:
+	if climb_tree == null or not is_instance_valid(climb_tree):
+		climb_tree = null
+		_set_state(State.IDLE)
+		return
+	climb_t += dt
+	var ground := generator.ground_y_at(climb_x) - 1.0
+	var top := climb_tree.global_position.y - CLIMB_TOP
+	var t := clampf(climb_t / CLIMB_DURATION, 0.0, 1.0)
+	if t < 0.24:
+		position.x = move_toward(position.x, climb_x, speed() * dt)
+		position.y = ground
+	else:
+		var u := (t - 0.24) / 0.76
+		position.x = climb_x
+		position.y = lerpf(ground, top, sin(u * PI))
+	if climb_t >= CLIMB_DURATION:
+		climb_tree = null
+		_set_state(State.IDLE)
+
+
+## KORREKTUR P8.1: echter Flug ~90px ueber dem Gelaende mit Bogenbahn.
+func _tick_woodpecker(dt: float) -> void:
+	if _debug_frozen:
+		_update_body_sprite()
+		queue_redraw()
+		return
+	var before_x := position.x
+	match state:
+		State.IDLE:
+			if timer <= 0.0:
+				_idle_count += 1
+				_set_state(State.FLY if _idle_count % 2 == 1 else State.WANDER)
+		State.WANDER, State.FLY:
+			_move_toward(target_x, speed() * dt)
+			if absf(position.x - target_x) < 6.0:
+				_set_state(State.IDLE)
+		State.EAT:
+			if timer <= 0.0:
+				_eat()
+		State.HELP_TREE:
+			_help(dt)
+		State.PERCH:
+			_tick_perch(dt)
+		State.CARRY, State.CLIMB:
+			_set_state(State.IDLE)
+	if generator != null:
+		surface_y = generator.ground_y_at(position.x)
+		base_y = surface_y - WOODPECKER_HEIGHT
+	if state == State.PERCH:
+		# Sitzplatz am Stamm, mit leichtem Pick-Wippen.
+		position.y = perch_y + sin(peck_t * 18.0) * 1.2
+	else:
+		position.y = base_y + sin(phase * 3.0) * 7.0
+	if absf(position.x - before_x) > 0.5:
+		facing = 1 if position.x > before_x else -1
+	_update_body_sprite()
+	queue_redraw()
+
+
+func _tick_perch(dt: float) -> void:
+	if perch_tree == null or not is_instance_valid(perch_tree):
+		perch_tree = null
+		_set_state(State.FLY)
+		return
+	perch_t += dt
+	peck_t += dt
+	if peck_t >= PECK_INTERVAL:
+		peck_t = 0.0
+		if wildlife != null and wildlife.has_method("on_woodpecker_peck"):
+			wildlife.on_woodpecker_peck(self, perch_tree)
+	if perch_t >= PERCH_TIME:
+		perch_tree = null
+		_set_state(State.FLY)
 
 
 func _tick_burrow(dt: float) -> void:
@@ -475,10 +697,15 @@ func _help(dt: float) -> void:
 	target_x = host_tree.global_position.x
 	_move_toward(target_x, 240.0 * dt)
 	if absf(position.x - target_x) < 26.0:
+		# KORREKTUR P8.1: der ERSTE Pick bleibt bei Ankunft erhalten, damit
+		# Phase5Smoke.debug_step(1.2) unveraendert gruen bleibt. Danach
+		# setzt sich der Specht an den Stamm und frisst weiter.
 		if wildlife != null and wildlife.has_method("on_woodpecker_help"):
 			wildlife.on_woodpecker_help(self)
+		perch_tree = host_tree
+		perch_y = host_tree.global_position.y - PERCH_HEIGHT
 		host_tree = null
-		_set_state(State.IDLE)
+		_set_state(State.PERCH)
 
 
 func _carry(dt: float) -> void:
@@ -497,6 +724,9 @@ func state_key() -> String:
 		State.EAT: return "STATE_EAT"
 		State.HELP_TREE: return "STATE_HELP_TREE"
 		State.CARRY: return "STATE_CARRY"
+		State.FLY: return "STATE_FLY"
+		State.PERCH: return "STATE_PERCH"
+		State.CLIMB: return "STATE_CLIMB"
 	return "STATE_IDLE"
 
 
@@ -512,6 +742,9 @@ func hit_rect() -> Rect2:
 		return Rect2(global_position + Vector2(-6.0, -8.0), Vector2(12.0, 10.0))
 	if species == "bird":
 		return Rect2(global_position + Vector2(-20.0, -20.0), Vector2(40.0, 36.0))
+	# KORREKTUR P8.1: kleinere Klickflaeche passend zum 26px-Eichhoernchen.
+	if species == "squirrel":
+		return Rect2(global_position + Vector2(-13.0, -18.0), Vector2(26.0, 22.0))
 	return Rect2(global_position + Vector2(-18.0, -30.0), Vector2(36.0, 34.0))
 
 
@@ -679,25 +912,21 @@ func _draw() -> void:
 		"ant":
 			_draw_ant(w)
 		"woodpecker":
-			var body := Color(0.18, 0.20, 0.20, 1.0)
-			draw_circle(Vector2(0.0, -16.0), 9.0, body)
-			draw_circle(Vector2(7.0 * f, -22.0), 6.0, body)
-			draw_rect(Rect2(3.0 * f - 4.0, -29.0, 8.0, 5.0),
-				Color(0.82, 0.18, 0.14, 1.0))
-			var beak := PackedVector2Array([
-				Vector2(12.0 * f, -22.0), Vector2(20.0 * f, -20.0),
-				Vector2(12.0 * f, -18.0),
-			])
-			draw_colored_polygon(beak, Color(0.90, 0.76, 0.38, 1.0))
-			draw_circle(Vector2(9.0 * f, -23.0), 1.3, Color.WHITE)
-			var tail := PackedVector2Array([
-				Vector2(-7.0, -14.0), Vector2(-18.0 * f, -10.0),
-				Vector2(-6.0, -10.0),
-			])
-			draw_colored_polygon(tail, body)
-			draw_line(Vector2(-3.0, -8.0), Vector2(-3.0, -2.0), body, 2.0)
-			draw_line(Vector2(3.0, -8.0), Vector2(3.0, -2.0), body, 2.0)
+			# KORREKTUR P8.1: der Koerper ist jetzt ein Sprite2D mit echten
+			# Flug-Frames. Nur als Fallback (fehlendes Sprite) und fuer den
+			# Pick-Blitz wird hier noch gezeichnet.
+			if _body_sprite == null or not is_instance_valid(_body_sprite) \
+					or not _body_sprite.visible:
+				draw_circle(Vector2(0.0, -16.0), 9.0,
+					Color(0.18, 0.20, 0.20, 1.0))
+			if state == State.PERCH:
+				draw_line(Vector2(8.0 * f, -14.0),
+					Vector2(15.0 * f, -14.0),
+					Color(0.90, 0.76, 0.38, 0.85), 1.5)
 		"squirrel":
+			# KORREKTUR P8.1: 40px -> 26px, einheitlich skaliert.
+			draw_set_transform(Vector2.ZERO, 0.0,
+				Vector2(SQUIRREL_SCALE, SQUIRREL_SCALE))
 			var fur := Color(0.88, 0.45, 0.12, 1.0)
 			var dark := Color(0.60, 0.28, 0.08, 1.0)
 			draw_circle(Vector2(-11.0 * f, -15.0), 11.0, dark)
@@ -713,3 +942,55 @@ func _draw() -> void:
 					Color(0.55, 0.34, 0.12, 1.0))
 				draw_rect(Rect2(11.0 * f, -22.0, 4.0, 3.0),
 					Color(0.32, 0.20, 0.08, 1.0))
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# --------------------------------------------------------------------------- #
+# KORREKTUR P8.1: Debug-Hooks fuer FixSmoke
+# --------------------------------------------------------------------------- #
+func debug_is_climbing() -> bool:
+	return species == "squirrel" and state == State.CLIMB
+
+
+func debug_is_perched() -> bool:
+	return species == "woodpecker" and state == State.PERCH
+
+
+func debug_is_flying() -> bool:
+	return species == "woodpecker" and state == State.FLY
+
+
+func debug_frame_index() -> int:
+	return _woodpecker_frame_index() if species == "woodpecker" else -1
+
+
+func debug_frame_count() -> int:
+	return _flight_frames.size()
+
+
+func debug_frame_path() -> String:
+	if _body_sprite == null or _body_sprite.texture == null:
+		return ""
+	return _body_sprite.texture.resource_path
+
+
+func debug_ground_offset() -> float:
+	if generator == null:
+		return 0.0
+	return generator.ground_y_at(position.x) - position.y
+
+
+func debug_force_climb() -> bool:
+	if species != "squirrel" or not _pick_climb_target():
+		return false
+	_set_state(State.CLIMB)
+	return true
+
+
+func debug_force_perch(tree: BaseTree) -> bool:
+	if species != "woodpecker" or tree == null:
+		return false
+	perch_tree = tree
+	perch_y = tree.global_position.y - PERCH_HEIGHT
+	_set_state(State.PERCH)
+	return true

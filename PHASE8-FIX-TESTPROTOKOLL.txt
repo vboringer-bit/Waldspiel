@@ -1,0 +1,139 @@
+WALD-REGENERATION — KORREKTURRUNDE P8.1: NEUN GEMELDETE FEHLER
+Godot 4.7.2 stable · 2026-11-15 · Nachfolger von a144657 (PHASE 8)
+======================================================================
+
+SCOPE (dokumentierte Annahme nach Master-Punkt §13; DECISIONS.md §78)
+  Der User meldete wörtlich:
+    1) Eichhoernchen kleiner
+    2) Eichhoernchen zu keiner Zeit in der Luft laufen
+    3) Eichhoernchen auf Baeume klettern koennen
+    4) Ruckler bei jedem Biom-Wechsel
+    5) Ruckler bei schneller WASD-Kamera
+    6) Eicheln nicht immer an derselben Stelle / nur 20% Keimung /
+       seltener / verstreut
+    7) Specht fliegen mit Frame-Animation, auf Baeume setzen, Parasiten fressen
+    8) Nachrichten stapeln, ausbleichen, verschwinden
+    9) Bodengenerierung an Chunkgrenzen zu unterschiedlich
+  Keine Rueckfrage (Auftrag eindeutig). Keine neue PHASE: Fehlerbehebungsrunde
+  auf P8. Tag/Nacht, begehbare Berge, 40-60 Skillnodes, SFX bleiben aussen vor.
+
+DIAGNOSE (vorher -> nachher)
+  TerrainSurface._draw()   : EIN tint in der Chunk-Mitte -> 32 Streifen in
+                             WELTKOORDINATEN (Nachbarchunks identisch).
+  ChunkManager._refresh()  : 1 Chunk = 711ms in EINEM Frame -> 2-Spalten-
+                             Scheiben, 4ms Frame-Budget, Start-Chunks synchron.
+  Generator                : _raw_reservoir() 5x/Zelle, atlas_slot_at() 2x/Tile
+                             -> _raw_res_cache + _slot_cache (Wiederholbau 31ms).
+  BiomeSystem              : biome_changed mit 10Hz bei jeder Blende -> Cooldown
+                             0,35s + Mindestaenderung 0,05; echte Wechsel sofort.
+  HUD                      : 27 Signale -> refresh() -> Dirty-Flag, 10-Hz-Takt.
+  SkyBackground            : modulate pro Signal auf 1920x1080 -> Interpolation
+                             einmal pro Frame.
+  Animal.tick()            : eingefrorene base_y -> Eichhoernchen per
+                             _follow_ground() bodengebunden; Specht fliegt 90px.
+  WildlifeSystem           : base_x + 2304px IMMER -> verstreute Ziele, 20%
+                             Keimung, Intervall 55s statt 22s.
+
+GEENDERTE / NEUE QUELLEN
+  src/animals/Animal.gd            State.FLY/PERCH/CLIMB am Enum-Ende,
+                                   BODY_SPAN squirrel 26, SQUIRREL_SCALE,
+                                   WOODPECKER_HEIGHT 90, 5 Frame-Texturen,
+                                   _tick_squirrel/_tick_climb/_tick_woodpecker/
+                                   _tick_perch/_woodpecker_frame_index,
+                                   _help() setzt danach PERCH, Hitbox 26x22,
+                                   9 Debug-Hooks. Wurm-/Ameisen-Pfad unberuehrt.
+  src/systems/WildlifeSystem.gd  CARRY_INTERVAL 55, GERMINATION_CHANCE 0.20,
+                                   _scattered_carry_target(), _deliver_squirrel(),
+                                   _plant_remote_at(), on_woodpecker_peck(),
+                                   Transport-Statistik + Debug-Hooks.
+                                   debug_force_remote_seed() UNVERAENDERT.
+  src/ui/HUD.gd                 VBoxContainer ToastStack (5 Zeilen, 6s, 1.5s
+                                   Fade), 27 Signal-Handler -> _request_refresh(),
+                                   Debug-Hooks.
+  src/world/TerrainSurface.gd    streifenweise Welt-Tints + debug_stripe_tints()
+  src/world/WorldGenerator.gd    globale positionsbasierte Deko, 2 neue Caches
+  src/world/Chunk.gd             build_slice() / _finish_build() / is_build_complete()
+  src/world/ChunkManager.gd      2-Spalten-Scheiben, 4ms Budget, Start-Chunks
+                                   synchron, 4 Debug-Hooks inkl. Bench
+  src/systems/BiomeSystem.gd     gedrosselte Blend-Signale, debug_force_at()
+                                   bleibt ungedrosselt
+  src/background/SkyBackground.gd Zielton-Interpolation pro Frame
+  src/render/PixelArt.gd         WOODPECKER_FRAMES (ausserhalb PATHS -> 21)
+  src/Main.gd                    --fix-smoke, --fix-shot-wildlife|toasts|seam,
+                                   enable_sliced_build_after_init()
+  tools/generate_placeholders.py build_woodpecker_frames() -> 5 eigene PNGs
+  assets/placeholders/PIXELART.md Dokumentation der Frames
+  data/localization.csv          253 Zeilen (STATE_FLY/PERCH/CLIMB,
+                                   MSG_ACORN_CACHED, MSG_WOODPECKER_EAT)
+  tests/Revision5Smoke.gd        Groessenerwartung an neue Anforderung angepasst
+  tests/FixSmoke.gd              118 Checks (--fix-smoke)
+  tools/build_phase8_fix_report.py  selbst enthaltener MD/HTML-Bericht
+
+IMPORT / GENERATOR
+  $G --headless --path . --import -> exit 0, 0 Fehler
+  Skillgen: 24 Knoten / err=0 (unveraendert)
+
+HEADLESS SMOKES (je `timeout 240 $G --headless --path . -- --<t>-smoke`)
+  --seed=20261105 / 20261106 / 20261107; phase1 OHNE --seed.
+  Drei komplette Final-Laeufe:
+    phase0   3 OK    phase1  26 OK    phase2  25 OK
+    rev1    32 OK    rev2    27 OK    p3      56 OK
+    rev3    20 OK    rev4    32 OK    phase4  63 OK
+    phase5  58 OK    rev5    35 OK    rev6    34 OK
+    rev7    51 OK    rev8    59 OK    p6     132 OK
+    p7     130 OK    p8     104 OK    fix    118 OK
+    --------------------------------------------------
+    TOTAL 1005 OK / 0 FEHLER / BAD=0 je Lauf (A, B, C)
+
+  FIX-SMOKE SCHWERPUNKTE (118 Checks)
+    1) Erbe/Regression + 5 verschiedene Frame-PNGs (MD5)
+    2) Eichhoernchen 26px / Hitbox 26x22
+    3) Bodenkontakt bei 7 x-Positionen + 50 Ticks, max. Abweichung <= 1.5px
+    4) CLIMB hoch und wieder runter, danach bodengebunden
+    5) Specht 90px Flughoehe, >= 3 verschiedene Frames pro Flug, nie bodennah
+    6) PERCH am Stamm (tree.y - 64), Parasiten werden wirklich gefressen
+    7) 40 Transporte: 20%-Keimungsbereich, >= 30 unique Ziele, beide
+       Richtungen, Streuung > 3000px, garantierter P5-Hook bleibt 1 Baum
+    8) Toast-Stack: 3 -> 5 Zeilen, Reihenfolge, Fade nach 5s, weg nach 7s
+    9) Naht: 32 Streifen/Chunk, |s1[31] - s2[0]| < 0.01, Hoehenlinie/
+       Schichtgrenze/Deko-Dichte stetig
+   10) 20 Blend-Schritte -> hoechstens 5 Signale; 12 Signale -> 1 Dirty-Flag
+   11) Chunk-Bench 711ms / Cache 31ms; gescheitelter Bau mit Pending-Jobs,
+       danach alle Chunks vollstaendig (TileMap/Surface/Contours)
+   12) Save/Load v6 + 16px-Raster + R5/R7-HUD-Zeilen + CSV >= 253
+
+F5-LAUF (zeitgescheitelte Chunks AKTIV)
+  $G --headless --path . --quit-after 180 -- --seed=20261105 --windowed
+  -> exit 0, 0 Fehler
+
+RENDERS (je 25 Frames, 1920x1080, 0 Fehler)
+  xvfb-run -a -s "-screen 0 1920x1080x24" $G --path . \
+    --rendering-driver opengl3 --resolution 1920x1080 --fixed-fps 10 \
+    --write-movie <frames>/frame.png --quit-after 25 \
+    -- --seed=20261105 --windowed --fix-shot-<preset>
+  Presets: wildlife, toasts, seam
+  -> screenshots/fix_{wildlife,toasts,seam}.png
+
+VISUELLE PRUEFUNG
+  - wildlife: Specht mit rotem Schopf im Flug-Frame, Eichhoernchen klein und
+    auf der Geländekante, vier Nachrichten klar untereinander
+  - toasts: fuenf Zeilen gestapelt, volle Deckkraft, keine Ueberschreibung
+  - seam: Kamera auf x=4096, Oberkante und Bodenfaerbung durchgehend
+  Alle drei: "PHASE 8 · Tierwelt & Progression", Biom-, Boden-, Ereignis-,
+  Versorgungs-, Licht- und Arten-Zeile erhalten.
+
+BERICHT
+  python3 tools/build_phase8_fix_report.py
+  -> [FIX-REPORT] md + html | Bilder: 3 | Snippets: 12 | Checks: 19
+  PHASE8-FIX-ERGEBNIS.html/.md: 3 Data-URI-Bilder, 0 externe Referenzen
+
+LIEFERUNG
+  python3 tools/build_zip.py PHASE8-FIX
+  -> deliverables/waldspiel-PHASE8-FIX.zip, project.godot im ZIP-Root,
+     .godot / ZIPs / Credentials ausgeschlossen, CRC-Test OK
+  Frischer ZIP-Extrakt: --headless --import (0 Fehler) + 18/18 Smokes.
+  Gemaess fortgeltender Freigabe "Ja, alles inkl. GitHub-Push" als EIN Commit
+  auf main gepusht. PAT liegt ausserhalb des Repos in
+  /home/user/.waldspiel_github_pat (600); Askpass in
+  /home/user/.waldspiel_askpass.sh (700). Kein Token in Commit, Remote-URL,
+  Git-Config, gestagtem Diff oder Projektdatei.

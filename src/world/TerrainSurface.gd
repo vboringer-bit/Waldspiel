@@ -20,11 +20,13 @@ const SPECK_DARK := Color(0.13, 0.12, 0.11)
 const SPECK_LIGHT := Color(0.37, 0.34, 0.31)
 
 var index: int = 0
+var origin: float = 0.0
 var generator: WorldGenerator
 
 
 func setup(p_index: int, p_generator: WorldGenerator) -> void:
 	index = p_index
+	origin = float(p_index * WorldGenerator.CHUNK_WIDTH_PX)
 	generator = p_generator
 	name = "Surface"
 	z_index = 1                 # ueber tile_layer (0), unter Baeumen (2)
@@ -35,7 +37,6 @@ func _draw() -> void:
 	if generator == null:
 		return
 	var steps := int(WorldGenerator.CHUNK_WIDTH_PX / STEP)   # 512
-	var origin := float(index * WorldGenerator.CHUNK_WIDTH_PX)
 	var top := PackedVector2Array()
 	var bottom := PackedVector2Array()
 	for s in range(steps + 1):
@@ -49,14 +50,35 @@ func _draw() -> void:
 	poly.append_array(top)
 	for i in range(bottom.size() - 1, -1, -1):
 		poly.append(bottom[i])
-	# PHASE 7: Oberkanten-Ton folgt dem Biom. Im Kern (Alpha 0) bleibt BODY
-	# exakt erhalten und es entsteht kein zusaetzlicher Draw-Aufruf.
-	var tint := generator.biome_tint_at(origin + WorldGenerator.CHUNK_WIDTH_PX * 0.5)
-	if tint.a > 0.002:
-		draw_colored_polygon(poly, BODY.lerp(Color(tint.r, tint.g, tint.b),
-			clampf(tint.a * 2.2, 0.0, 0.65)))
-	else:
-		draw_colored_polygon(poly, BODY)
+	# KORREKTUR P8.1: Der Biom-Ton wurde frueher EINMAL in der Chunk-Mitte
+	# berechnet und auf den ganzen Chunk angewandt -> harter Farbsprung an
+	# jeder 2048px-Grenze. Jetzt wird streifenweise in WELTKOORDINATEN
+	# abgetastet (identisch zu TerrainContours._draw_biome_tint), damit
+	# linker und rechter Nachbarchunk an der Naht exakt dieselbe Farbe haben.
+	# Im temperierten Kern bleibt der bisherige EINE draw_colored_polygon-
+	# Aufruf mit BODY bitgenau erhalten.
+	draw_colored_polygon(poly, BODY)
+	var any_tint := false
+	for i in 32:
+		var wx := origin + (float(i) + 0.5) * 64.0
+		if generator.biome_tint_at(wx).a > 0.002:
+			any_tint = true
+			break
+	if any_tint:
+		for i in 32:
+			var wx := origin + (float(i) + 0.5) * 64.0
+			var tint := generator.biome_tint_at(wx)
+			if tint.a <= 0.002:
+				continue
+			var i0 := i * 16
+			var i1 := mini((i + 1) * 16, top.size() - 1)
+			var quad := PackedVector2Array()
+			for k in range(i0, i1 + 1):
+				quad.append(top[k])
+			for k in range(i1, i0 - 1, -1):
+				quad.append(bottom[k])
+			draw_colored_polygon(quad, BODY.lerp(
+				Color(tint.r, tint.g, tint.b), clampf(tint.a * 2.2, 0.0, 0.65)))
 
 	# Verbrannte Oberkante + heller Aschesaum.
 	draw_polyline(top, RIM_DARK, 2.0)
@@ -71,3 +93,16 @@ func _draw() -> void:
 		var yy := top[s].y + 6.0 + float(absi(h) % 14)
 		draw_rect(Rect2(float(s) * STEP + 1.0, yy, 2.0, 2.0),
 			SPECK_DARK if h % 2 == 0 else SPECK_LIGHT)
+
+
+## KORREKTUR P8.1: Debug-Hook. Liefert die 32 Streifen-Alphas in
+## WELTKOORDINATEN. Der letzte Streifen von Chunk n und der erste von
+## Chunk n+1 muessen praktisch identisch sein (keine Naht).
+func debug_stripe_tints() -> Array:
+	var out: Array[float] = []
+	if generator == null:
+		return out
+	for i in 32:
+		out.append(generator.biome_tint_at(
+			origin + (float(i) + 0.5) * 64.0).a)
+	return out

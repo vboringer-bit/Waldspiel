@@ -20,21 +20,31 @@ var contours: TerrainContours
 ## rief jeweils den Noise-Generator auf -> sichtbarer Ruckler.
 var _water_cells: Array[Vector2i] = []
 
+## KORREKTUR P8.1: zeitgescheitelter Chunk-Aufbau. Ein kompletter Chunk
+## kostete frueher einen ganzen Frame (sichtbarer Ruckler beim Ueberfahren
+## einer Chunkgrenze mit schnellem WASD). Jetzt werden 4 Spalten pro
+## Scheibe gebaut; ChunkManager verteilt die Scheiben auf mehrere Frames.
+## load_radius = 2 => der neu gebaute Chunk liegt zwei Chunks neben der
+## Kamera und ist daher noch ausserhalb des sichtbaren Ausschnitts.
+var _done_cols: int = 0
+var _caves_partial: Dictionary = {}
+var _water_partial: Dictionary = {}
+var _built: bool = false
+
 
 func setup(p_index: int, p_generator: WorldGenerator, p_tile_set: TileSet,
-		p_world_state: WorldState) -> void:
+		p_world_state: WorldState, p_sliced: bool = false) -> void:
 	index = p_index
 	generator = p_generator
 	world_state = p_world_state
 	name = "Chunk_%d" % index
 	position = Vector2(float(index * WorldGenerator.CHUNK_WIDTH_PX), 0.0)
-	_build_terrain(p_tile_set)
-	_build_decor()
-	EventBus.reservoir_dried.connect(_on_reservoir_dried)
-	EventBus.reservoir_level_changed.connect(_on_level_changed)
+	_done_cols = 0
+	_built = false
+	_caves_partial.clear()
+	_water_partial.clear()
+	_water_cells.clear()
 
-
-func _build_terrain(p_tile_set: TileSet) -> void:
 	tile_layer = TileMapLayer.new()
 	tile_layer.name = "Terrain"
 	tile_layer.tile_set = p_tile_set
@@ -49,40 +59,68 @@ func _build_terrain(p_tile_set: TileSet) -> void:
 	surface.setup(index, generator)
 	add_child(surface)
 
-	# REVISION 2: Strukturen sammeln (inkl. 2 Tiles Rand, damit Blobs an der
-	# Chunk-Grenze nicht hart abgeschnitten werden).
-	var caves: Dictionary = {}
-	var water: Dictionary = {}
+	_build_decor()
+	EventBus.reservoir_dried.connect(_on_reservoir_dried)
+	EventBus.reservoir_level_changed.connect(_on_level_changed)
+
+	if not p_sliced:
+		build_slice(WorldGenerator.CHUNK_TILES_X)
+
+
+## Baut `cols` weitere Spalten. Rueckgabe true, wenn der Chunk fertig ist.
+## Strukturen werden mit +-2 Spalten Rand gescannt, damit Blobs an der
+## Chunkgrenze nicht hart abgeschnitten werden.
+func build_slice(cols: int) -> bool:
+	if _built:
+		return true
 	var first_gx := index * WorldGenerator.CHUNK_TILES_X
-	for lx in range(-2, WorldGenerator.CHUNK_TILES_X + 2):
+	var end := mini(_done_cols + cols, WorldGenerator.CHUNK_TILES_X)
+
+	for lx in range(_done_cols - 2, end + 2):
 		var gx := first_gx + lx
 		var top := generator.surface_tile_y_at(float(gx * WorldGenerator.TILE_SIZE))
 		for ty in range(top + 1, WorldGenerator.BOTTOM_TILE_Y + 1):
 			if generator.cave_at(gx, ty):
-				caves[Vector2i(gx, ty)] = true
+				_caves_partial[Vector2i(gx, ty)] = true
 			elif generator.reservoir_at(gx, ty):
-				water[Vector2i(gx, ty)] = true
+				_water_partial[Vector2i(gx, ty)] = true
 
-	for lx in WorldGenerator.CHUNK_TILES_X:
+	for lx in range(_done_cols, end):
 		var gx := first_gx + lx
 		var top := generator.surface_tile_y_at(float(gx * WorldGenerator.TILE_SIZE))
-		# Top-Zeile auslassen: TerrainSurface deckt sie ab (auch bei halben
-		# Hoehenversaetzen), sonst gaebe es wieder harte Ecken.
+		# Top-Zeile auslassen: TerrainSurface deckt sie ab.
 		for ty in range(top + 1, WorldGenerator.BOTTOM_TILE_Y + 1):
 			var slot := _slot_for(gx, ty)
 			if slot >= 0:
 				var alt := generator.alternative_at(gx, ty)
 				tile_layer.set_cell(Vector2i(lx, ty), 0, Vector2i(slot, 0), alt)
 
-	for tv in water.keys():
+	_done_cols = end
+	if _done_cols >= WorldGenerator.CHUNK_TILES_X:
+		_finish_build()
+		return true
+	return false
+
+
+func _finish_build() -> void:
+	var first_gx := index * WorldGenerator.CHUNK_TILES_X
+	for tv in _water_partial.keys():
 		var g: Vector2i = tv as Vector2i
 		var lx := g.x - first_gx
 		if lx >= 0 and lx < WorldGenerator.CHUNK_TILES_X:
 			_water_cells.append(Vector2i(lx, g.y))
-
 	contours = TerrainContours.new()
-	contours.setup(index, generator, world_state, caves, water)
+	contours.setup(index, generator, world_state, _caves_partial, _water_partial)
 	add_child(contours)
+	_built = true
+
+
+func is_build_complete() -> bool:
+	return _built
+
+
+func debug_built_columns() -> int:
+	return _done_cols
 
 
 func _slot_for(gx: int, ty: int) -> int:

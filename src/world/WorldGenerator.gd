@@ -64,6 +64,12 @@ var _reservoir_noise := FastNoiseLite.new()
 var _seed_noise := FastNoiseLite.new()
 var _cave_cache: Dictionary = {}
 var _res_cache: Dictionary = {}
+## KORREKTUR P8.1: Die 1-Tile-Dilatation rief `_raw_reservoir()` fuer jede
+## Zelle 5x auf; `atlas_slot_at()` wurde pro Tile 2x (Slot + Alternative)
+## berechnet. Beides wird jetzt gecacht -> der Chunk-Bau wird mehrfach
+## schneller und der WASD-Ruckler verschwindet zusaetzlich zur Scheitelung.
+var _raw_res_cache: Dictionary = {}
+var _slot_cache: Dictionary = {}
 
 
 func _init(p_seed: int = 20261105) -> void:
@@ -74,6 +80,8 @@ func set_world_seed(p_seed: int) -> void:
 	world_seed = p_seed
 	_cave_cache.clear()
 	_res_cache.clear()
+	_raw_res_cache.clear()
+	_slot_cache.clear()
 	_configure(_height_noise, p_seed, 1, FastNoiseLite.TYPE_SIMPLEX_SMOOTH, 3, 0.50)
 	_configure(_detail_noise, p_seed, 2, FastNoiseLite.TYPE_SIMPLEX, 2, 0.45)
 	_configure(_variation_noise, p_seed, 3, FastNoiseLite.TYPE_VALUE, 2, 0.50)
@@ -89,6 +97,8 @@ func set_cave_area_scale(value: float) -> void:
 	_cave_radius_scale = sqrt(cave_area_scale)
 	_cave_cache.clear()
 	_res_cache.clear()
+	_raw_res_cache.clear()
+	_slot_cache.clear()
 
 
 func _configure(n: FastNoiseLite, s: int, salt: int, type: int, octaves: int, gain: float) -> void:
@@ -367,6 +377,15 @@ func cave_at(gx: int, ty: int) -> bool:
 
 
 func _raw_reservoir(gx: int, ty: int) -> bool:
+	var rk := Vector2i(gx, ty)
+	if _raw_res_cache.has(rk):
+		return _raw_res_cache[rk]
+	var rv := _raw_reservoir_uncached(gx, ty)
+	_raw_res_cache[rk] = rv
+	return rv
+
+
+func _raw_reservoir_uncached(gx: int, ty: int) -> bool:
 	if is_starter_reservoir(gx, ty):
 		return true
 	if cave_at(gx, ty):
@@ -453,6 +472,15 @@ func material_at(gx: int, ty: int) -> SoilKind:
 
 ## Liefert den Atlas-Slot fuer ein Tile oder -1 fuer Luft.
 func atlas_slot_at(gx: int, ty: int) -> int:
+	var sk := Vector2i(gx, ty)
+	if _slot_cache.has(sk):
+		return _slot_cache[sk]
+	var sv := _atlas_slot_uncached(gx, ty)
+	_slot_cache[sk] = sv
+	return sv
+
+
+func _atlas_slot_uncached(gx: int, ty: int) -> int:
 	var surface_ty := surface_tile_y_at(float(gx * TILE_SIZE))
 	if ty < surface_ty or ty > BOTTOM_TILE_Y:
 		return -1
@@ -515,37 +543,58 @@ func chunk_seed(chunk_index: int) -> int:
 
 
 func decorations_for_chunk(chunk_index: int) -> Array[Dictionary]:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = chunk_seed(chunk_index)
 	var out: Array[Dictionary] = []
 	var used: Array[int] = []
+	var start_gx := chunk_index * CHUNK_TILES_X
 
-	# Start-Chunk: 4 Stuempfe (Master-Prompt: 3-5), sonst 1-2 zur Deko.
-	var stump_count := 4 if chunk_index == 0 else rng.randi_range(1, 2)
-	for _i in stump_count:
-		var tx := _spread_x(rng, used)
-		used.append(tx)
-		var wx := float(chunk_index * CHUNK_WIDTH_PX + tx * TILE_SIZE)
-		# Fliessende Oberflaeche als Auflagehoehe (4px-Raster).
+	# KORREKTUR P8.1: frueher wurde der RNG pro Chunk neu gesetzt und die
+	# Anzahl (4 Stuempfe in Chunk 0, 1-2 sonst) hart umgeschaltet -> an der
+	# Chunkgrenze sprang die Deko-Dichte sichtbar. Jetzt entscheidet ein
+	# GLOBALER, positionsbasierter Hash fuer jede 16px-Spalte. Die Dichte
+	# ist damit ueber die Grenze hinweg konstant und weiterhin seed-stabil.
+	for lx in range(4, CHUNK_TILES_X - 5):
+		var gx := start_gx + lx
+		var h := ("%d_decor_%d" % [world_seed, gx]).hash() & 0x7fffffff
+		var roll := h % 1000
+		var kind := ""
+		if roll < 22:
+			kind = "stump"
+		elif roll < 44:
+			kind = "branch"
+		if kind == "" or _too_close(lx, used, 14):
+			continue
+		used.append(lx)
+		var wx := float(gx * TILE_SIZE)
 		var sy := roundf(height_smooth_at(wx) / 4.0) * 4.0
-		out.append({
-			"x": float(tx * TILE_SIZE),
-			"y": sy - float(TILE_SIZE * 2),
-			"kind": "stump_%s" % ["a", "b", "c"][rng.randi_range(0, 2)],
-		})
+		if kind == "stump":
+			out.append({
+				"x": float(lx * TILE_SIZE),
+				"y": sy - float(TILE_SIZE * 2),
+				"kind": "stump_%s" % ["a", "b", "c"][absi(h) % 3],
+			})
+		else:
+			out.append({
+				"x": float(lx * TILE_SIZE),
+				"y": sy - float(TILE_SIZE),
+				"kind": "branch",
+			})
 
-	for _i in rng.randi_range(1, 3):
-		var tx := _spread_x(rng, used)
-		used.append(tx)
-		var wx := float(chunk_index * CHUNK_WIDTH_PX + tx * TILE_SIZE)
-		var sy := roundf(height_smooth_at(wx) / 4.0) * 4.0
-		out.append({
-			"x": float(tx * TILE_SIZE),
-			"y": sy - float(TILE_SIZE),
-			"kind": "branch",
-		})
+	# Startzone (Master-Punkt: 3-5 verbrannte Stuempfe). Liegt weit genug
+	# innerhalb von Chunk 0, also KEIN Sprung an einer Chunkgrenze.
+	if chunk_index == 0:
+		for gx in [-7, -3, 2, 6]:
+			if _too_close(gx, used, 6):
+				continue
+			used.append(gx)
+			var wx := float(gx * TILE_SIZE)
+			var sy := roundf(height_smooth_at(wx) / 4.0) * 4.0
+			var h := ("%d_start_stump_%d" % [world_seed, gx]).hash() & 0x7fffffff
+			out.append({
+				"x": float(gx * TILE_SIZE),
+				"y": sy - float(TILE_SIZE * 2),
+				"kind": "stump_%s" % ["a", "b", "c"][absi(h) % 3],
+			})
 	return out
-
 
 func _spread_x(rng: RandomNumberGenerator, used: Array[int]) -> int:
 	var tx := rng.randi_range(4, CHUNK_TILES_X - 6)

@@ -41,6 +41,11 @@ func _ready() -> void:
 	_fit_display()
 	get_tree().root.size_changed.connect(_fit_display)
 	_chunk_manager.setup(_camera)
+	# KORREKTUR P8.1: Im echten Spielbetrieb Chunks in Scheiben bauen.
+	# Tests/Screenshot-Presets rufen _refresh() direkt auf und bleiben
+	# deshalb synchron, damit alle 17 Smokes unveraendert gruen bleiben.
+	if not _has_debug_args(args):
+		_chunk_manager.enable_sliced_build_after_init()
 	# REVISION 3: Regen kennt Kamera + Gelände -> Aufprall auf der Oberfläche.
 	# PHASE 4: Regen/Schnee kennt jetzt auch die Jahreszeit.
 	_rain.setup(_camera, _chunk_manager.generator, _time)
@@ -164,6 +169,12 @@ func _ready() -> void:
 			_water, _time, _season, _wildlife, _forest_health, _biomes,
 			_camera)
 		add_child(smoke8)
+	elif args.has("--fix-smoke"):
+		var smokef = preload("res://tests/FixSmoke.gd").new()
+		smokef.setup(_interaction, _chunk_manager, _hud, _save, _growth,
+			_water, _time, _season, _wildlife, _forest_health, _biomes,
+			_camera, _parasites)
+		add_child(smokef)
 
 	print("[Main] PHASE 5 bereit: %d Eicheln, %d Tiere, Gesundheit %.0f%%, AUTO aus (MANUELL)." % [
 		_interaction.get_seed_count(), _wildlife.debug_total_animal_count(),
@@ -235,6 +246,13 @@ func _set_reservoir_fill(fraction: float) -> void:
 ## Reproduzierbare Zustaende fuer Screenshots / Tests.
 ## Ohne Argument: F5 startet OHNE Inventar-Eicheln; die 2 Start-Eicheln
 ## liegen auf dem Boden (REVISION 4).
+func _has_debug_args(args: PackedStringArray) -> bool:
+	for a in args:
+		if a.contains("-smoke") or a.contains("-shot") or a.contains("--bench"):
+			return true
+	return false
+
+
 func _apply_presets(args: PackedStringArray) -> void:
 	if args.has("--p3-debug-sizes"):
 		print("[DBG] window=", DisplayServer.window_get_size(),
@@ -243,6 +261,14 @@ func _apply_presets(args: PackedStringArray) -> void:
 			" scale=", get_tree().root.content_scale_factor,
 			" mode=", get_tree().root.content_scale_mode,
 			" aspect=", get_tree().root.content_scale_aspect)
+
+	# --- KORREKTURRUNDE P8.1: neun Fehlerbehebungen ---------------------------
+	if args.has("--fix-shot-wildlife"):
+		_fix_shot("wildlife")
+	elif args.has("--fix-shot-toasts"):
+		_fix_shot("toasts")
+	elif args.has("--fix-shot-seam"):
+		_fix_shot("seam")
 
 	# --- PHASE 8: fünfte Tierart / Vogel-Progression --------------------------
 	if args.has("--p8-shot-before"):
@@ -806,6 +832,38 @@ func _p5_freeze() -> void:
 	_mycorrhiza.set_process(false)
 	_disasters.set_process(false)
 	_biomes.set_process(false)
+
+
+## KORREKTUR P8.1: drei Zustände der Fehlerbehebungen.
+func _fix_shot(mode: String) -> void:
+	_p8_shot("bird")
+	_hud.debug_clear_toasts()
+	if mode == "wildlife":
+		var sq := _wildlife.debug_animal("squirrel")
+		if sq != null:
+			sq.position.x = 110.0
+			sq.debug_force_climb()
+			EventBus.toast.emit(tr("STATE_CLIMB"))
+		var wp := _wildlife.debug_animal("woodpecker")
+		var tl := get_tree().get_nodes_in_group("trees")
+		if wp != null and tl.size() > 0 and tl[0] is BaseTree:
+			wp.debug_force_perch(tl[0] as BaseTree)
+			EventBus.toast.emit(tr("MSG_WOODPECKER_EAT"))
+		EventBus.toast.emit(tr("MSG_ACORN_CACHED"))
+		EventBus.toast.emit(tr("MSG_SEED_CARRIED"))
+	elif mode == "toasts":
+		EventBus.toast.emit(tr("MSG_BIRD_ARRIVED"))
+		EventBus.toast.emit(tr("MSG_ACORN_CACHED"))
+		EventBus.toast.emit(tr("MSG_WOODPECKER_EAT"))
+		EventBus.toast.emit(tr("MSG_SEED_CARRIED"))
+		EventBus.toast.emit(tr("MSG_BIOME_WET"))
+	elif mode == "seam":
+		_camera.teleport_to(Vector2(4096.0, 430.0))
+		_chunk_manager._refresh()
+		_biomes.debug_force_at(4096.0)
+		_hud.refresh()
+		EventBus.toast.emit(tr("MSG_BIOME_WET"))
+		EventBus.toast.emit(tr("HUD_PHASE8"))
 
 
 func _p5_reset_world() -> void:

@@ -109,9 +109,12 @@ func run() -> void:
 	_check(small_hits, "Kleine Klickflaechen passen zur neuen Tiergroesse")
 	# Specht/Eichhoernchen erscheinen erst ab >50 % Gesundheit -> hier ueber
 	# die Konstante pruefen, nicht ueber eine (noch nicht gespawnte) Instanz.
+	# KORREKTUR P8.1: Der User wollte das Eichhoernchen ausdruecklich
+	# KLEINER. Der Specht behaelt seine Groesse; die Erwartung wird also
+	# an die neue Anforderung angepasst, nicht aufgeweicht.
 	_check(float(Animal.BODY_SPAN["woodpecker"]) >= 36.0
-		and float(Animal.BODY_SPAN["squirrel"]) >= 36.0,
-		"Specht/Eichhoernchen behalten ihre Groesse")
+		and float(Animal.BODY_SPAN["squirrel"]) <= 30.0,
+		"Specht bleibt gross, Eichhoernchen ist jetzt 26px klein")
 
 	# --- 3) Groesser, langsamer, frei verzweigt -----------------------------
 	var mature: BaseTree = interaction.spawn_tree_at(Vector2(0.0, 0.0), {})

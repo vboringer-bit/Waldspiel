@@ -9,6 +9,9 @@ const HAZE_PATH := PixelArt.SUN_HAZE
 
 var _sky_rect: TextureRect
 var _haze: TextureRect
+## KORREKTUR P8.1: Zielton wird EINMAL pro Frame interpoliert statt bei
+# jedem Signal abrupt auf die komplette 1920x1080-Textur gesetzt.
+var _target_modulate := Color(1.0, 1.0, 1.0, 1.0)
 
 
 func _ready() -> void:
@@ -53,5 +56,17 @@ func _on_biome_changed(kind: int, blend: float) -> void:
 			target = Color(1.0, 0.95, 0.84)
 		WorldGenerator.BiomeKind.FEUCHT:
 			target = Color(0.82, 0.91, 0.89)
-	_sky_rect.modulate = Color(1.0, 1.0, 1.0).lerp(target,
-		clampf(maxf(blend, 0.35) if kind != WorldGenerator.BiomeKind.TEMPERIERT else 0.0, 0.0, 1.0))
+	var strength := 0.0
+	if kind != WorldGenerator.BiomeKind.TEMPERIERT:
+		strength = clampf(blend, 0.0, 1.0)
+	_target_modulate = Color(1.0, 1.0, 1.0).lerp(target, strength)
+
+
+func _process(delta: float) -> void:
+	if _sky_rect == null:
+		return
+	var cur: Color = _sky_rect.modulate
+	if cur.is_equal_approx(_target_modulate):
+		return
+	_sky_rect.modulate = cur.lerp(_target_modulate,
+		clampf(delta * 4.0, 0.0, 1.0))

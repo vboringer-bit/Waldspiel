@@ -1,11 +1,24 @@
-# Wald-Regeneration — PHASE 8 (auf GitHub)
+# Wald-Regeneration — KORREKTURRUNDE P8.1 (auf GitHub)
 
 > 2D-Seitenansicht (Himmel **und** Bodenquerschnitt) · Godot **4.7.2 stable** · GDScript · Forward+ / Vulkan
 > Inspiriert von Mycelium / Mycelarium. Nach dem Waldbrand: 2 Eicheln **auf dem Boden**, ein hungriger Vogel, ein Keimling mit wachsender Pfahlwurzel — jetzt mit Jahreszeiten, Zeitspulen, natürlicher Vermehrung, **Skilltree mit 24 Knoten**, Winter-Schnee, Tieren, Parasiten, Pilz-Symbiose sowie **gezielt ziehbaren Wurzeln/Stämmen/Ästen**.
 
-**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · PHASE 6 ✅ auf GitHub · PHASE 7 ✅ auf GitHub · **PHASE 8 ✅ auf GitHub (17/17 Smokes · 887 OK)**
+**Status:** PHASE 0 ✅ · PHASE 1 ✅ · PHASE 2 ✅ · REVISION 1 ✅ · REVISION 2 ✅ · PHASE 3 ✅ · REVISION 3 ✅ · REVISION 4 ✅ · PHASE 4 ✅ + Fixrunde ✅ · PHASE 5 ✅ · REVISION 5 ✅ · REVISION 6 ✅ · REVISION 7 ✅ · REVISION 8 ✅ · PHASE 6 ✅ auf GitHub · PHASE 7/8 ✅ auf GitHub · **KORREKTURRUNDE P8.1 ✅ (18/18 Smokes · 1005 OK)**
 
-**Wichtig:** PHASE 8 ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `0b2f064`, PHASE 7). `deliverables/waldspiel-PHASE8.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE8-ERGEBNIS.md` / `.html`, `PHASE8-TESTPROTOKOLL.txt`, `DECISIONS.md` §77. Alle R0–R8-, P6- und P7-Korrekturen bleiben vollständig gültig.
+**Wichtig:** Die **KORREKTURRUNDE P8.1** ist als **vollständiger Stand auf GitHub gepusht** (Nachfolger von `a144657`, PHASE 8). `deliverables/waldspiel-PHASE8-FIX.zip` ist das aktuelle, Godot-importierbare Komplett-Paket; alle älteren ZIPs bleiben historisch erhalten. Berichte: `PHASE8-FIX-ERGEBNIS.md` / `.html`, `PHASE8-FIX-TESTPROTOKOLL.txt`, `DECISIONS.md` §78. Alle R0–R8-, P6-, P7- und P8-Korrekturen bleiben vollständig gültig.
+
+---
+
+## KORREKTURRUNDE P8.1 — neun Fehler behoben
+
+**User-Auftrag:** neun konkrete Fehler/Wünsche (siehe `DECISIONS.md` §78). Es ist eine **Fehlerbehebungsrunde**, keine neue PHASE; die historischen P0–P8-Pakete bleiben erhalten.
+
+1. **Tierwelt.** Eichhörnchen `40 → 26px`, nach jedem Tick per `_follow_ground()` auf der 4px-Kante (nie in der Luft), neuer `State.CLIMB` zum Baumklettern. Specht fliegt 90px hoch mit **4 eigenen Flug-Frames + Sitz-Frame**, setzt sich im `State.PERCH` an den Stamm und frisst Parasiten.
+2. **Eicheln.** Ziele seed-deterministisch **verstreut in beide Richtungen**, nur **20 % Keimung**, Transport `22s → 55s`. Der garantierte P5-Test-Hook bleibt unverändert.
+3. **Performance.** Biom-Signale gedrosselt, 27 HUD-Signale koalesziert, Himmel interpoliert. Chunk-Bau `711ms → 2-Spalten-Scheiben` mit 4ms Frame-Budget (Start-Chunks synchron), zusätzliche Noise-Caches (`31ms` Wiederholbau).
+4. **Naht & Toasts.** Oberkante wird in 32 Streifen in **Weltkoordinaten** getönt — kein Farbsprung mehr an 2048px-Grenzen. Nachrichten stapeln sich (5 Zeilen), bleiben 6s lesbar, bleichen 1,5s aus und verschwinden.
+
+Abnahme: **drei komplette Läufe je 18/18 Smokes · 1005 OK · 0 Fehler** (neu: `--fix-smoke`, 118 Checks), Import 0, F5 180/0, 3×25 Render-Frames 0. Siehe `PHASE8-FIX-ERGEBNIS.html` / `.md`.
 
 ---
 

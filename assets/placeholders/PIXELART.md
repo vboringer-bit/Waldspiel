@@ -38,3 +38,16 @@ eigener `src/animals/BurrowTrail.gd`-Node mit `top_level = true` und absoluter
 mehr mit dem Tier-Transform wackeln. `worm.png` und alle Vektor-Details am
 Wurm sind dunkler/erdiger. Ameisenhügel und Tiere rasten auf
 `WorldGenerator.ground_y_at()` (sichtbare 4px-Kante), damit nichts schwebt.
+
+
+## KORREKTURRUNDE P8.1 — Specht-Flug-Frames
+
+`woodpecker_f1.png` … `woodpecker_f4.png` (je 32x24) sind vier eigene,
+selbst gezeichnete Fluegelstellungen. `woodpecker_perch.png` zeigt den
+Specht mit angelegten Schwingen senkrecht am Stamm. Sie werden von
+`tools/generate_placeholders.py` erzeugt (keine Fremd-Assets).
+
+`Animal._update_body_sprite()` wechselt im Flug mit 9 fps durch f1..f4 und
+beim `PERCH`-Zustand auf das Sitz-Frame. Die Pfade liegen bewusst in
+`PixelArt.WOODPECKER_FRAMES` und **nicht** in `PixelArt.PATHS`, damit die
+21 zentralen Slots und alle aelteren Regressionen unveraendert bleiben.

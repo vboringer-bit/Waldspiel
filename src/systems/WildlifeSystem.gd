@@ -16,7 +16,14 @@ const BASE_ANTS := 2
 const MAX_ANTS := 8
 const MAX_ANIMALS := 20
 const COLONY_INTERVAL := 10.0
-const CARRY_INTERVAL := 22.0
+## KORREKTUR P8.1: deutlich seltener (vorher 22s).
+const CARRY_INTERVAL := 55.0
+## Nur jede fuenfte verschleppte Eichel keimt; der Rest wird versteckt.
+const GERMINATION_CHANCE := 0.20
+const SCATTER_MIN := 0.6
+const SCATTER_MAX := 2.4
+const SCATTER_JITTER := 512.0
+const CARRY_MIN_DISTANCE := 96.0
 const REMOTE_OFFSET := 2304.0
 const ADVANCED := ["woodpecker", "squirrel"]
 ## PHASE 8: fuenfte Art. Bewusst NICHT in ADVANCED: _sync_advanced() und damit
@@ -47,6 +54,12 @@ var colony: int = 0
 var colony_timer: float = 0.0
 var carry_timer: float = 0.0
 var bird_carry_timer: float = 0.0
+## KORREKTUR P8.1: Statistik der Eichel-Transporte (nur Debug/Protokoll).
+var carry_count: int = 0
+var germinated_count: int = 0
+var cached_count: int = 0
+var last_carry_x: float = 0.0
+var carry_targets: Array[float] = []
 var _rng := RandomNumberGenerator.new()
 var _connected: bool = false
 
@@ -113,6 +126,11 @@ func reset() -> void:
 	colony_timer = 0.0
 	carry_timer = 0.0
 	bird_carry_timer = 0.0
+	carry_count = 0
+	germinated_count = 0
+	cached_count = 0
+	last_carry_x = 0.0
+	carry_targets.clear()
 	for x in BASELINE_WORM_X:
 		_spawn_animal("worm", float(x), true)
 	for x in BASELINE_ANT_X:
@@ -297,15 +315,32 @@ func _tick(dt: float) -> void:
 	if carry_timer >= CARRY_INTERVAL and has_species("squirrel"):
 		carry_timer = 0.0
 		var sq := _first_animal("squirrel")
-		if sq != null and sq.state != Animal.State.CARRY:
+		if sq != null and sq.state != Animal.State.CARRY \
+				and sq.state != Animal.State.CLIMB:
 			var base_x := 0.0
 			var t0 := _first_tree()
 			if t0 != null:
 				base_x = t0.global_position.x
-			var target := base_x + REMOTE_OFFSET
+			# KORREKTUR P8.1: nicht mehr IMMER base_x + REMOTE_OFFSET,
+			# sondern seed-deterministisch verstreut in beide Richtungen.
+			var target := _scattered_carry_target(base_x)
 			sq.assign_carry(target)
 			EventBus.seed_carried.emit(Vector2(base_x, 0.0), Vector2(target, 0.0))
 			EventBus.toast.emit(tr("MSG_SEED_CARRIED"))
+
+
+## KORREKTUR P8.1: verstreute Ziele. Vorher war das Ziel IMMER
+## `erster Baum + 2304px`; jetzt Richtung, Entfernung und Jitter kommen
+## aus dem seed-deterministischen RNG, auf dem 16px-Bodenraster.
+func _scattered_carry_target(base_x: float) -> float:
+	var dir := 1.0 if _rng.randf() < 0.5 else -1.0
+	var dist := REMOTE_OFFSET * _rng.randf_range(SCATTER_MIN, SCATTER_MAX)
+	var jitter := _rng.randf_range(-SCATTER_JITTER, SCATTER_JITTER)
+	var x := base_x + dir * dist + jitter
+	if absf(x - last_carry_x) < CARRY_MIN_DISTANCE:
+		x += dir * CARRY_MIN_DISTANCE * 8.0
+	return roundf(x / float(WorldGenerator.TILE_SIZE)) \
+		* float(WorldGenerator.TILE_SIZE)
 
 
 func rand_range(a: float, b: float) -> float:
@@ -328,8 +363,53 @@ func on_woodpecker_help(a: Animal) -> int:
 	return removed
 
 
-func on_seed_delivered(_a: Animal) -> void:
-	debug_force_remote_seed()
+## KORREKTUR P8.1: nur 20 % Keimung. Der garantierte Test-Hook
+## debug_force_remote_seed() bleibt davon UNBERUEHRT (Phase5Smoke).
+func on_seed_delivered(a: Animal) -> void:
+	var x := a.target_x if a != null else REMOTE_OFFSET
+	_deliver_squirrel(x)
+
+
+func _deliver_squirrel(x: float) -> bool:
+	carry_count += 1
+	last_carry_x = x
+	carry_targets.append(x)
+	if carry_targets.size() > 64:
+		carry_targets.remove_at(0)
+	if _rng.randf() >= GERMINATION_CHANCE:
+		cached_count += 1
+		EventBus.toast.emit(tr("MSG_ACORN_CACHED"))
+		return false
+	germinated_count += 1
+	return _plant_remote_at(x) != null
+
+
+func _plant_remote_at(x: float) -> BaseTree:
+	if interaction == null or generator == null:
+		return null
+	var px := roundf(x / float(WorldGenerator.TILE_SIZE)) \
+		* float(WorldGenerator.TILE_SIZE)
+	var y := generator.height_smooth_at(px)
+	var nt := interaction.spawn_tree_at(Vector2(px, y), {})
+	EventBus.seed_planted_remote.emit(Vector2(px, y))
+	EventBus.toast.emit(tr("MSG_TREE_PLANTED_REMOTE"))
+	if forest_health != null:
+		forest_health.recompute()
+	return nt
+
+
+## KORREKTUR P8.1: Der sitzende Specht frisst weitere Parasiten. Nutzt das
+## bewaehrte on_woodpecker_help(), setzt host_tree nur kurzzeitig.
+func on_woodpecker_peck(a: Animal, tree: BaseTree) -> int:
+	if a == null or tree == null or parasite_system == null:
+		return 0
+	var previous := a.host_tree
+	a.host_tree = tree
+	var removed := on_woodpecker_help(a)
+	a.host_tree = previous
+	if removed > 0:
+		EventBus.toast.emit(tr("MSG_WOODPECKER_EAT"))
+	return removed
 
 
 ## PHASE 8: Der Vogel pflanzt am ENDE seines Fluges (links), nicht am
@@ -652,3 +732,34 @@ func debug_bird_carry_timer() -> float:
 
 func debug_force_progression() -> void:
 	_sync_progression()
+
+
+# --------------------------------------------------------------------------- #
+# KORREKTUR P8.1: Debug-Hooks fuer FixSmoke
+# --------------------------------------------------------------------------- #
+func debug_carry_stats() -> Dictionary:
+	return {
+		"carries": carry_count,
+		"germinated": germinated_count,
+		"cached": cached_count,
+		"chance": GERMINATION_CHANCE,
+		"interval": CARRY_INTERVAL,
+	}
+
+
+func debug_carry_targets() -> Array:
+	return carry_targets.duplicate()
+
+
+func debug_scattered_unique(targets: Array) -> int:
+	var d := {}
+	for x in targets:
+		d[roundf(float(x))] = true
+	return d.size()
+
+
+## Fuehrt n Transporte ohne echte Flugzeit aus (deterministisch, smokebar).
+func debug_simulate_carries(n: int) -> Dictionary:
+	for _i in n:
+		_deliver_squirrel(_scattered_carry_target(0.0))
+	return debug_carry_stats()

@@ -41,14 +41,23 @@ var _pause_button: Button
 var _season_bar: ProgressBar
 var _season_label: Label
 var _hint: Label
-var _toast_label: Label
+## KORREKTUR P8.1: statt EINES ueberschriebenen Labels ein Stack aus
+## bis zu 5 Nachrichten, die einzeln ausbleichen und verschwinden.
+var _toast_root: VBoxContainer
+var _toast_entries: Array = []
+const TOAST_MAX := 5
+const TOAST_LIFE := 6.0
+const TOAST_FADE := 1.5
 
 var _settings: LabelSettings
 var _small: LabelSettings
 var _cost_settings: LabelSettings
 var _warn_settings: LabelSettings
-var _toast_timer: float = 0.0
 var _acc: float = 0.0
+## KORREKTUR P8.1: Signal-Refreshes werden gesammelt und nur im
+## vorhandenen 10-Hz-Takt ausgefuehrt (vorher bis zu ~30x pro Sekunde).
+var _refresh_dirty: bool = false
+var _refresh_requests: int = 0
 var _ghost_cost: float = -1.0
 var _ghost_material: String = ""
 var _ghost_affordable: bool = true
@@ -256,9 +265,15 @@ func _build_widgets() -> void:
 	_p8_species.modulate = Color(0.88, 0.82, 0.64, 1.0)
 
 	_hint = _label("", _small)
-	_toast_label = _label("", _settings)
-	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast_label.modulate.a = 0.0
+	_build_toasts()
+
+
+func _build_toasts() -> void:
+	_toast_root = VBoxContainer.new()
+	_toast_root.name = "ToastStack"
+	_toast_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_root.add_theme_constant_override("separation", 4)
+	add_child(_toast_root)
 
 
 func _icon(filename: String) -> TextureRect:
@@ -360,45 +375,45 @@ func _connect() -> void:
 	_load_button.pressed.connect(_on_load_pressed)
 	EventBus.toast.connect(_on_toast)
 	EventBus.locale_changed.connect(_on_locale_changed)
-	EventBus.inventory_changed.connect(func(_count): refresh())
-	EventBus.tree_selected.connect(func(_tree): refresh())
-	EventBus.tree_grew.connect(func(_tree, _part): refresh())
-	EventBus.rain_started.connect(func(_duration): refresh())
-	EventBus.rain_stopped.connect(func(): refresh())
+	EventBus.inventory_changed.connect(func(_count): _request_refresh())
+	EventBus.tree_selected.connect(func(_tree): _request_refresh())
+	EventBus.tree_grew.connect(func(_tree, _part): _request_refresh())
+	EventBus.rain_started.connect(func(_duration): _request_refresh())
+	EventBus.rain_stopped.connect(func(): _request_refresh())
 	EventBus.ghost_preview.connect(_on_ghost_preview)
-	EventBus.root_grown.connect(func(_tree, _tile, _cost): refresh())
-	EventBus.reservoir_dried.connect(func(_tile): refresh())
+	EventBus.root_grown.connect(func(_tree, _tile, _cost): _request_refresh())
+	EventBus.reservoir_dried.connect(func(_tile): _request_refresh())
 	EventBus.mode_changed.connect(func(_auto): _hide_ghost_info())
 	# PHASE 3
 	_difficulty_button.pressed.connect(_on_difficulty_pressed)
 	for i in _scale_buttons.size():
 		_scale_buttons[i].pressed.connect(_on_scale_pressed.bind(TimeManager.SCALES[i]))
 	_pause_button.pressed.connect(_on_pause_pressed)
-	EventBus.season_changed.connect(func(_y, _s): refresh())
-	EventBus.precipitation_mode_changed.connect(func(_snow): refresh())
+	EventBus.season_changed.connect(func(_y, _s): _request_refresh())
+	EventBus.precipitation_mode_changed.connect(func(_snow): _request_refresh())
 	EventBus.precipitation_blend_changed.connect(_on_precipitation_blend_changed)
-	EventBus.time_scale_changed.connect(func(_s, _p): refresh())
+	EventBus.time_scale_changed.connect(func(_s, _p): _request_refresh())
 	EventBus.difficulty_changed.connect(func(_d): refresh_texts())
 	# PHASE 5: Oekologie-Panel reagiert auf alle neuen Signale.
-	EventBus.forest_health_changed.connect(func(_v): refresh())
-	EventBus.food_changed.connect(func(_v): refresh())
-	EventBus.wildlife_changed.connect(func(): refresh())
-	EventBus.animal_spawned.connect(func(_v): refresh())
-	EventBus.animal_state_changed.connect(func(_a, _b): refresh())
-	EventBus.colony_grown.connect(func(_v): refresh())
-	EventBus.parasite_spawned.connect(func(_a, _b): refresh())
-	EventBus.parasite_removed.connect(func(_a, _b, _c): refresh())
-	EventBus.fungus_patch_spawned.connect(func(_v): refresh())
-	EventBus.seed_planted_remote.connect(func(_v): refresh())
-	EventBus.game_loaded.connect(func(): refresh())
+	EventBus.forest_health_changed.connect(func(_v): _request_refresh())
+	EventBus.food_changed.connect(func(_v): _request_refresh())
+	EventBus.wildlife_changed.connect(func(): _request_refresh())
+	EventBus.animal_spawned.connect(func(_v): _request_refresh())
+	EventBus.animal_state_changed.connect(func(_a, _b): _request_refresh())
+	EventBus.colony_grown.connect(func(_v): _request_refresh())
+	EventBus.parasite_spawned.connect(func(_a, _b): _request_refresh())
+	EventBus.parasite_removed.connect(func(_a, _b, _c): _request_refresh())
+	EventBus.fungus_patch_spawned.connect(func(_v): _request_refresh())
+	EventBus.seed_planted_remote.connect(func(_v): _request_refresh())
+	EventBus.game_loaded.connect(func(): _request_refresh())
 	# PHASE 6: Boden / Netz / Ereignisse aktualisieren die zwei neuen Zeilen.
-	EventBus.soil_changed.connect(func(_r): refresh())
-	EventBus.mycorrhiza_changed.connect(func(_n): refresh())
-	EventBus.disaster_started.connect(func(_k, _d): refresh())
-	EventBus.disaster_ended.connect(func(_k): refresh())
+	EventBus.soil_changed.connect(func(_r): _request_refresh())
+	EventBus.mycorrhiza_changed.connect(func(_n): _request_refresh())
+	EventBus.disaster_started.connect(func(_k, _d): _request_refresh())
+	EventBus.disaster_ended.connect(func(_k): _request_refresh())
 	# PHASE 7: Biom-Wechsel aktualisieren die neue Zeile.
-	EventBus.biome_changed.connect(func(_k, _b): refresh())
-	EventBus.biome_discovered.connect(func(_k): refresh())
+	EventBus.biome_changed.connect(func(_k, _b): _request_refresh())
+	EventBus.biome_discovered.connect(func(_k): _request_refresh())
 
 
 # --------------------------------------------------------------------------- #
@@ -476,9 +491,14 @@ func _layout() -> void:
 	_skill_button.position = Vector2(vp.x - 250.0, 24.0)
 	_skill_button.size = Vector2(226.0, 40.0)
 	_hint.position = Vector2(24.0, y - 30.0)
-	# PHASE 6: Toast unter das erweiterte Oekologie-Panel legen.
-	_toast_label.position = Vector2(0.0, 334.0)
-	_toast_label.size = Vector2(vp.x, 44.0)
+	# KORREKTUR P8.1: Stack unter dem erweiterten Oekologie-Panel.
+	if _toast_root != null:
+		_toast_root.position = Vector2(0.0, 334.0)
+		_toast_root.size = Vector2(vp.x, float(TOAST_MAX) * 30.0)
+		for e in _toast_entries:
+			var l := e["label"] as Label
+			if l != null and is_instance_valid(l):
+				l.custom_minimum_size = Vector2(maxf(vp.x - 80.0, 200.0), 0.0)
 
 
 # --------------------------------------------------------------------------- #
@@ -751,18 +771,99 @@ func _process(delta: float) -> void:
 	_acc += delta
 	if _acc >= 0.1:
 		_acc = 0.0
+		# Alle zwischenzeitlichen Signal-Anforderungen landen in genau
+		# DIESEM einen Refresh pro 100ms statt in vielen Einzelrefreshs.
+		_refresh_dirty = false
 		refresh()
-	if _toast_timer > 0.0:
-		_toast_timer -= delta
-		_toast_label.modulate.a = clampf(_toast_timer, 0.0, 1.0)
-		if _toast_timer <= 0.0:
-			_toast_label.text = ""
+	_update_toasts(delta)
+
+
+func _request_refresh() -> void:
+	_refresh_dirty = true
+	_refresh_requests += 1
+
+
+func _update_toasts(delta: float) -> void:
+	if _toast_entries.is_empty():
+		return
+	for i in range(_toast_entries.size() - 1, -1, -1):
+		var e: Dictionary = _toast_entries[i]
+		var l := e["label"] as Label
+		var ttl := float(e["ttl"]) - delta
+		e["ttl"] = ttl
+		if ttl <= 0.0:
+			_toast_entries.remove_at(i)
+			if l != null and is_instance_valid(l):
+				l.queue_free()
+		elif l != null and is_instance_valid(l):
+			# Volle Lesbarkeit, danach sanftes Ausbleichen.
+			l.modulate.a = clampf(ttl / TOAST_FADE, 0.0, 1.0)
 
 
 func _on_toast(text: String) -> void:
-	_toast_label.text = text
-	_toast_label.modulate.a = 1.0
-	_toast_timer = 3.5
+	if _toast_root == null or text.strip_edges() == "":
+		return
+	var l := Label.new()
+	l.name = "Toast"
+	l.text = text
+	l.label_settings = _settings
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.custom_minimum_size = Vector2(
+		maxf(float(get_viewport().get_visible_rect().size.x) - 80.0, 200.0), 0.0)
+	l.modulate.a = 1.0
+	_toast_root.add_child(l)
+	_toast_entries.append({"label": l, "ttl": TOAST_LIFE})
+	while _toast_entries.size() > TOAST_MAX:
+		var old: Dictionary = _toast_entries.pop_front()
+		var ol := old["label"] as Label
+		if ol != null and is_instance_valid(ol):
+			ol.queue_free()
+
+
+# --------------------------------------------------------------------------- #
+# KORREKTUR P8.1: Debug-Hooks fuer den Toast-Stack
+# --------------------------------------------------------------------------- #
+func debug_toast_lines() -> Array:
+	var out: Array[String] = []
+	for e in _toast_entries:
+		var l := e["label"] as Label
+		if l != null and is_instance_valid(l):
+			out.append(l.text)
+	return out
+
+
+func debug_toast_alphas() -> Array:
+	var out: Array[float] = []
+	for e in _toast_entries:
+		var l := e["label"] as Label
+		out.append(l.modulate.a if l != null and is_instance_valid(l) else 0.0)
+	return out
+
+
+func debug_toast_count() -> int:
+	return _toast_entries.size()
+
+
+func debug_refresh_requests() -> int:
+	return _refresh_requests
+
+
+func debug_advance_toasts(seconds: float) -> void:
+	_update_toasts(seconds)
+
+
+func debug_clear_toasts() -> void:
+	for e in _toast_entries:
+		var l := e["label"] as Label
+		if l != null and is_instance_valid(l):
+			l.queue_free()
+	_toast_entries.clear()
+
+
+func debug_refresh_dirty() -> bool:
+	return _refresh_dirty
 
 
 func _on_locale_changed(_locale: String) -> void:

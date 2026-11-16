@@ -369,10 +369,66 @@ def build_seed_mound() -> None:
     im.save(OUT / "seed_mound.png", optimize=True)
 
 
+def woodpecker_frame(path: str, wing: int, perch: bool = False) -> None:
+    """KORREKTUR P8.1: eigener 32x24-Pixelart-Frame (kein Fremd-Asset).
+
+    wing: 0=Fluegel unten, 1=waagerecht, 2=oben, 3=schraeg unten.
+    perch=True: angelegte Fluegel, senkrecht am Stamm sitzend.
+    Die vier Flug-Frames ergeben zusammen eine echte Frame-Animation.
+    """
+    im = canvas(32, 24)
+    d = ImageDraw.Draw(im)
+    black = (32, 38, 40, 255)
+    dark = (20, 25, 27, 255)
+    white = (226, 226, 214, 255)
+    red = (206, 46, 36, 255)
+    beak = (232, 194, 84, 255)
+
+    if perch:
+        # Senkrecht am Stamm: schmaler Koerper, angelegte Schwingen.
+        d.ellipse((11, 5, 21, 19), fill=black)
+        d.ellipse((14, 9, 19, 18), fill=white)
+        d.ellipse((13, 2, 21, 10), fill=black)
+        d.rectangle((15, 0, 19, 3), fill=red)
+        d.polygon([(21, 5), (29, 7), (21, 9)], fill=beak)
+        d.point((19, 5), fill=white)
+        d.polygon([(11, 15), (7, 23), (13, 19)], fill=dark)
+        d.line([(12, 10), (12, 17)], fill=white, width=1)
+        d.line([(15, 19), (14, 23)], fill=beak, width=1)
+        d.line([(18, 19), (19, 23)], fill=beak, width=1)
+    else:
+        # Fliegend: Koerper waagerecht, Schwanz links, Schnabel rechts.
+        d.ellipse((7, 8, 23, 17), fill=black)
+        d.ellipse((11, 12, 20, 17), fill=white)
+        d.ellipse((19, 5, 28, 14), fill=black)
+        d.rectangle((21, 2, 26, 5), fill=red)
+        d.polygon([(28, 8), (32, 9), (28, 11)], fill=beak)
+        d.point((25, 8), fill=white)
+        d.point((26, 8), fill=dark)
+        d.polygon([(7, 10), (1, 7), (6, 15)], fill=dark)
+        # Vier deutlich verschiedene Schwingenstellungen.
+        wings = [
+            [(13, 10), (6, 19), (16, 15)],       # unten
+            [(13, 9), (3, 9), (14, 14)],        # waagerecht
+            [(13, 9), (5, 1), (16, 13)],        # oben
+            [(13, 10), (4, 14), (16, 15)],      # schraeg unten
+        ]
+        d.polygon(wings[wing], fill=dark)
+        d.line([(10, 12), (14, 14)], fill=white, width=1)
+    im.save(OUT / path, optimize=True)
+
+
+def build_woodpecker_frames() -> None:
+    for i in range(4):
+        woodpecker_frame(f"woodpecker_f{i + 1}.png", i)
+    woodpecker_frame("woodpecker_perch.png", 0, perch=True)
+
+
 if __name__ == "__main__":
     build_soil_atlas()
     build_sprites()
     build_seed_mound()
     build_sky()
     build_mountains()
+    build_woodpecker_frames()
     print(f"[placeholders] {len(list(OUT.glob('*.png')))} PNGs -> {OUT}")

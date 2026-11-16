@@ -40,6 +40,18 @@ const WATER := DIR + "water.png"
 const WORM := DIR + "worm.png"
 const ANT := DIR + "ant.png"
 
+## KORREKTUR P8.1: eigene, selbst gezeichnete Flug-Frames fuer den Specht.
+## Bewusst AUSSERHALB von PATHS -> PATHS.size() bleibt exakt 21 (alle
+## R0-R8-/P6-/P7-/P8-Regressionen bleiben gueltig).
+const WOODPECKER_FLIGHT_FRAMES := 4
+const WOODPECKER_FRAMES := [
+	DIR + "woodpecker_f1.png",
+	DIR + "woodpecker_f2.png",
+	DIR + "woodpecker_f3.png",
+	DIR + "woodpecker_f4.png",
+	DIR + "woodpecker_perch.png",
+]
+
 const PATHS := {
 	"acorn": ACORN, "bird": BIRD, "branch": BRANCH, "glucose": GLUCOSE,
 	"icon": ICON, "leaf": LEAF, "mountains_far": MOUNTAINS_FAR,

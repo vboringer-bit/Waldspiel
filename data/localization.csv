@@ -246,3 +246,8 @@ MSG_BIRD_ARRIVED,Ein Vogel siedelt sich an und traegt Eicheln nach links.,A bird
 MSG_BIRD_LEFT,Der Vogel ist weitergezogen.,The bird has moved on.
 MSG_BIRD_CARRIED,Der Vogel traegt eine Eichel in ein anderes Biom.,The bird carries an acorn into another biome.
 MSG_BIRD_REQUIRES,Vogel erscheint ab 50% Wald-Gesundheit und allen drei Biomen.,Bird appears above 50% forest health and with all three biomes discovered.
+STATE_FLY,fliegt,flying
+STATE_PERCH,sitzt am Baum,perched on a tree
+STATE_CLIMB,klettert am Baum,climbing a tree
+MSG_ACORN_CACHED,Das Eichhoernchen hat eine Eichel versteckt - sie keimt nicht.,The squirrel cached an acorn - it will not sprout.
+MSG_WOODPECKER_EAT,Der Specht pickt einen Parasiten vom Stamm.,The woodpecker eats a parasite from the trunk.
